@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "plansparency-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "export PATH=\"/usr/local/Cellar/node/25.9.0_3/bin:$PATH\" && npm run dev"],
+      "port": 3000
+    }
+  ]
+}
