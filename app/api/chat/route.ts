@@ -42,10 +42,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const blobRes = await fetch(blobUrl);
       if (!blobRes.ok) throw new Error(`Blob fetch failed: ${blobRes.status}`);
       const buf = await blobRes.arrayBuffer();
-      // Edge Runtime has btoa but not Buffer — use Uint8Array → btoa approach
+      // Edge Runtime: chunk the Uint8Array to avoid stack overflow on large PDFs
       const bytes = new Uint8Array(buf);
+      const CHUNK = 8192;
       let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      for (let i = 0; i < bytes.byteLength; i += CHUNK) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      }
       pdfBase64 = btoa(binary);
     } catch (e: any) {
       return jsonError(`Could not fetch PDF: ${e.message}`, 422);
