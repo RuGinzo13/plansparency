@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { upload } from '@vercel/blob/client';
 
 // ── Colors ──
 const C = {
@@ -604,17 +605,40 @@ When discussing vesting, explain what it means and clearly distinguish which sou
   return shared;
 }
 
-async function callClaude(msgs: any[], pdf: string | null, lang: string, planData: any): Promise<string> {
-  const response = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: msgs, pdf, lang, planData }),
-  });
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error || 'API call failed');
+// blobUrl: Vercel Blob URL of the uploaded PDF (first call); null for follow-ups
+async function callClaude(msgs: any[], blobUrl: string | null, lang: string, planData: any, signal?: AbortSignal): Promise<string> {
+  // 28-second client timeout — safely under Vercel Edge's 30 s limit
+  const clientController = new AbortController();
+  const timerId = setTimeout(() => clientController.abort(), 28_000);
+  // Merge with any external signal (e.g. the user cancelling)
+  const mergedSignal = signal
+    ? (AbortSignal as any).any?.([signal, clientController.signal]) ?? clientController.signal
+    : clientController.signal;
+
+  let response: Response;
+  try {
+    response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: msgs, blobUrl: blobUrl ?? undefined, lang, planData }),
+      signal: mergedSignal,
+    });
+  } finally {
+    clearTimeout(timerId);
   }
-  const data = await response.json();
+
+  // Parse body as text first so we never throw on non-JSON (e.g. Vercel 413 page)
+  const raw = await response.text();
+  let data: any = {};
+  try { data = JSON.parse(raw); } catch { /* non-JSON body */ }
+
+  if (!response.ok) {
+    const msg = data?.error || `HTTP ${response.status}`;
+    const err: any = new Error(msg);
+    err.status = response.status;
+    throw err;
+  }
+  if (!data?.text) throw new Error('Unexpected response from server');
   return data.text;
 }
 function parsePlanData(text) { const m = text.match(/<!--PLANDATA:(.*?)-->/); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } }
@@ -1702,8 +1726,10 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const pendingFileRef = useRef(null);
   const addDocRef = useRef(null);
   const abortRef = useRef(null);
-  // Store base64 PDF as a ref — it's never rendered, so state would just trigger wasteful diffs
-  const pdfBase64Ref = useRef<string | null>(null);
+  // Store the Blob URL as a ref — not rendered, so no need for state
+  const blobUrlRef = useRef<string | null>(null);
+  // Two-step upload status for UI feedback
+  const [uploadStatus, setUploadStatus] = useState<'blob' | 'ai' | ''>('');
 
   const t = i18n[lang];
 
@@ -1717,7 +1743,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setCachedPlanText(planText);
     try {
       const m1 = { role: 'user', content: t.firstMessage };
-      const raw = await callClaude([m1], null, lang, null);
+      const raw = await callClaude([m1], null, lang, null, undefined);
       const pd = parsePlanData(raw);
       if (pd) setPlanData(pd);
       setMessages([m1, { role: 'assistant', content: stripPlanData(raw) }]);
@@ -1738,7 +1764,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   }, []);
 
   const clearSession = () => {
-    pdfBase64Ref.current = null;
+    blobUrlRef.current = null;
     setCachedPlanText(null);
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
@@ -1753,41 +1779,51 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (!f || f.type !== "application/pdf") { setUploadError(t.errorFormat); return; }
     if (resetState) {
       setMessages([]); setPlanData(null); setStmtData(null);
-      pdfBase64Ref.current = null; setCalcExpanded(false);
+      blobUrlRef.current = null; setCalcExpanded(false);
     }
     setUploadError(""); setFileName(f.name); setStage(STAGE.UPLOADING);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      // Convert PDF to base64 for direct Claude API upload
-      const b = await fileToBase64(f);
-      pdfBase64Ref.current = b;
+      // Step 1: Upload PDF to Vercel Blob (no body-size limit, up to 20 MB)
+      setUploadStatus('blob');
+      const blob = await upload(f.name, f, { access: 'public', handleUploadUrl: '/api/upload' });
+      blobUrlRef.current = blob.url;
       pendingFileRef.current = null;
+
+      // Step 2: Send blob URL to Claude for analysis
+      setUploadStatus('ai');
       if (docType === "statement") {
         const m1 = { role: "user", content: t.stmtFirstMessage };
-        const raw = await callClaude([m1], b, lang, null);
+        const raw = await callClaude([m1], blob.url, lang, null, abortRef.current.signal);
         const sd = parseStmtData(raw);
         if (sd) setStmtData(sd);
         setMessages([m1, { role: "assistant", content: stripStmtData(raw) }]);
         setStage(STAGE.STMT_DASHBOARD);
       } else {
         const m1 = { role: "user", content: t.firstMessage };
-        const raw = await callClaude([m1], b, lang, null);
+        const raw = await callClaude([m1], blob.url, lang, null, abortRef.current.signal);
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
         setStage(STAGE.DASHBOARD);
       }
+      setUploadStatus('');
       abortRef.current = null;
     } catch (e) {
-      if (e.name === "AbortError") return;
-      console.error('[processUpload] Upload failed:', e.message, e);
-      pdfBase64Ref.current = null;
+      if ((e as any).name === "AbortError") { setUploadStatus(''); return; }
+      console.error('[processUpload] Upload failed:', (e as any).message, e);
+      blobUrlRef.current = null;
       pendingFileRef.current = null;
       abortRef.current = null;
+      setUploadStatus('');
 
-      let userMsg = t.errorRead;
-      if (e.message) userMsg = e.message;
+      let userMsg: string = t.errorRead;
+      const status = (e as any).status;
+      if (status === 429) userMsg = "Too many requests — please wait a minute and try again.";
+      else if (status === 504) userMsg = "The AI took too long. Try a shorter document or simpler question.";
+      else if (status === 413) userMsg = "This PDF is too large to upload. Please try a smaller document (under 20 MB).";
+      else if ((e as any).message) userMsg = (e as any).message;
 
       setUploadError(userMsg);
       setStage(resetState ? (docType === "statement" ? STAGE.STMT_DASHBOARD : STAGE.DASHBOARD) : STAGE.LANDING);
@@ -1806,7 +1842,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      const raw = await callClaude(nm, null, lang, planData);
+      const raw = await callClaude(nm, null, lang, planData, abortRef.current.signal);
       const cleaned = docType === "statement" ? stripStmtData(raw) : stripPlanData(raw);
       setMessages([...nm, { role: "assistant", content: cleaned }]);
       abortRef.current = null;
@@ -1969,10 +2005,20 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Uploading ──
   if (stage === "uploading") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
     <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid rgba(212,168,83,.2)` }}>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+      {uploadStatus === 'blob'
+        ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+      }
     </div>
-    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.readingTitle}</h2>
-    <p style={{ color: C.textMuted, fontSize: 14, margin: 0 }}>{t.readingSubPrefix} <span style={{ color: C.accent }}>{fileName}</span> {t.readingSubSuffix}</p>
+    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>
+      {uploadStatus === 'blob' ? "Uploading document…" : t.readingTitle}
+    </h2>
+    <p style={{ color: C.textMuted, fontSize: 14, margin: 0 }}>
+      {uploadStatus === 'blob'
+        ? <><span style={{ color: C.accent }}>{fileName}</span> is being securely uploaded</>
+        : <>{t.readingSubPrefix} <span style={{ color: C.accent }}>{fileName}</span> {t.readingSubSuffix}</>
+      }
+    </p>
     <style>{`@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.75}}`}</style></div>;
 
   // ── Dashboard (TOC) ──

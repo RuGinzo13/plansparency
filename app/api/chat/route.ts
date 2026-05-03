@@ -1,52 +1,122 @@
 export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function jsonError(msg: string, status = 500): NextResponse {
+  return NextResponse.json({ error: msg }, { status });
+}
+
+async function safeJsonParse(res: Response): Promise<any> {
+  const text = await res.text();
+  try { return JSON.parse(text); } catch { return { error: text.slice(0, 300) }; }
+}
+
+// ── Route ─────────────────────────────────────────────────────────────────────
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  // ── 1. Auth ──────────────────────────────────────────────────────────────────
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return jsonError('API key not configured', 500);
+
+  // ── 2. Parse body ────────────────────────────────────────────────────────────
+  let body: {
+    messages?: { role: 'user' | 'assistant'; content: string }[];
+    lang?: string;
+    planData?: any;
+    blobUrl?: string;   // Vercel Blob URL — Edge fetches PDF from here
+    pdf?: string;       // Legacy: raw base64 fallback for small PDFs
+  };
+
+  try { body = await req.json(); }
+  catch { return jsonError('Invalid request body', 400); }
+
+  const { messages, lang = 'en', planData, blobUrl, pdf } = body;
+  if (!messages?.length) return jsonError('Missing messages', 400);
+
+  // ── 3. Build PDF base64 (from Blob URL or direct) ────────────────────────────
+  let pdfBase64: string | null = pdf ?? null;
+
+  if (blobUrl && !pdfBase64) {
+    try {
+      const blobRes = await fetch(blobUrl);
+      if (!blobRes.ok) throw new Error(`Blob fetch failed: ${blobRes.status}`);
+      const buf = await blobRes.arrayBuffer();
+      // Edge Runtime has btoa but not Buffer — use Uint8Array → btoa approach
+      const bytes = new Uint8Array(buf);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      pdfBase64 = btoa(binary);
+    } catch (e: any) {
+      return jsonError(`Could not fetch PDF: ${e.message}`, 422);
+    }
+  }
+
+  // ── 4. Build Anthropic messages ───────────────────────────────────────────────
+  const anthropicMessages = messages.map((m, i) => {
+    if (i === 0 && pdfBase64) {
+      return {
+        role: 'user' as const,
+        content: [
+          {
+            type: 'document' as const,
+            source: { type: 'base64' as const, media_type: 'application/pdf' as const, data: pdfBase64 },
+          },
+          { type: 'text' as const, text: m.content },
+        ],
+      };
+    }
+    return { role: m.role as 'user' | 'assistant', content: m.content };
+  });
+
+  // ── 5. Call Anthropic (25 s abort — Edge limit 30 s) ─────────────────────────
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 25_000);
+
+  let anthropicRes: Response;
   try {
-    const { messages, pdf, lang, planData } = await req.json();
-
-    const systemPrompt = buildSystemPrompt(lang, planData);
-
-    const anthropicMessages = messages.map((m: any, i: number) => {
-      if (i === 0 && pdf) {
-        return {
-          role: 'user',
-          content: [
-            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf } },
-            { type: 'text', text: m.content }
-          ]
-        };
-      }
-      return { role: m.role, content: m.content };
-    });
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY!,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'pdfs-2024-09-25',   // Required for document content type
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1500,
-        system: systemPrompt,
+        system: buildSystemPrompt(lang, planData),
         messages: anthropicMessages,
       }),
     });
-
-    if (!response.ok) {
-      const err = await response.json();
-      return NextResponse.json({ error: err.error?.message || 'API error' }, { status: 500 });
-    }
-
-    const data = await response.json();
-    const text = data.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n');
-    return NextResponse.json({ text });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'Unknown error' }, { status: 500 });
+    clearTimeout(timer);
+    if (e.name === 'AbortError')
+      return jsonError('Request timed out — try a smaller document or ask a shorter question.', 504);
+    return jsonError(`Network error: ${e.message}`, 502);
   }
+  clearTimeout(timer);
+
+  if (!anthropicRes.ok) {
+    const err = await safeJsonParse(anthropicRes);
+    const msg = err?.error?.message || err?.error || JSON.stringify(err);
+    return jsonError(String(msg), 502);
+  }
+
+  const data = await safeJsonParse(anthropicRes);
+  if (!data?.content) return jsonError('Unexpected response from AI service', 502);
+
+  const text = (data.content as any[])
+    .filter((b: any) => b.type === 'text')
+    .map((b: any) => b.text)
+    .join('\n');
+
+  return NextResponse.json({ text });
 }
+
+// ── System prompt ──────────────────────────────────────────────────────────────
 
 function buildSystemPrompt(lang: string, planData: any): string {
   const acctUrl = planData?.recordkeeperUrl || '';
