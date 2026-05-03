@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { upload } from '@vercel/blob/client';
 
 // ── Colors ──
 const C = {
@@ -605,44 +604,18 @@ When discussing vesting, explain what it means and clearly distinguish which sou
   return shared;
 }
 
-// blobUrl: Vercel Blob URL for the first call; null/undefined for follow-ups (use cachedText instead)
-async function callClaude(msgs, blobUrl, lang, planData, sysPromptOverride, maxTokens = 4096, signal, cachedText) {
-  const sysPrompt = sysPromptOverride || getSystemPrompt(lang, planData);
-  const body = {
-    messages: msgs,
-    systemPrompt: sysPrompt,
-    maxTokens,
-    blobUrl: (blobUrl && !cachedText) ? blobUrl : undefined,
-    extractedText: cachedText ?? undefined,
-  };
-  const r = await fetch('/api/chat', {
+async function callClaude(msgs: any[], pdf: string | null, lang: string, planData: any): Promise<string> {
+  const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal,
+    body: JSON.stringify({ messages: msgs, pdf, lang, planData }),
   });
-  if (!r.ok) {
-    let errMsg = `HTTP ${r.status}`;
-    try {
-      const d = await r.json();
-      if (d.error) errMsg = d.error;
-    } catch { /* server returned non-JSON (e.g. HTML error page) */ }
-    console.error(`[callClaude] Request failed — status ${r.status}:`, errMsg);
-    const err = new Error(errMsg);
-    (err as any).status = r.status;
-    throw err;
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || 'API call failed');
   }
-  const d = await r.json();
-  if (d.error) {
-    console.error('[callClaude] Response contained error:', d.error);
-    throw new Error(d.error);
-  }
-  if (!d.content || !Array.isArray(d.content)) {
-    console.error('[callClaude] Unexpected response shape:', d);
-    throw new Error('Unexpected response from server');
-  }
-  const text = d.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
-  return { text, extractedText: d.extractedText };
+  const data = await response.json();
+  return data.text;
 }
 function parsePlanData(text) { const m = text.match(/<!--PLANDATA:(.*?)-->/); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } }
 function stripPlanData(text) { return text.replace(/<!--PLANDATA:.*?-->/g, "").trim(); }
@@ -1729,10 +1702,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const pendingFileRef = useRef(null);
   const addDocRef = useRef(null);
   const abortRef = useRef(null);
-  // Store Blob URL as a ref — it's never rendered, so state would just trigger wasteful re-renders
-  const blobUrlRef = useRef(null);
-  // Track which upload step we're on so the loading screen can show the right message
-  const [uploadStatus, setUploadStatus] = useState<'blob' | 'ai' | ''>('');
+  // Store base64 PDF as a ref — it's never rendered, so state would just trigger wasteful diffs
+  const pdfBase64Ref = useRef<string | null>(null);
 
   const t = i18n[lang];
 
@@ -1746,7 +1717,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setCachedPlanText(planText);
     try {
       const m1 = { role: 'user', content: t.firstMessage };
-      const { text: raw } = await callClaude([m1], null, lang, null, undefined, 4096, undefined, planText);
+      const raw = await callClaude([m1], null, lang, null);
       const pd = parsePlanData(raw);
       if (pd) setPlanData(pd);
       setMessages([m1, { role: 'assistant', content: stripPlanData(raw) }]);
@@ -1767,7 +1738,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   }, []);
 
   const clearSession = () => {
-    blobUrlRef.current = null;
+    pdfBase64Ref.current = null;
     setCachedPlanText(null);
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
@@ -1782,56 +1753,41 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (!f || f.type !== "application/pdf") { setUploadError(t.errorFormat); return; }
     if (resetState) {
       setMessages([]); setPlanData(null); setStmtData(null);
-      blobUrlRef.current = null; setCalcExpanded(false);
+      pdfBase64Ref.current = null; setCalcExpanded(false);
     }
     setUploadError(""); setFileName(f.name); setStage(STAGE.UPLOADING);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      // Step 1: Upload PDF directly to Vercel Blob (bypasses 4.5MB serverless limit)
-      setUploadStatus('blob');
-      const blob = await upload(f.name, f, { access: 'public', handleUploadUrl: '/api/upload' });
-      blobUrlRef.current = blob.url;
+      // Convert PDF to base64 for direct Claude API upload
+      const b = await fileToBase64(f);
+      pdfBase64Ref.current = b;
       pendingFileRef.current = null;
-
-      // Step 2: Send blob URL to Claude for text extraction + analysis
-      setUploadStatus('ai');
       if (docType === "statement") {
         const m1 = { role: "user", content: t.stmtFirstMessage };
-        const { text: raw, extractedText: newCache } = await callClaude([m1], blob.url, lang, null, getStmtSystemPrompt(lang), 4096, abortRef.current.signal);
-        if (newCache) setCachedPlanText(newCache);
+        const raw = await callClaude([m1], b, lang, null);
         const sd = parseStmtData(raw);
         if (sd) setStmtData(sd);
         setMessages([m1, { role: "assistant", content: stripStmtData(raw) }]);
         setStage(STAGE.STMT_DASHBOARD);
       } else {
         const m1 = { role: "user", content: t.firstMessage };
-        const { text: raw, extractedText: newCache } = await callClaude([m1], blob.url, lang, null, undefined, 4096, abortRef.current.signal);
-        if (newCache) setCachedPlanText(newCache);
+        const raw = await callClaude([m1], b, lang, null);
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
         setStage(STAGE.DASHBOARD);
       }
-      setUploadStatus('');
       abortRef.current = null;
     } catch (e) {
       if (e.name === "AbortError") return;
-      console.error('[processUpload] Upload failed — status:', (e as any).status, 'message:', e.message, e);
-      blobUrlRef.current = null;
+      console.error('[processUpload] Upload failed:', e.message, e);
+      pdfBase64Ref.current = null;
       pendingFileRef.current = null;
       abortRef.current = null;
-      setUploadStatus('');
 
       let userMsg = t.errorRead;
-      if ((e as any).status === 429) {
-        userMsg = "Too many requests — please wait a minute and try again.";
-      } else if (e.message === 'API key not configured') {
-        userMsg = "Configuration error — please contact support.";
-      } else if (e.message && e.message !== 'HTTP 500' && e.message !== 'HTTP 502') {
-        // Show specific server-side error (e.g. "Unable to extract text from this PDF")
-        userMsg = e.message;
-      }
+      if (e.message) userMsg = e.message;
 
       setUploadError(userMsg);
       setStage(resetState ? (docType === "statement" ? STAGE.STMT_DASHBOARD : STAGE.DASHBOARD) : STAGE.LANDING);
@@ -1850,8 +1806,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      const sysPrompt = docType === "statement" ? getStmtSystemPrompt(lang) : undefined;
-      const { text: raw } = await callClaude(nm, null, lang, planData, sysPrompt, 4096, abortRef.current.signal, cachedPlanText);
+      const raw = await callClaude(nm, null, lang, planData);
       const cleaned = docType === "statement" ? stripStmtData(raw) : stripPlanData(raw);
       setMessages([...nm, { role: "assistant", content: cleaned }]);
       abortRef.current = null;
@@ -2014,20 +1969,10 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Uploading ──
   if (stage === "uploading") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
     <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid rgba(212,168,83,.2)` }}>
-      {uploadStatus === 'blob'
-        ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-        : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
-      }
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
     </div>
-    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>
-      {uploadStatus === 'blob' ? "Uploading document…" : t.readingTitle}
-    </h2>
-    <p style={{ color: C.textMuted, fontSize: 14, margin: 0 }}>
-      {uploadStatus === 'blob'
-        ? <><span style={{ color: C.accent }}>{fileName}</span> is being securely uploaded</>
-        : <>{t.readingSubPrefix} <span style={{ color: C.accent }}>{fileName}</span> {t.readingSubSuffix}</>
-      }
-    </p>
+    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.readingTitle}</h2>
+    <p style={{ color: C.textMuted, fontSize: 14, margin: 0 }}>{t.readingSubPrefix} <span style={{ color: C.accent }}>{fileName}</span> {t.readingSubSuffix}</p>
     <style>{`@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.75}}`}</style></div>;
 
   // ── Dashboard (TOC) ──

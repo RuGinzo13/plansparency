@@ -1,181 +1,130 @@
+export const runtime = 'edge';
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
 
-// ── Anthropic client ─────────────────────────────────────────────────────────
-// Constructed once at module load; intentionally does not throw on missing key
-// so the 500 response below is the single source of truth for that error.
-const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
-const client = new Anthropic({ apiKey: anthropicKey });
-
-// ── PDF text extraction with fallback ────────────────────────────────────────
-async function extractPdfText(buffer: Buffer): Promise<string> {
-  // Primary: pdf-parse
+export async function POST(req: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pdfParse = require('pdf-parse');
-    const parsed = await pdfParse(buffer);
-    if (parsed?.text && parsed.text.trim().length > 0) {
-      return parsed.text;
-    }
-    console.error('[pdf] pdf-parse returned empty text');
-  } catch (primaryErr) {
-    console.error('[pdf] pdf-parse failed, trying raw text fallback:', primaryErr);
-  }
+    const { messages, pdf, lang, planData } = await req.json();
 
-  // Fallback: extract printable ASCII runs from the raw PDF bytes.
-  // Works for uncompressed/partially-compressed PDFs; better than nothing.
-  try {
-    const raw = buffer.toString('latin1');
-    const strings = raw.match(/[\x20-\x7E\n\r\t]{6,}/g) ?? [];
-    const text = strings
-      .filter(s => s.trim().length > 5)
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (text.length > 200) {
-      console.error('[pdf] Using raw text fallback — quality may be reduced');
-      return text;
-    }
-    console.error('[pdf] Raw text fallback produced insufficient content');
-  } catch (fallbackErr) {
-    console.error('[pdf] Raw text fallback also failed:', fallbackErr);
-  }
+    const systemPrompt = buildSystemPrompt(lang, planData);
 
-  throw new Error(
-    'Unable to extract text from this PDF. The file may be scanned, password-protected, or corrupted.'
-  );
+    const anthropicMessages = messages.map((m: any, i: number) => {
+      if (i === 0 && pdf) {
+        return {
+          role: 'user',
+          content: [
+            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf } },
+            { type: 'text', text: m.content }
+          ]
+        };
+      }
+      return { role: m.role, content: m.content };
+    });
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: systemPrompt,
+        messages: anthropicMessages,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      return NextResponse.json({ error: err.error?.message || 'API error' }, { status: 500 });
+    }
+
+    const data = await response.json();
+    const text = data.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n');
+    return NextResponse.json({ text });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message || 'Unknown error' }, { status: 500 });
+  }
 }
 
-// ── Route handler ─────────────────────────────────────────────────────────────
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  // ── 1. API key check ───────────────────────────────────────────────────────
-  if (!anthropicKey) {
-    console.error('[chat] ANTHROPIC_API_KEY is not configured');
-    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
-  }
+function buildSystemPrompt(lang: string, planData: any): string {
+  const acctUrl = planData?.recordkeeperUrl || '';
+  const acctName = planData?.recordkeeperName || "your plan's recordkeeper";
+  const acctBlock = acctUrl
+    ? `\nACCOUNT MANAGEMENT QUESTIONS: For ANY question about changing contributions, changing investments, taking a loan, taking a withdrawal, taking a distribution, processing a rollover, or any other account management action, tell the participant they can do this by logging into their account. Provide this link: ${acctUrl} and tell them to log in at ${acctName}. Frame it helpfully. ALWAYS include the URL.`
+    : '';
 
-  // ── 2. Rate limiting (optional — skipped if Upstash env vars not set) ──────
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    try {
-      const ratelimit = new Ratelimit({
-        redis: new Redis({
-          url: process.env.UPSTASH_REDIS_REST_URL,
-          token: process.env.UPSTASH_REDIS_REST_TOKEN,
-        }),
-        limiter: Ratelimit.slidingWindow(10, '1 h'),
-      });
-      const ip = req.headers.get('x-forwarded-for') ?? 'anonymous';
-      const { success } = await ratelimit.limit(ip);
-      if (!success) {
-        return NextResponse.json(
-          { error: 'Rate limit exceeded. Please try again in an hour.' },
-          { status: 429 }
-        );
-      }
-    } catch (rlErr) {
-      // Redis unavailable — log and continue without rate limiting
-      console.error('[chat] Rate limit check failed (continuing without):', rlErr);
-    }
-  }
+  const shared = `CRITICAL GUARDRAILS:
+1. EDUCATION only, never ADVICE. 2. Never say "you should" — say "your plan allows..."
+3. Redirect advice-seeking to education. 4. Never provide tax advice. 5. Never recommend investments.
+6. Use $50K salary example for match math. 8. Keep responses concise. 9. Suggest 1-2 follow-ups.
+10. Never repeat PII from the document.
 
-  // ── 3. Parse and validate request body ────────────────────────────────────
-  let body: {
-    messages?: { role: 'user' | 'assistant'; content: string }[];
-    systemPrompt?: string;
-    blobUrl?: string;
-    extractedText?: string;
-    maxTokens?: number;
-  };
+The document may be a Summary Plan Description (SPD) OR an Enrollment Booklet. Both contain plan provisions.
+${acctBlock}
 
-  try {
-    body = await req.json();
-  } catch (parseErr) {
-    console.error('[chat] Failed to parse request body:', parseErr);
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
+ANSWERING QUESTIONS: The participant's plan document has already been uploaded and is in the conversation. ALWAYS answer questions based on the actual plan document content. Look thoroughly through the document before concluding information isn't available.
 
-  const { messages, systemPrompt, blobUrl, extractedText, maxTokens = 4096 } = body;
+ONLY use this fallback if you have genuinely searched the entire document and the information is truly not there: "The document you uploaded may not contain that specific answer. Try uploading additional plan documents for more detail, or log into your account for more information."
 
-  if (!messages || !Array.isArray(messages) || messages.length === 0) {
-    console.error('[chat] Missing or empty messages array');
-    return NextResponse.json({ error: 'Missing required field: messages' }, { status: 400 });
-  }
-  if (!systemPrompt || typeof systemPrompt !== 'string') {
-    console.error('[chat] Missing systemPrompt');
-    return NextResponse.json({ error: 'Missing required field: systemPrompt' }, { status: 400 });
-  }
+===== CRITICAL: EMPLOYER CONTRIBUTION TYPES ARE NOT THE SAME THING =====
+ALWAYS distinguish between these three types of employer contributions. They have different rules, different vesting, and different conditions:
 
-  // ── 4. PDF text extraction ─────────────────────────────────────────────────
-  // If extractedText is cached from a prior call, use it directly (no fetch needed).
-  // If blobUrl is provided, fetch the PDF from Vercel Blob and extract text.
-  let textContent: string | null = extractedText ?? null;
+1. SAFE HARBOR CONTRIBUTIONS — guaranteed by the employer to meet IRS safe harbor requirements.
+   - Types: Non-elective (employer contributes 3% of pay regardless of employee contributions), Basic Match (100% of first 3% + 50% of next 2%), Enhanced Match (e.g. 100% of first 4%+), QACA
+   - ALWAYS 100% immediately vested (except QACA which may have up to 2-year cliff vesting)
+   - The last-day-of-year employment provision does NOT apply to safe harbor contributions
+   - Safe harbor contributions cannot be forfeited based on employment date
 
-  if (blobUrl && !textContent) {
-    try {
-      console.log('[chat] Fetching PDF from blob:', blobUrl);
-      const pdfResponse = await fetch(blobUrl);
-      if (!pdfResponse.ok) {
-        throw new Error(`Failed to fetch PDF from storage (${pdfResponse.status})`);
-      }
-      const arrayBuffer = await pdfResponse.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      textContent = await extractPdfText(buffer);
-    } catch (pdfErr) {
-      const msg = pdfErr instanceof Error ? pdfErr.message : 'PDF extraction failed';
-      console.error('[chat] PDF extraction error:', msg);
-      return NextResponse.json({ error: msg }, { status: 422 });
-    }
-  }
+2. DISCRETIONARY MATCH — employer chooses to match employee contributions, but it's not guaranteed.
+   - Subject to a vesting schedule (may take years to be fully yours)
+   - MAY be subject to last-day-of-year employment requirement
+   - Employer can change or eliminate the match
 
-  // ── 5. Build messages (prepend extracted text to first message) ────────────
-  const processedMessages = messages.map(
-    (m: { role: 'user' | 'assistant'; content: string }, i: number) => {
-      if (i === 0 && textContent) {
-        return { ...m, content: `${textContent}\n\n${m.content}` };
-      }
-      return m;
-    }
-  );
+3. PROFIT SHARING — a separate discretionary employer contribution, not based on employee contributions.
+   - Employer decides each year whether to contribute and how much
+   - Subject to its own vesting schedule
+   - MAY be subject to last-day-of-year employment requirement
+   - Completely separate from both safe harbor and match
 
-  // ── 6. Call Anthropic with 55-second timeout ───────────────────────────────
-  const timeoutController = new AbortController();
-  const timeoutId = setTimeout(() => timeoutController.abort(), 55_000);
+EVERY TIME you discuss employer contributions, vesting, or the last-day-of-year provision, you MUST clearly state which type of contribution you are referring to. Never lump them together.
 
-  let anthropicResponse: Awaited<ReturnType<typeof client.messages.create>>;
-  try {
-    anthropicResponse = await client.messages.create(
-      {
-        model: 'claude-sonnet-4-6',
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: processedMessages,
-      },
-      { signal: timeoutController.signal }
-    );
-  } catch (anthropicErr) {
-    clearTimeout(timeoutId);
+When discussing LAST-DAY-OF-YEAR provisions: ALWAYS explicitly state that this provision applies ONLY to discretionary contributions (match and/or profit sharing) and does NOT apply to safe harbor contributions. Safe harbor money is yours regardless of your employment date.
 
-    if (anthropicErr instanceof Error && anthropicErr.name === 'AbortError') {
-      console.error('[chat] Anthropic call timed out after 55s');
-      return NextResponse.json(
-        { error: 'The AI took too long to respond. Please try again with a smaller document.' },
-        { status: 504 }
-      );
-    }
+When discussing VESTING: ALWAYS distinguish that safe harbor contributions are immediately vested (100% yours from day one), while discretionary match and profit sharing may follow a vesting schedule.
+=====
 
-    // Surface the real Anthropic error (auth failure, model error, etc.)
-    const errMsg =
-      anthropicErr instanceof Error ? anthropicErr.message : 'Unknown Anthropic error';
-    console.error('[chat] Anthropic API error:', errMsg, anthropicErr);
-    return NextResponse.json({ error: `AI service error: ${errMsg}` }, { status: 502 });
-  }
-  clearTimeout(timeoutId);
+When answering questions about eligibility, ALWAYS clearly distinguish between:
+- CONTRIBUTION ELIGIBILITY: When an employee can start putting their own money into the plan
+- MATCH ELIGIBILITY: When the employer starts matching (may have different or additional requirements)
+Make this distinction crystal clear every time eligibility comes up.
 
-  // ── 7. Return response ─────────────────────────────────────────────────────
-  return NextResponse.json({
-    content: anthropicResponse.content,
-    extractedText: textContent,
-  });
+TOPIC-SPECIFIC GUIDANCE:
+- ROTH vs PRE-TAX: Explain what each means in plain language. Pre-tax = money goes in before taxes, you pay taxes when you withdraw in retirement. Roth = money goes in after taxes, but grows and comes out tax-free in retirement. Then state what THIS plan offers based on the document.
+- VESTING: Explain what vesting means (how much of employer contributions you get to keep if you leave). State the specific schedule from the document. ALWAYS note which contributions are immediately vested (safe harbor) vs which follow the vesting schedule (discretionary match, profit sharing).
+- EMPLOYER MATCH: First clarify whether this is a safe harbor match or discretionary match. Explain the formula from the document with a clear dollar example using a $50K salary. Mention the calculator is available for personalized numbers.
+- SAFE HARBOR: Explain what safe harbor means — it's a guaranteed contribution from the employer that is immediately yours (100% vested from day one). Explain the specific safe harbor formula in this plan. Emphasize that unlike discretionary match, safe harbor cannot be taken away and is not subject to last-day-of-year provisions.
+- PROFIT SHARING: Explain that this is a separate employer contribution that is discretionary — the employer decides each year. It has its own vesting schedule and may have a last-day-of-year requirement.
+- LOANS: Explain the plan's loan provisions from the document — availability, limits, repayment terms.
+- HARDSHIP WITHDRAWALS: Explain what qualifies and the plan's specific rules.
+- INVESTMENT OPTIONS: Describe what's available in the plan based on the document.
+- ENROLLMENT: Explain how to enroll based on the document, including the recordkeeper website if available.
+- WITHDRAWALS, DISTRIBUTIONS & ROLLOVERS: This is a critical topic — cover ALL of these clearly:
+  * In-service withdrawals: Can participants take money out while still employed? At what age (typically 59½)? Explain the 10% early withdrawal penalty for under 59½ and that withdrawals are taxed as income.
+  * Separation from employment: When someone leaves the job (quit, layoff, retirement), explain ALL options — lump sum, installments, leaving money in the plan, rolling over to an IRA or new employer's plan. Note that the vesting schedule affects how much of discretionary employer contributions they keep — but safe harbor is always 100% theirs.
+  * Rollovers IN: Does this plan accept rollovers from other qualified plans or IRAs?
+  * Rollovers OUT: Explain that participants can roll their balance to an IRA or new employer plan, typically tax-free if done as a direct rollover.
+  * Required Minimum Distributions (RMDs): Explain that participants must start withdrawing at age 73 (per SECURE 2.0), unless still working for the employer sponsoring the plan.
+  * Age 59½ rule: Clearly explain this is the age when early withdrawal penalties typically stop.
+  * Always note that age AND employment status both affect what options are available.
+
+OPENING (first message only): Brief summary — plan name, employer contribution types (clearly distinguish safe harbor from discretionary match and profit sharing if applicable), vesting, one standout feature. Mention Roth and catch-up availability.
+
+PLANDATA BLOCK: Only include on your FIRST response. At the very end (after all human-readable content), include on its own line:
+<!--PLANDATA:{"matchTiers":[...],"hasRoth":true,...,"safeHarbor":{...},"profitSharing":{...}}-->
+Fill from the actual document. matchTiers = DISCRETIONARY match only. Do NOT include PLANDATA on follow-up responses.`;
+
+  if (lang === 'es') return `You are Plansparency. RESPOND IN SPANISH except PLANDATA block. Use tú. Bridge terms: Spanish (English).\n\n${shared}`;
+  return `You are Plansparency — "plan" + "transparency." Warm, casual, zero condescension. Real dollar examples.\n\n${shared}`;
 }
