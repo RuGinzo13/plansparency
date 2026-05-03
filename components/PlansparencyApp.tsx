@@ -1,3 +1,4 @@
+// @ts-nocheck — migrated from app.jsx; type annotations to be added incrementally
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
@@ -24,10 +25,10 @@ const STAGE = Object.freeze({ CHOOSER:"chooser", LANDING:"landing", PRIVACY:"pri
 const MODEL = "claude-sonnet-4-6";
 
 // ── Module-level formatters ──
-const fmtRounded = n => "$" + Math.round(n || 0).toLocaleString();
-const fmtDollars = n => "$" + Math.abs(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtShortAmt = n => { const a = Math.abs(n || 0); if (a >= 1000000) return "$" + (a/1000000).toFixed(1) + "M"; if (a >= 1000) return "$" + (a/1000).toFixed(1) + "K"; return "$" + a.toFixed(0); };
-const fmtPctVal = n => (n || 0).toFixed(2) + "%";
+const fmtRounded = (n: number) => "$" + Math.round(n || 0).toLocaleString();
+const fmtDollars = (n: number) => "$" + Math.abs(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtShortAmt = (n: number) => { const a = Math.abs(n || 0); if (a >= 1000000) return "$" + (a/1000000).toFixed(1) + "M"; if (a >= 1000) return "$" + (a/1000).toFixed(1) + "K"; return "$" + a.toFixed(0); };
+const fmtPctVal = (n: number) => (n || 0).toFixed(2) + "%";
 
 // ── Module-level shared styles ──
 const btnBase = { border: "none", cursor: "pointer", fontFamily: F.body, fontWeight: 600, borderRadius: 12, transition: "all .15s" };

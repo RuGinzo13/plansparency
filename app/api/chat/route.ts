@@ -1,23 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { kv } from '@vercel/kv';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pdfParse = require('pdf-parse');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') ?? 'anonymous';
-  const rateLimitKey = `ratelimit:${ip}`;
-
-  try {
-    const count = await kv.incr(rateLimitKey);
-    if (count === 1) await kv.expire(rateLimitKey, 3600);
-    if (count > 10) {
-      return NextResponse.json({ error: 'Rate limit exceeded. Please try again in an hour.' }, { status: 429 });
+  // Rate limiting — only active when UPSTASH_REDIS_REST_URL is configured
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    try {
+      const ratelimit = new Ratelimit({
+        redis: new Redis({
+          url: process.env.UPSTASH_REDIS_REST_URL,
+          token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        }),
+        limiter: Ratelimit.slidingWindow(10, '1 h'),
+      });
+      const ip = req.headers.get('x-forwarded-for') ?? 'anonymous';
+      const { success } = await ratelimit.limit(ip);
+      if (!success) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded. Please try again in an hour.' },
+          { status: 429 }
+        );
+      }
+    } catch {
+      // If Redis is unreachable, continue without rate limiting
     }
-  } catch {
-    // If KV is unavailable in dev, continue without rate limiting
   }
 
   const { messages, systemPrompt, pdfBase64, extractedText } = await req.json();
