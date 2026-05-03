@@ -556,7 +556,26 @@ function getIRSLimits(dob) {
 }
 
 // ── Helpers ──
-function fileToBase64(f) { return new Promise((r, j) => { const x = new FileReader(); x.onload = () => r(x.result.split(",")[1]); x.onerror = () => j(new Error("fail")); x.readAsDataURL(f); }); }
+function fileToBase64(f) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        reject(new Error('FileReader returned unexpected type'));
+        return;
+      }
+      const base64 = result.split(',')[1];
+      if (!base64) {
+        reject(new Error('Could not extract base64 data from file'));
+        return;
+      }
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error(`Failed to read file: ${f?.name ?? 'unknown'}`));
+    reader.readAsDataURL(f);
+  });
+}
 // ── Statement System Prompt ──
 function getStmtSystemPrompt(lang) {
   const shared = `You are Plansparency — helping a participant understand their 401(k) account statement.
@@ -601,11 +620,25 @@ async function callClaude(msgs, pdf, lang, planData, sysPromptOverride, maxToken
     signal,
   });
   if (!r.ok) {
-    const d = await r.json().catch(() => ({}));
-    throw new Error(d.error || `HTTP ${r.status}`);
+    let errMsg = `HTTP ${r.status}`;
+    try {
+      const d = await r.json();
+      if (d.error) errMsg = d.error;
+    } catch { /* server returned non-JSON (e.g. HTML error page) */ }
+    console.error(`[callClaude] Request failed — status ${r.status}:`, errMsg);
+    const err = new Error(errMsg);
+    (err as any).status = r.status;
+    throw err;
   }
   const d = await r.json();
-  if (d.error) throw new Error(d.error);
+  if (d.error) {
+    console.error('[callClaude] Response contained error:', d.error);
+    throw new Error(d.error);
+  }
+  if (!d.content || !Array.isArray(d.content)) {
+    console.error('[callClaude] Unexpected response shape:', d);
+    throw new Error('Unexpected response from server');
+  }
   const text = d.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
   return { text, extractedText: d.extractedText };
 }
@@ -1716,7 +1749,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       setStage(STAGE.DASHBOARD);
     } catch (e: any) {
       if (e.name === 'AbortError') return;
-      console.error(e);
+      console.error('[processVersionB] Failed — status:', e.status, 'message:', e.message, e);
       setStage(STAGE.CHOOSER);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1774,11 +1807,22 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       abortRef.current = null;
     } catch (e) {
       if (e.name === "AbortError") return;
-      console.error(e);
+      console.error('[processUpload] Upload failed — status:', (e as any).status, 'message:', e.message, e);
       pdfBase64Ref.current = null;
       pendingFileRef.current = null;
       abortRef.current = null;
-      setUploadError(t.errorRead);
+
+      let userMsg = t.errorRead;
+      if ((e as any).status === 429) {
+        userMsg = "Too many requests — please wait a minute and try again.";
+      } else if (e.message === 'API key not configured') {
+        userMsg = "Configuration error — please contact support.";
+      } else if (e.message && e.message !== 'HTTP 500' && e.message !== 'HTTP 502') {
+        // Show specific server-side error (e.g. "Unable to extract text from this PDF")
+        userMsg = e.message;
+      }
+
+      setUploadError(userMsg);
       setStage(resetState ? (docType === "statement" ? STAGE.STMT_DASHBOARD : STAGE.DASHBOARD) : STAGE.LANDING);
     }
   // lang and docType are stable during an upload; t is derived from lang
@@ -1801,7 +1845,15 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       setMessages([...nm, { role: "assistant", content: cleaned }]);
       abortRef.current = null;
     } catch (e) {
-      if (e.name !== "AbortError") setMessages([...nm, { role: "assistant", content: t.errorReply }]);
+      if (e.name === "AbortError") { abortRef.current = null; setLoading(false); return; }
+      console.error('[sendMessage] Failed — status:', (e as any).status, 'message:', e.message, e);
+      let replyMsg = t.errorReply;
+      if ((e as any).status === 429) {
+        replyMsg = "Too many requests — please wait a minute and try again.";
+      } else if (e.message === 'API key not configured') {
+        replyMsg = "Configuration error — please contact support.";
+      }
+      setMessages([...nm, { role: "assistant", content: replyMsg }]);
       abortRef.current = null;
     }
     setLoading(false);
