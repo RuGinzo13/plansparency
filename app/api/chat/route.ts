@@ -84,7 +84,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: {
     messages?: { role: 'user' | 'assistant'; content: string }[];
     systemPrompt?: string;
-    pdfBase64?: string;
+    blobUrl?: string;
     extractedText?: string;
     maxTokens?: number;
   };
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { messages, systemPrompt, pdfBase64, extractedText, maxTokens = 4096 } = body;
+  const { messages, systemPrompt, blobUrl, extractedText, maxTokens = 4096 } = body;
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     console.error('[chat] Missing or empty messages array');
@@ -108,11 +108,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // ── 4. PDF text extraction ─────────────────────────────────────────────────
+  // If extractedText is cached from a prior call, use it directly (no fetch needed).
+  // If blobUrl is provided, fetch the PDF from Vercel Blob and extract text.
   let textContent: string | null = extractedText ?? null;
 
-  if (pdfBase64 && !textContent) {
+  if (blobUrl && !textContent) {
     try {
-      const buffer = Buffer.from(pdfBase64, 'base64');
+      console.log('[chat] Fetching PDF from blob:', blobUrl);
+      const pdfResponse = await fetch(blobUrl);
+      if (!pdfResponse.ok) {
+        throw new Error(`Failed to fetch PDF from storage (${pdfResponse.status})`);
+      }
+      const arrayBuffer = await pdfResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
       textContent = await extractPdfText(buffer);
     } catch (pdfErr) {
       const msg = pdfErr instanceof Error ? pdfErr.message : 'PDF extraction failed';

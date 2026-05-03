@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { upload } from '@vercel/blob/client';
 
 // ── Colors ──
 const C = {
@@ -604,13 +605,14 @@ When discussing vesting, explain what it means and clearly distinguish which sou
   return shared;
 }
 
-async function callClaude(msgs, pdf, lang, planData, sysPromptOverride, maxTokens = 4096, signal, cachedText) {
+// blobUrl: Vercel Blob URL for the first call; null/undefined for follow-ups (use cachedText instead)
+async function callClaude(msgs, blobUrl, lang, planData, sysPromptOverride, maxTokens = 4096, signal, cachedText) {
   const sysPrompt = sysPromptOverride || getSystemPrompt(lang, planData);
   const body = {
     messages: msgs,
     systemPrompt: sysPrompt,
     maxTokens,
-    pdfBase64: (pdf && !cachedText) ? pdf : undefined,
+    blobUrl: (blobUrl && !cachedText) ? blobUrl : undefined,
     extractedText: cachedText ?? undefined,
   };
   const r = await fetch('/api/chat', {
@@ -1727,8 +1729,10 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const pendingFileRef = useRef(null);
   const addDocRef = useRef(null);
   const abortRef = useRef(null);
-  // Store PDF as a ref — it's never rendered, so state would just trigger wasteful diffs of a 10MB+ string
-  const pdfBase64Ref = useRef(null);
+  // Store Blob URL as a ref — it's never rendered, so state would just trigger wasteful re-renders
+  const blobUrlRef = useRef(null);
+  // Track which upload step we're on so the loading screen can show the right message
+  const [uploadStatus, setUploadStatus] = useState<'blob' | 'ai' | ''>('');
 
   const t = i18n[lang];
 
@@ -1763,7 +1767,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   }, []);
 
   const clearSession = () => {
-    pdfBase64Ref.current = null;
+    blobUrlRef.current = null;
     setCachedPlanText(null);
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
@@ -1778,18 +1782,23 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (!f || f.type !== "application/pdf") { setUploadError(t.errorFormat); return; }
     if (resetState) {
       setMessages([]); setPlanData(null); setStmtData(null);
-      pdfBase64Ref.current = null; setCalcExpanded(false);
+      blobUrlRef.current = null; setCalcExpanded(false);
     }
     setUploadError(""); setFileName(f.name); setStage(STAGE.UPLOADING);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      const b = await fileToBase64(f);
-      pdfBase64Ref.current = b;
+      // Step 1: Upload PDF directly to Vercel Blob (bypasses 4.5MB serverless limit)
+      setUploadStatus('blob');
+      const blob = await upload(f.name, f, { access: 'public', handleUploadUrl: '/api/upload' });
+      blobUrlRef.current = blob.url;
       pendingFileRef.current = null;
+
+      // Step 2: Send blob URL to Claude for text extraction + analysis
+      setUploadStatus('ai');
       if (docType === "statement") {
         const m1 = { role: "user", content: t.stmtFirstMessage };
-        const { text: raw, extractedText: newCache } = await callClaude([m1], b, lang, null, getStmtSystemPrompt(lang), 4096, abortRef.current.signal);
+        const { text: raw, extractedText: newCache } = await callClaude([m1], blob.url, lang, null, getStmtSystemPrompt(lang), 4096, abortRef.current.signal);
         if (newCache) setCachedPlanText(newCache);
         const sd = parseStmtData(raw);
         if (sd) setStmtData(sd);
@@ -1797,20 +1806,22 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         setStage(STAGE.STMT_DASHBOARD);
       } else {
         const m1 = { role: "user", content: t.firstMessage };
-        const { text: raw, extractedText: newCache } = await callClaude([m1], b, lang, null, undefined, 4096, abortRef.current.signal);
+        const { text: raw, extractedText: newCache } = await callClaude([m1], blob.url, lang, null, undefined, 4096, abortRef.current.signal);
         if (newCache) setCachedPlanText(newCache);
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
         setStage(STAGE.DASHBOARD);
       }
+      setUploadStatus('');
       abortRef.current = null;
     } catch (e) {
       if (e.name === "AbortError") return;
       console.error('[processUpload] Upload failed — status:', (e as any).status, 'message:', e.message, e);
-      pdfBase64Ref.current = null;
+      blobUrlRef.current = null;
       pendingFileRef.current = null;
       abortRef.current = null;
+      setUploadStatus('');
 
       let userMsg = t.errorRead;
       if ((e as any).status === 429) {
@@ -2003,9 +2014,20 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Uploading ──
   if (stage === "uploading") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
     <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid rgba(212,168,83,.2)` }}>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg></div>
-    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.readingTitle}</h2>
-    <p style={{ color: C.textMuted, fontSize: 14, margin: 0 }}>{t.readingSubPrefix} <span style={{ color: C.accent }}>{fileName}</span> {t.readingSubSuffix}</p>
+      {uploadStatus === 'blob'
+        ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+      }
+    </div>
+    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>
+      {uploadStatus === 'blob' ? "Uploading document…" : t.readingTitle}
+    </h2>
+    <p style={{ color: C.textMuted, fontSize: 14, margin: 0 }}>
+      {uploadStatus === 'blob'
+        ? <><span style={{ color: C.accent }}>{fileName}</span> is being securely uploaded</>
+        : <>{t.readingSubPrefix} <span style={{ color: C.accent }}>{fileName}</span> {t.readingSubSuffix}</>
+      }
+    </p>
     <style>{`@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.75}}`}</style></div>;
 
   // ── Dashboard (TOC) ──
