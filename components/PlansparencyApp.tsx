@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { upload } from '@vercel/blob/client';
+
 
 // ── Colors ──
 const C = {
@@ -605,8 +605,8 @@ When discussing vesting, explain what it means and clearly distinguish which sou
   return shared;
 }
 
-// blobUrl: Vercel Blob URL of the uploaded PDF (first call); null for follow-ups
-async function callClaude(msgs: any[], blobUrl: string | null, lang: string, planData: any, signal?: AbortSignal): Promise<string> {
+// pdf: base64-encoded PDF string (first call only); null for follow-up questions
+async function callClaude(msgs: any[], pdf: string | null, lang: string, planData: any, signal?: AbortSignal): Promise<string> {
   // 28-second client timeout — safely under Vercel Edge's 30 s limit
   const clientController = new AbortController();
   const timerId = setTimeout(() => clientController.abort(), 28_000);
@@ -620,7 +620,7 @@ async function callClaude(msgs: any[], blobUrl: string | null, lang: string, pla
     response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: msgs, blobUrl: blobUrl ?? undefined, lang, planData }),
+      body: JSON.stringify({ messages: msgs, pdf: pdf ?? undefined, lang, planData }),
       signal: mergedSignal,
     });
   } finally {
@@ -1785,24 +1785,21 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      // Step 1: Upload PDF to Vercel Blob (no body-size limit, up to 20 MB)
-      setUploadStatus('blob');
-      const blob = await upload(f.name, f, { access: 'public', handleUploadUrl: '/api/upload' });
-      blobUrlRef.current = blob.url;
+      // Convert PDF to base64 and send directly to Edge function (no body size limit)
+      setUploadStatus('ai');
+      const base64 = await fileToBase64(f);
       pendingFileRef.current = null;
 
-      // Step 2: Send blob URL to Claude for analysis
-      setUploadStatus('ai');
       if (docType === "statement") {
         const m1 = { role: "user", content: t.stmtFirstMessage };
-        const raw = await callClaude([m1], blob.url, lang, null, abortRef.current.signal);
+        const raw = await callClaude([m1], base64, lang, null, abortRef.current.signal);
         const sd = parseStmtData(raw);
         if (sd) setStmtData(sd);
         setMessages([m1, { role: "assistant", content: stripStmtData(raw) }]);
         setStage(STAGE.STMT_DASHBOARD);
       } else {
         const m1 = { role: "user", content: t.firstMessage };
-        const raw = await callClaude([m1], blob.url, lang, null, abortRef.current.signal);
+        const raw = await callClaude([m1], base64, lang, null, abortRef.current.signal);
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
@@ -1813,7 +1810,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     } catch (e) {
       if ((e as any).name === "AbortError") { setUploadStatus(''); return; }
       console.error('[processUpload] Upload failed:', (e as any).message, e);
-      blobUrlRef.current = null;
       pendingFileRef.current = null;
       abortRef.current = null;
       setUploadStatus('');

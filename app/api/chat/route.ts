@@ -24,36 +24,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     messages?: { role: 'user' | 'assistant'; content: string }[];
     lang?: string;
     planData?: any;
-    blobUrl?: string;   // Vercel Blob URL — Edge fetches PDF from here
-    pdf?: string;       // Legacy: raw base64 fallback for small PDFs
+    pdf?: string;       // base64-encoded PDF (first message only)
   };
 
   try { body = await req.json(); }
   catch { return jsonError('Invalid request body', 400); }
 
-  const { messages, lang = 'en', planData, blobUrl, pdf } = body;
+  const { messages, lang = 'en', planData, pdf } = body;
   if (!messages?.length) return jsonError('Missing messages', 400);
 
-  // ── 3. Build PDF base64 (from Blob URL or direct) ────────────────────────────
-  let pdfBase64: string | null = pdf ?? null;
-
-  if (blobUrl && !pdfBase64) {
-    try {
-      const blobRes = await fetch(blobUrl);
-      if (!blobRes.ok) throw new Error(`Blob fetch failed: ${blobRes.status}`);
-      const buf = await blobRes.arrayBuffer();
-      // Edge Runtime: chunk the Uint8Array to avoid stack overflow on large PDFs
-      const bytes = new Uint8Array(buf);
-      const CHUNK = 8192;
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i += CHUNK) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-      }
-      pdfBase64 = btoa(binary);
-    } catch (e: any) {
-      return jsonError(`Could not fetch PDF: ${e.message}`, 422);
-    }
-  }
+  // ── 3. PDF base64 ─────────────────────────────────────────────────────────────
+  const pdfBase64: string | null = pdf ?? null;
 
   // ── 4. Build Anthropic messages ───────────────────────────────────────────────
   const anthropicMessages = messages.map((m, i) => {
