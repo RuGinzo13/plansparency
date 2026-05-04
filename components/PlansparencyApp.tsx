@@ -279,186 +279,6 @@ Llena cada campo. period = solo período del estado. ytd = año calendario compl
     stmtPeriod: "Período del Estado",
     stmtDisclaimer: "Este es un resumen educativo de tu estado de cuenta. No es asesoría financiera.",
   },
-  fr: {
-    heroLine1: "Votre 401(k),", tagline: "enfin clair",
-    subtitle: "Téléchargez votre document de régime ou livret d'inscription. Posez toutes vos questions.",
-    dropTitle: "Déposez votre document ici",
-    dropSub: "PDF — Description Sommaire du Régime (SPD) ou Livret d'Inscription",
-    trustPrivate: "Document jamais stocké", trustEducation: "Information uniquement",
-    trustPlain: "Réponses claires", trustEncrypted: "Chiffré en transit",
-    readingTitle: "Analyse de votre régime...",
-    readingSubPrefix: "Lecture de", readingSubSuffix: "pour vous faciliter la tâche",
-    disclaimer: "Information uniquement — pas de conseil financier",
-    inputPlaceholder: "Posez une question sur votre régime...",
-    footerDisclaimer: "Plansparency fournit de l'information sur votre régime de retraite, pas des conseils financiers personnalisés.",
-    planProvisionDisclaimer: "Éducatif uniquement — pas de conseil financier. Les dispositions du régime reflètent les documents téléchargés et sont en vigueur à la date de ces documents. Les dispositions du régime sont sujettes à modification — confirmez toujours les détails actuels avec l'administrateur de votre régime ou les RH.",
-    firstMessage: `Je viens de télécharger mon document de régime 401(k). Faites-en un résumé de bienvenue — nom du régime, types de contributions de l'employeur (distinguez safe harbor, match discrétionnaire et participation aux bénéfices), calendrier d'acquisition, et une caractéristique notable. Mentionnez la disponibilité Roth et cotisation de rattrapage. Répondez en français.\n\nIMPORTANT — incluez à la fin sur une ligne :\n<!--PLANDATA:{"matchTiers":[{"pct":100,"upTo":4}],"hasRoth":true,"planAllowsCatchUp":true,"noMatch":false,"recordkeeperUrl":"","recordkeeperName":"","lastDayProvision":false,"planName":"","ein":"","planNumber":"","contribEligibility":{"requirement":"","entryDates":"","autoEnroll":false,"autoEnrollPct":0},"matchEligibility":{"requirement":"","entryDates":"","immediateMatch":false},"vestingSchedule":"","loanAvailable":true,"rothAvailable":true,"hardshipAvailable":true,"investmentOptions":"","distributionInfo":{"inServiceAge":59.5,"rmdAge":73,"rolloversIn":true,"separationOptions":""},"safeHarbor":{"type":"none","formula":"","vestingImmediate":true},"profitSharing":{"available":false,"type":"discretionary","formula":"","lastDayApplies":false}}-->`,
-    errorRead: "Erreur de lecture. Veuillez réessayer.",
-    errorReply: "Le document téléchargé pourrait ne pas contenir cette réponse spécifique.",
-    errorFormat: "Veuillez télécharger un fichier PDF.",
-    clearSession: "Terminer la session",
-    clearConfirmTitle: "Terminer la session ?", clearConfirmBody: "Votre document et conversation seront définitivement effacés.",
-    clearConfirmYes: "Oui, tout effacer", clearConfirmNo: "Garder ma session",
-    clearedTitle: "Session terminée", clearedBody: "Tout a été effacé. Aucune donnée n'a été sauvegardée.", clearedButton: "Recommencer",
-    privacyTitle: "Comment nous traitons votre document", privacyIntro: "Avant de télécharger :",
-    privacyPoints: [
-      ["Document jamais stocké.", "Conservé uniquement en mémoire temporaire du navigateur."],
-      ["Envoyé via HTTPS.", "Anthropic le traite pour répondre à vos questions. Pas utilisé pour l'entraînement."],
-      ["Pas de compte, pas de suivi.", "Rien n'est sauvegardé."],
-      ["Pas de données personnelles.", "Les SPD décrivent les règles du régime, pas votre solde."],
-    ],
-    privacyAgree: "Je comprends — télécharger", privacyCancel: "Retour",
-    securityBadge: "Session uniquement • Aucune donnée",
-    calcTitle: "Calculateur de Cotisations",
-    calcSalary: "Salaire Annuel", calcDob: "Date de Naissance",
-    calcContribution: "Votre Taux de Cotisation",
-    calcMatchFormula: "Formule de Match Discrétionnaire",
-    calcNoMatch: "Pas de match discrétionnaire.",
-    calcYourContrib: "Votre cotisation annuelle", calcEmployerMatch: "Match employeur",
-    calcTotal: "Total épargné / an", calcPerPaycheck: "Cotisation par paie",
-    calcPayPeriod: "Période de paie",
-    calcBiweekly: "Bimensuel (26)", calcSemimonthly: "Semi-mensuel (24)",
-    calcMonthly: "Mensuel (12)", calcWeekly: "Hebdomadaire (52)",
-    calcIrsLimit: "Plafond IRS", calcCatchUp: "Cotisation Supplémentaire",
-    calcRothAvail: "Roth Disponible", calcPreTax: "Avant Impôt",
-    calcYes: "Oui", calcNo: "Non",
-    calcEnterDob: "Entrez date de naissance",
-    calcSecureNote: "Les plafonds reflètent les directives IRS et SECURE 2.0. Les 60–63 ans bénéficient de cotisations supplémentaires améliorées.",
-    calcLastDayYes: "Ce régime exige l'emploi au dernier jour de l'année pour recevoir des contributions DISCRÉTIONNAIRES.",
-    calcLastDayNo: "Ce régime n'exige pas l'emploi au dernier jour pour les contributions discrétionnaires.",
-    calcNote: "À titre informatif uniquement. Vérifiez avec votre administrateur de régime.",
-    calcWaiting: "Téléchargez un document pour détecter votre formule de match",
-    calcCatchUpNotAllowed: "Le régime ne permet pas de cotisation supplémentaire",
-    quickAsks: [
-      "Comment fonctionne le match employeur ?",
-      "Quand serai-je totalement acquis ?",
-      "Puis-je emprunter sur mon 401(k) ?",
-      "Qu'est-ce que le Roth ?",
-      "Quelles sont mes options de placement ?",
-      "Comment m'inscrire au régime ?",
-    ],
-    dashWelcome: "Guide de Votre Régime",
-    dashSubtitle: "Touchez une section pour l'explorer en détail",
-    dashUploadAnother: "Télécharger un Nouveau Document",
-    dashStartChat: "Poser une Question",
-    suggestionTitle: "Soumettre une Suggestion",
-    suggestionTopic: "Sujet",
-    suggestionDetails: "Détails",
-    suggestionSubmit: "Envoyer",
-    suggestionThanks: "Merci ! Suggestion envoyée.",
-    suggestionAdd: "Ajouter une autre suggestion",
-    suggestionTopicPlaceholder: "ex. Processus de prêt, explication Roth...",
-    suggestionDetailsPlaceholder: "Qu'aimeriez-vous voir amélioré ?",
-    chooserTitle: "Que regardez-vous aujourd'hui ?",
-    chooserSub: "Nous adapterons l'expérience selon votre document",
-    chooserSpd: "Document de Régime",
-    chooserSpdSub: "SPD ou Livret d'Inscription — apprenez les règles",
-    chooserStmt: "Relevé de Compte",
-    chooserStmtSub: "Relevé trimestriel ou annuel — voyez où en est votre argent",
-    stmtFirstMessage: `Je viens de télécharger mon relevé de compte 401(k). Extrayez TOUTES les données financières. Répondez UNIQUEMENT avec le bloc de données.\n\n<!--STMTDATA:{"planName":"","participantName":"","statementPeriod":{"start":"","end":""},"calendarYTD":{"start":"","end":""},"beginBalance":0,"endBalance":0,"ytdBeginBalance":0,"vestedBalance":0,"vestedPct":100,"personalROR":{"period":0,"ytd":0,"oneYear":0,"threeYear":0},"period":{"moneyIn":{"employeeSalaryDeferral":0,"employeeRoth":0,"employerMatch":0,"employerSafeHarbor":0,"employerProfitSharing":0,"employerOther":0,"rolloverIn":0,"loanRepayment":0,"total":0},"moneyOut":{"withdrawals":0,"distributions":0,"rollovers":0,"loans":0,"total":0},"fees":{"items":[{"name":"","amount":0}],"total":0},"gainLoss":0,"dividendsInterest":0},"ytd":{"moneyIn":{"employeeSalaryDeferral":0,"employeeRoth":0,"employerMatch":0,"employerSafeHarbor":0,"employerProfitSharing":0,"employerOther":0,"rolloverIn":0,"loanRepayment":0,"total":0},"moneyOut":{"withdrawals":0,"distributions":0,"rollovers":0,"loans":0,"total":0},"fees":{"items":[{"name":"","amount":0}],"total":0},"gainLoss":0,"dividendsInterest":0},"investments":[{"name":"","category":"","beginValue":0,"endValue":0,"shares":0,"pctOfAccount":0}],"sources":[{"name":"","beginValue":0,"contributions":0,"endValue":0,"vestedPct":100,"vestedValue":0}],"assetAllocation":{"stocks":0,"bonds":0,"multiAsset":0,"other":0},"recordkeeperName":"","recordkeeperUrl":"","recordkeeperPhone":""}-->`,
-    stmtDashTitle: "Aperçu de Votre Compte",
-    stmtDashSub: "Résumé interactif de votre relevé",
-    stmtUploadAnother: "Télécharger un Nouveau Relevé",
-    stmtAskQuestion: "Poser une Question",
-    stmtMoneyIn: "Argent Entrant", stmtMoneyOut: "Argent Sortant",
-    stmtFees: "Frais et Dépenses", stmtGainLoss: "Croissance",
-    stmtInvestments: "Vos Placements",
-    stmtSources: "Sources de Cotisation",
-    stmtAllocation: "Répartition des Actifs",
-    stmtPerformance: "Performance",
-    stmtPeriod: "Période du Relevé",
-    stmtDisclaimer: "Ceci est un résumé éducatif de votre relevé. Ce n'est pas un conseil financier.",
-  },
-  it: {
-    heroLine1: "Il tuo 401(k),", tagline: "finalmente chiaro",
-    subtitle: "Carica il documento del piano o il libretto di iscrizione. Fai qualsiasi domanda.",
-    dropTitle: "Trascina qui il tuo documento",
-    dropSub: "PDF — Descrizione Sommaria del Piano (SPD) o Libretto di Iscrizione",
-    trustPrivate: "Documento mai memorizzato", trustEducation: "Solo informativo",
-    trustPlain: "Risposte chiare", trustEncrypted: "Crittografato in transito",
-    readingTitle: "Analisi del tuo piano...",
-    readingSubPrefix: "Lettura di", readingSubSuffix: "al posto tuo",
-    disclaimer: "Solo informativo — non consulenza finanziaria",
-    inputPlaceholder: "Fai una domanda sul tuo piano...",
-    footerDisclaimer: "Plansparency fornisce informazioni sul tuo piano pensionistico, non consulenza finanziaria personalizzata.",
-    planProvisionDisclaimer: "Solo a scopo educativo — non è una consulenza finanziaria. Le disposizioni del piano riflettono i documenti caricati e sono aggiornate alla data di quei documenti. Le disposizioni del piano sono soggette a modifiche — verifica sempre i dettagli attuali con l'amministratore del piano o le Risorse Umane.",
-    firstMessage: `Ho appena caricato il documento del mio piano 401(k). Fornisci un riepilogo di benvenuto — nome del piano, tipi di contributi del datore di lavoro (distingui safe harbor, match discrezionale e profit sharing), calendario di maturazione, e una caratteristica di rilievo. Menziona la disponibilità di Roth e contributi di recupero. Rispondi in italiano.\n\nIMPORTANTE — includi alla fine su una riga:\n<!--PLANDATA:{"matchTiers":[{"pct":100,"upTo":4}],"hasRoth":true,"planAllowsCatchUp":true,"noMatch":false,"recordkeeperUrl":"","recordkeeperName":"","lastDayProvision":false,"planName":"","ein":"","planNumber":"","contribEligibility":{"requirement":"","entryDates":"","autoEnroll":false,"autoEnrollPct":0},"matchEligibility":{"requirement":"","entryDates":"","immediateMatch":false},"vestingSchedule":"","loanAvailable":true,"rothAvailable":true,"hardshipAvailable":true,"investmentOptions":"","distributionInfo":{"inServiceAge":59.5,"rmdAge":73,"rolloversIn":true,"separationOptions":""},"safeHarbor":{"type":"none","formula":"","vestingImmediate":true},"profitSharing":{"available":false,"type":"discretionary","formula":"","lastDayApplies":false}}-->`,
-    errorRead: "Errore di lettura. Riprova.",
-    errorReply: "Il documento caricato potrebbe non contenere questa risposta specifica.",
-    errorFormat: "Carica un file PDF.",
-    clearSession: "Termina sessione",
-    clearConfirmTitle: "Terminare la sessione?", clearConfirmBody: "Il tuo documento e la conversazione verranno cancellati definitivamente.",
-    clearConfirmYes: "Sì, cancella tutto", clearConfirmNo: "Mantieni la sessione",
-    clearedTitle: "Sessione terminata", clearedBody: "Tutto cancellato. Nessun dato è stato salvato.", clearedButton: "Ricominciare",
-    privacyTitle: "Come gestiamo il tuo documento", privacyIntro: "Prima di caricare:",
-    privacyPoints: [
-      ["Documento mai memorizzato.", "Conservato solo nella memoria temporanea del browser."],
-      ["Inviato tramite HTTPS.", "Anthropic lo elabora per rispondere alle tue domande. Non usato per l'addestramento."],
-      ["Nessun account, nessun tracciamento.", "Nulla viene salvato."],
-      ["Non sono dati personali.", "Gli SPD descrivono le regole del piano, non il tuo saldo."],
-    ],
-    privacyAgree: "Capisco — carica", privacyCancel: "Torna indietro",
-    securityBadge: "Solo sessione • Nessun dato",
-    calcTitle: "Calcolatore di Contributi",
-    calcSalary: "Stipendio Annuale", calcDob: "Data di Nascita",
-    calcContribution: "Il Tuo Tasso di Contributo",
-    calcMatchFormula: "Formula di Match Discrezionale",
-    calcNoMatch: "Nessun match discrezionale.",
-    calcYourContrib: "Il tuo contributo annuale", calcEmployerMatch: "Match del datore di lavoro",
-    calcTotal: "Totale risparmiato / anno", calcPerPaycheck: "Contributo per busta paga",
-    calcPayPeriod: "Periodo di paga",
-    calcBiweekly: "Bisettimanale (26)", calcSemimonthly: "Semi-mensile (24)",
-    calcMonthly: "Mensile (12)", calcWeekly: "Settimanale (52)",
-    calcIrsLimit: "Limite IRS Annuale", calcCatchUp: "Contributo Aggiuntivo",
-    calcRothAvail: "Roth Disponibile", calcPreTax: "Pre-Tasse",
-    calcYes: "Sì", calcNo: "No",
-    calcEnterDob: "Inserisci data di nascita",
-    calcSecureNote: "I limiti riflettono le linee guida IRS e SECURE 2.0. Le età 60–63 beneficiano di contributi aggiuntivi migliorati.",
-    calcLastDayYes: "Questo piano richiede l'impiego nell'ultimo giorno dell'anno per ricevere contributi DISCREZIONALI.",
-    calcLastDayNo: "Questo piano non richiede l'impiego nell'ultimo giorno per i contributi discrezionali.",
-    calcNote: "Solo a scopo informativo. Verifica con il tuo amministratore del piano.",
-    calcWaiting: "Carica un documento per rilevare la formula del match",
-    calcCatchUpNotAllowed: "Il piano non consente contributi aggiuntivi",
-    quickAsks: [
-      "Come funziona il match del datore di lavoro?",
-      "Quando sarò completamente maturato?",
-      "Posso prendere un prestito dal mio 401(k)?",
-      "Cos'è il Roth?",
-      "Quali opzioni di investimento ho?",
-      "Come mi iscrivo al piano?",
-    ],
-    dashWelcome: "Guida al Tuo Piano",
-    dashSubtitle: "Tocca una sezione per esplorarla in dettaglio",
-    dashUploadAnother: "Carica Nuovo Documento",
-    dashStartChat: "Fai una Domanda",
-    suggestionTitle: "Invia un Suggerimento",
-    suggestionTopic: "Argomento",
-    suggestionDetails: "Dettagli",
-    suggestionSubmit: "Invia",
-    suggestionThanks: "Grazie! Suggerimento inviato.",
-    suggestionAdd: "Aggiungi un altro suggerimento",
-    suggestionTopicPlaceholder: "es. Processo di prestito, spiegazione Roth...",
-    suggestionDetailsPlaceholder: "Cosa vorresti vedere migliorato?",
-    chooserTitle: "Cosa stai guardando oggi?",
-    chooserSub: "Adatteremo l'esperienza in base al tuo documento",
-    chooserSpd: "Documento del Piano",
-    chooserSpdSub: "SPD o Libretto di Iscrizione — impara le regole",
-    chooserStmt: "Estratto Conto",
-    chooserStmtSub: "Estratto trimestrale o annuale — vedi dove sono i tuoi soldi",
-    stmtFirstMessage: `Ho appena caricato il mio estratto conto 401(k). Estrai TUTTI i dati finanziari. Rispondi SOLO con il blocco di dati.\n\n<!--STMTDATA:{"planName":"","participantName":"","statementPeriod":{"start":"","end":""},"calendarYTD":{"start":"","end":""},"beginBalance":0,"endBalance":0,"ytdBeginBalance":0,"vestedBalance":0,"vestedPct":100,"personalROR":{"period":0,"ytd":0,"oneYear":0,"threeYear":0},"period":{"moneyIn":{"employeeSalaryDeferral":0,"employeeRoth":0,"employerMatch":0,"employerSafeHarbor":0,"employerProfitSharing":0,"employerOther":0,"rolloverIn":0,"loanRepayment":0,"total":0},"moneyOut":{"withdrawals":0,"distributions":0,"rollovers":0,"loans":0,"total":0},"fees":{"items":[{"name":"","amount":0}],"total":0},"gainLoss":0,"dividendsInterest":0},"ytd":{"moneyIn":{"employeeSalaryDeferral":0,"employeeRoth":0,"employerMatch":0,"employerSafeHarbor":0,"employerProfitSharing":0,"employerOther":0,"rolloverIn":0,"loanRepayment":0,"total":0},"moneyOut":{"withdrawals":0,"distributions":0,"rollovers":0,"loans":0,"total":0},"fees":{"items":[{"name":"","amount":0}],"total":0},"gainLoss":0,"dividendsInterest":0},"investments":[{"name":"","category":"","beginValue":0,"endValue":0,"shares":0,"pctOfAccount":0}],"sources":[{"name":"","beginValue":0,"contributions":0,"endValue":0,"vestedPct":100,"vestedValue":0}],"assetAllocation":{"stocks":0,"bonds":0,"multiAsset":0,"other":0},"recordkeeperName":"","recordkeeperUrl":"","recordkeeperPhone":""}-->`,
-    stmtDashTitle: "Panoramica del Tuo Conto",
-    stmtDashSub: "Riepilogo interattivo del tuo estratto conto",
-    stmtUploadAnother: "Carica Nuovo Estratto",
-    stmtAskQuestion: "Fai una Domanda",
-    stmtMoneyIn: "Denaro Entrato", stmtMoneyOut: "Denaro Uscito",
-    stmtFees: "Commissioni e Spese", stmtGainLoss: "Crescita",
-    stmtInvestments: "I Tuoi Investimenti",
-    stmtSources: "Fonti di Contributo",
-    stmtAllocation: "Allocazione degli Attivi",
-    stmtPerformance: "Performance",
-    stmtPeriod: "Periodo dell'Estratto",
-    stmtDisclaimer: "Questo è un riepilogo educativo del tuo estratto conto. Non è consulenza finanziaria.",
-  },
 };
 
 // ── System Prompt ──
@@ -600,8 +420,6 @@ When discussing investment performance, explain what rate of return means and th
 When discussing vesting, explain what it means and clearly distinguish which sources are immediately vested vs which follow a schedule.`;
 
   if (lang === "es") return `${shared}\n\nRESPOND IN SPANISH. Use tú.`;
-  if (lang === "fr") return `${shared}\n\nRESPOND IN FRENCH. Use vous.`;
-  if (lang === "it") return `${shared}\n\nRESPOND IN ITALIAN.`;
   return shared;
 }
 
@@ -654,10 +472,10 @@ function Fm({ t }) { const p = t.split(/(\*\*.*?\*\*)/g); return <>{p.map((s, i)
 
 // ── Shared UI ──
 function LangToggle({ lang, setLang, disabled }) {
-  const labels = { en: "EN", es: "ES", fr: "FR", it: "IT" };
+  const labels = { en: "EN", es: "ES" };
   return (
     <div style={{ display: "inline-flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.surface, opacity: disabled ? .5 : 1, pointerEvents: disabled ? "none" : "auto" }}>
-      {["en", "es", "fr", "it"].map(l => (
+      {["en", "es"].map(l => (
         <button key={l} onClick={() => setLang(l)} style={{ padding: "7px 11px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 11, fontWeight: 600, background: lang === l ? C.accentDim : "transparent", color: lang === l ? C.accent : C.textMuted, transition: "all .15s" }}>{labels[l]}</button>
       ))}
     </div>
@@ -688,6 +506,7 @@ function SectionIcon({ type, sz = 20 }) {
     distributions: <svg {...s} stroke="#94A0B2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
     safeHarbor: <svg {...s} stroke="#5CB88A"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>,
     profitSharing: <svg {...s} stroke="#D4A853"><circle cx="12" cy="12" r="10"/><path d="M16 8l-4 4-4-4"/><path d="M16 16l-4-4-4 4"/></svg>,
+    keyTerms: <svg {...s} stroke="#D4A853"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
   };
   return icons[type] || null;
 }
@@ -905,6 +724,21 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
   // All feature tiles
   const tiles = useMemo(() => {
     const list = [];
+
+    // Key Terms & Definitions — always first
+    list.push({
+      id: "keyTerms",
+      emoji: "📖",
+      title: es ? "Términos Clave" : "Key Terms & Definitions",
+      status: es ? "Glosario en lenguaje sencillo" : "Plain-English glossary",
+      desc: es
+        ? "Las palabras del 401(k) que verás en todas partes, explicadas en términos simples."
+        : "401(k) words you'll see everywhere, explained simply.",
+      accent: C.accent, bg: C.accentDim,
+      prompt: es
+        ? "Por favor explica los términos más importantes del 401(k) en lenguaje sencillo. Cubre: vesting, safe harbor, match discrecional, profit sharing, pre-impuesto vs Roth, contribuciones catch-up, retiro por dificultad, transferencia, RMD, y año del plan. Para cada término da una definición en una oración y un ejemplo del mundo real."
+        : "Please explain the most important 401(k) terms in plain English. Cover: vesting, safe harbor, discretionary match, profit sharing, pre-tax vs Roth, catch-up contributions, hardship withdrawal, rollover, RMD, and plan year. For each term give a one-sentence plain-English definition and a quick real-world example.",
+    });
 
     if (hasSafeHarbor) list.push({
       id: "safeHarbor", emoji: "🎁",
@@ -1772,7 +1606,11 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     pendingFileRef.current = null;
     setStage(STAGE.CLEARED);
   };
-  const initiateUpload = f => { if (!f || f.type !== "application/pdf") { setUploadError(t.errorFormat); return; } setUploadError(""); pendingFileRef.current = f; setStage(STAGE.PRIVACY); };
+  const initiateUpload = f => {
+    if (!f || f.type !== "application/pdf") { setUploadError(t.errorFormat); return; }
+    if (f.size > 10 * 1024 * 1024) { setUploadError("Please upload a PDF under 10 MB. Most plan documents are well under this limit."); return; }
+    setUploadError(""); pendingFileRef.current = f; setStage(STAGE.PRIVACY);
+  };
 
   // Shared upload processor — used by both first upload (resetState=false) and "upload another" (resetState=true)
   const processUpload = useCallback(async (f, resetState = false) => {
@@ -1831,6 +1669,15 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const proceedAfterConsent = () => processUpload(pendingFileRef.current, false);
   const handleAdditionalUpload = f => processUpload(f, true);
 
+  // Complete fresh-start re-upload: wipe all state then open file picker.
+  // The addDocRef onChange uses initiateUpload, so the user goes through the privacy screen.
+  const startFreshUpload = () => {
+    setMessages([]); setPlanData(null); setStmtData(null);
+    setFileName(""); setInput(""); setLoading(false); setCalcExpanded(false);
+    blobUrlRef.current = null; pendingFileRef.current = null;
+    addDocRef.current?.click();
+  };
+
   const sendMessage = async text => {
     if (!text.trim() || loading) return;
     const um = { role: "user", content: text.trim() }; const nm = [...messages, um]; setMessages(nm); setInput(""); setLoading(true);
@@ -1879,10 +1726,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
             <p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, margin: 0 }}>
               {lang === "es"
                 ? "Plansparency te ayuda a entender tu plan de jubilación. No proporciona asesoría financiera, fiscal ni de inversión personalizada. Consulta a un profesional calificado para decisiones financieras."
-                : lang === "fr"
-                ? "Plansparency vous aide à comprendre votre régime de retraite. Il ne fournit pas de conseils financiers, fiscaux ou d'investissement personnalisés. Consultez un professionnel qualifié pour les décisions financières."
-                : lang === "it"
-                ? "Plansparency ti aiuta a capire il tuo piano pensionistico. Non fornisce consulenza finanziaria, fiscale o di investimento personalizzata. Consulta un professionista qualificato per le decisioni finanziarie."
                 : "Plansparency helps you understand your retirement plan. It does not provide personalized financial, tax, or investment advice. Consult a qualified professional for financial decisions."}
             </p>
           </div>
@@ -2019,7 +1862,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   // ── Dashboard (TOC) ──
   if (stage === "dashboard") return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
-        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleAdditionalUpload(e.target.files[0]); e.target.value = ""; }} />
+        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) initiateUpload(e.target.files[0]); e.target.value = ""; }} />
 
     <AppHeader accentColor={C.accent} title={planData?.planName || fileName || "Your Plan"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
 
@@ -2027,7 +1870,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       t={t} planData={planData} lang={lang}
       onSectionClick={(prompt) => sendMessage(prompt)}
       onChat={() => setStage("chat")}
-      onUploadAnother={() => addDocRef.current?.click()}
+      onUploadAnother={startFreshUpload}
     />
 
     {/* ── Static provision disclaimer — always visible, all tabs ── */}
@@ -2043,14 +1886,14 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   // ── Statement Dashboard ──
   if (stage === "stmtDashboard") return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
-        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) handleAdditionalUpload(e.target.files[0]); e.target.value = ""; }} />
+        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) initiateUpload(e.target.files[0]); e.target.value = ""; }} />
 
     <AppHeader accentColor={C.green} title={stmtData?.planName || fileName || "Your Statement"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
 
     <StatementDashboard
       t={t} stmtData={stmtData} lang={lang}
       onChat={() => setStage("chat")}
-      onUploadAnother={() => addDocRef.current?.click()}
+      onUploadAnother={startFreshUpload}
     />
   </div>;
 
@@ -2076,7 +1919,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     {docType !== "statement" && <CalcPanel t={t} planData={planData} expanded={calcExpanded} setExpanded={setCalcExpanded} lang={lang} />}
 
     <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
-      {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir") && !m.content.startsWith("Je viens de télécharger") && !m.content.startsWith("Ho appena caricato"))).map((msg, i) => (
+      {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
         <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
           <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? "rgba(212,168,83,.1)" : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
             {msg.role === "assistant" ? <Md text={msg.content} /> : msg.content}
