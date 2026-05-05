@@ -22,9 +22,6 @@ const F = { display: "'Cormorant Garamond','Georgia',serif", body: "'DM Sans','S
 // ── Stage constants ──
 const STAGE = Object.freeze({ CHOOSER:"chooser", LANDING:"landing", PRIVACY:"privacy", UPLOADING:"uploading", DASHBOARD:"dashboard", STMT_DASHBOARD:"stmtDashboard", CHAT:"chat", CLEARED:"cleared" });
 
-// ── Model ──
-const MODEL = "claude-sonnet-4-6";
-
 // ── Module-level formatters ──
 const fmtRounded = (n: number) => "$" + Math.round(n || 0).toLocaleString();
 const fmtDollars = (n: number) => "$" + Math.abs(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -281,89 +278,6 @@ Llena cada campo. period = solo período del estado. ytd = año calendario compl
   },
 };
 
-// ── System Prompt ──
-function getSystemPrompt(lang, planData) {
-  const acctUrl = planData?.recordkeeperUrl || "";
-  const acctName = planData?.recordkeeperName || "your plan's recordkeeper";
-  const acctBlock = acctUrl ? `
-ACCOUNT MANAGEMENT QUESTIONS: For ANY question about changing contributions, changing investments, taking a loan, taking a withdrawal, taking a distribution, processing a rollover, or any other account management action, tell the participant they can do this by logging into their account. Provide this link: ${acctUrl} and tell them to log in at ${acctName}. Frame it helpfully. ALWAYS include the URL.` : "";
-
-  const shared = `CRITICAL GUARDRAILS:
-1. EDUCATION only, never ADVICE. 2. Never say "you should" — say "your plan allows..."
-3. Redirect advice-seeking to education. 4. Never provide tax advice. 5. Never recommend investments.
-6. Use $50K salary example for match math. 8. Keep responses concise. 9. Suggest 1-2 follow-ups.
-10. Never repeat PII from the document.
-
-The document may be a Summary Plan Description (SPD) OR an Enrollment Booklet. Both contain plan provisions.
-${acctBlock}
-
-ANSWERING QUESTIONS: The participant's plan document has already been uploaded and is in the conversation. ALWAYS answer questions based on the actual plan document content. Look thoroughly through the document before concluding information isn't available.
-
-ONLY use this fallback if you have genuinely searched the entire document and the information is truly not there: "The document you uploaded may not contain that specific answer. Try uploading additional plan documents for more detail, or log into your account for more information."
-
-===== CRITICAL: EMPLOYER CONTRIBUTION TYPES ARE NOT THE SAME THING =====
-ALWAYS distinguish between these three types of employer contributions. They have different rules, different vesting, and different conditions:
-
-1. SAFE HARBOR CONTRIBUTIONS — guaranteed by the employer to meet IRS safe harbor requirements.
-   - Types: Non-elective (employer contributes 3% of pay regardless of employee contributions), Basic Match (100% of first 3% + 50% of next 2%), Enhanced Match (e.g. 100% of first 4%+), QACA
-   - ALWAYS 100% immediately vested (except QACA which may have up to 2-year cliff vesting)
-   - The last-day-of-year employment provision does NOT apply to safe harbor contributions
-   - Safe harbor contributions cannot be forfeited based on employment date
-
-2. DISCRETIONARY MATCH — employer chooses to match employee contributions, but it's not guaranteed.
-   - Subject to a vesting schedule (may take years to be fully yours)
-   - MAY be subject to last-day-of-year employment requirement
-   - Employer can change or eliminate the match
-
-3. PROFIT SHARING — a separate discretionary employer contribution, not based on employee contributions.
-   - Employer decides each year whether to contribute and how much
-   - Subject to its own vesting schedule
-   - MAY be subject to last-day-of-year employment requirement
-   - Completely separate from both safe harbor and match
-
-EVERY TIME you discuss employer contributions, vesting, or the last-day-of-year provision, you MUST clearly state which type of contribution you are referring to. Never lump them together.
-
-When discussing LAST-DAY-OF-YEAR provisions: ALWAYS explicitly state that this provision applies ONLY to discretionary contributions (match and/or profit sharing) and does NOT apply to safe harbor contributions. Safe harbor money is yours regardless of your employment date.
-
-When discussing VESTING: ALWAYS distinguish that safe harbor contributions are immediately vested (100% yours from day one), while discretionary match and profit sharing may follow a vesting schedule.
-=====
-
-When answering questions about eligibility, ALWAYS clearly distinguish between:
-- CONTRIBUTION ELIGIBILITY: When an employee can start putting their own money into the plan
-- MATCH ELIGIBILITY: When the employer starts matching (may have different or additional requirements)
-Make this distinction crystal clear every time eligibility comes up.
-
-TOPIC-SPECIFIC GUIDANCE:
-- ROTH vs PRE-TAX: Explain what each means in plain language. Pre-tax = money goes in before taxes, you pay taxes when you withdraw in retirement. Roth = money goes in after taxes, but grows and comes out tax-free in retirement. Then state what THIS plan offers based on the document.
-- VESTING: Explain what vesting means (how much of employer contributions you get to keep if you leave). State the specific schedule from the document. ALWAYS note which contributions are immediately vested (safe harbor) vs which follow the vesting schedule (discretionary match, profit sharing).
-- EMPLOYER MATCH: First clarify whether this is a safe harbor match or discretionary match. Explain the formula from the document with a clear dollar example using a $50K salary. Mention the calculator is available for personalized numbers.
-- SAFE HARBOR: Explain what safe harbor means — it's a guaranteed contribution from the employer that is immediately yours (100% vested from day one). Explain the specific safe harbor formula in this plan. Emphasize that unlike discretionary match, safe harbor cannot be taken away and is not subject to last-day-of-year provisions.
-- PROFIT SHARING: Explain that this is a separate employer contribution that is discretionary — the employer decides each year. It has its own vesting schedule and may have a last-day-of-year requirement.
-- LOANS: Explain the plan's loan provisions from the document — availability, limits, repayment terms.
-- HARDSHIP WITHDRAWALS: Explain what qualifies and the plan's specific rules.
-- INVESTMENT OPTIONS: Describe what's available in the plan based on the document.
-- ENROLLMENT: Explain how to enroll based on the document, including the recordkeeper website if available.
-- WITHDRAWALS, DISTRIBUTIONS & ROLLOVERS: This is a critical topic — cover ALL of these clearly:
-  * In-service withdrawals: Can participants take money out while still employed? At what age (typically 59½)? Explain the 10% early withdrawal penalty for under 59½ and that withdrawals are taxed as income.
-  * Separation from employment: When someone leaves the job (quit, layoff, retirement), explain ALL options — lump sum, installments, leaving money in the plan, rolling over to an IRA or new employer's plan. Note that the vesting schedule affects how much of discretionary employer contributions they keep — but safe harbor is always 100% theirs.
-  * Rollovers IN: Does this plan accept rollovers from other qualified plans or IRAs?
-  * Rollovers OUT: Explain that participants can roll their balance to an IRA or new employer plan, typically tax-free if done as a direct rollover.
-  * Required Minimum Distributions (RMDs): Explain that participants must start withdrawing at age 73 (per SECURE 2.0), unless still working for the employer sponsoring the plan.
-  * Age 59½ rule: Clearly explain this is the age when early withdrawal penalties typically stop.
-  * Always note that age AND employment status both affect what options are available.
-
-OPENING (first message only): Brief summary — plan name, employer contribution types (clearly distinguish safe harbor from discretionary match and profit sharing if applicable), vesting, one standout feature. Mention Roth and catch-up availability.
-
-PLANDATA BLOCK: Only include on your FIRST response. At the very end (after all human-readable content), include on its own line:
-<!--PLANDATA:{"matchTiers":[...],"hasRoth":true,...,"safeHarbor":{...},"profitSharing":{...}}-->
-Fill from the actual document. matchTiers = DISCRETIONARY match only. Do NOT include PLANDATA on follow-up responses.`;
-
-  if (lang === "es") return `You are Plansparency. RESPOND IN SPANISH except PLANDATA block. Use tú. Bridge terms: Spanish (English).\n\n${shared}`;
-  if (lang === "fr") return `You are Plansparency. RESPOND IN FRENCH except PLANDATA block. Use vous. Bridge terms: French (English).\n\n${shared}`;
-  if (lang === "it") return `You are Plansparency. RESPOND IN ITALIAN except PLANDATA block. Use lei/tu as natural. Bridge terms: Italian (English).\n\n${shared}`;
-  return `You are Plansparency — "plan" + "transparency." Warm, casual, zero condescension. Real dollar examples.\n\n${shared}`;
-}
-
 // ── IRS Limits (SECURE 2.0) ──
 function getIRSLimits(dob) {
   if (!dob) return { base: 23500, catchUp: 0, total: 23500, catchUpEligible: false, enhanced: false, age: null };
@@ -397,67 +311,47 @@ function fileToBase64(f) {
     reader.readAsDataURL(f);
   });
 }
-// ── Statement System Prompt ──
-function getStmtSystemPrompt(lang) {
-  const shared = `You are Plansparency — helping a participant understand their 401(k) account statement.
-
-CRITICAL GUARDRAILS:
-1. EDUCATION only, never ADVICE. 2. Never say "you should." 3. Never provide tax advice. 4. Never recommend investments.
-5. Keep responses concise and clear. 6. Use plain language.
-
-The participant has uploaded their account statement. Answer questions about what's in the statement — balances, contributions, fees, investments, returns, vesting, sources.
-
-When discussing contribution sources, ALWAYS distinguish:
-- EMPLOYEE contributions (salary deferral, Roth) — always 100% yours
-- SAFE HARBOR contributions — guaranteed by employer, always 100% immediately vested
-- DISCRETIONARY MATCH — employer can change or eliminate, subject to vesting schedule
-- PROFIT SHARING — discretionary, subject to vesting schedule
-
-When discussing fees, explain what each fee type means in plain language and how fees affect long-term growth.
-
-When discussing investment performance, explain what rate of return means and that past performance does not guarantee future results.
-
-When discussing vesting, explain what it means and clearly distinguish which sources are immediately vested vs which follow a schedule.`;
-
-  if (lang === "es") return `${shared}\n\nRESPOND IN SPANISH. Use tú.`;
-  return shared;
-}
-
 // pdf: base64-encoded PDF string (first call only); null for follow-up questions
-async function callClaude(msgs: any[], pdf: string | null, lang: string, planData: any, signal?: AbortSignal): Promise<string> {
-  // 28-second client timeout — safely under Vercel Edge's 30 s limit
-  const clientController = new AbortController();
-  const timerId = setTimeout(() => clientController.abort(), 28_000);
-  // Merge with any external signal (e.g. the user cancelling)
-  const mergedSignal = signal
-    ? (AbortSignal as any).any?.([signal, clientController.signal]) ?? clientController.signal
-    : clientController.signal;
-
-  let response: Response;
-  try {
-    response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: msgs, pdf: pdf ?? undefined, lang, planData }),
-      signal: mergedSignal,
-    });
-  } finally {
-    clearTimeout(timerId);
-  }
-
-  // Parse body as text first so we never throw on non-JSON (e.g. Vercel 413 page)
-  const raw = await response.text();
-  let data: any = {};
-  try { data = JSON.parse(raw); } catch { /* non-JSON body */ }
+// onChunk: called with each streamed text token as it arrives
+async function callClaude(
+  msgs: any[],
+  pdf: string | null,
+  lang: string,
+  planData: any,
+  onChunk: (chunk: string) => void,
+  signal?: AbortSignal
+): Promise<string> {
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: msgs, pdf: pdf ?? undefined, lang, planData }),
+    signal,
+  });
 
   if (!response.ok) {
+    // Error responses are JSON — parse for the error message
+    let data: any = {};
+    try { data = await response.json(); } catch {}
     const msg = data?.error || `HTTP ${response.status}`;
     const err: any = new Error(msg);
     err.status = response.status;
     throw err;
   }
-  if (!data?.text) throw new Error('Unexpected response from server');
-  return data.text;
+
+  // Success — stream plain-text token chunks from the route
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let full = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    full += chunk;
+    onChunk(chunk);
+  }
+
+  return full;
 }
 function parsePlanData(text) { const m = text.match(/<!--PLANDATA:(.*?)-->/); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } }
 function stripPlanData(text) { return text.replace(/<!--PLANDATA:.*?-->/g, "").trim(); }
@@ -1553,17 +1447,13 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [planData, setPlanData] = useState(null);
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
-  const [cachedPlanText, setCachedPlanText] = useState<string | null>(null);
+  const [streamingText, setStreamingText] = useState('');
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const pendingFileRef = useRef(null);
   const addDocRef = useRef(null);
   const abortRef = useRef(null);
-  // Store the Blob URL as a ref — not rendered, so no need for state
-  const blobUrlRef = useRef<string | null>(null);
-  // Two-step upload status for UI feedback
-  const [uploadStatus, setUploadStatus] = useState<'blob' | 'ai' | ''>('');
 
   const t = i18n[lang];
 
@@ -1574,10 +1464,9 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const processVersionB = useCallback(async (planText: string) => {
     setDocType('spd');
     setStage(STAGE.UPLOADING);
-    setCachedPlanText(planText);
     try {
       const m1 = { role: 'user', content: t.firstMessage };
-      const raw = await callClaude([m1], null, lang, null, undefined);
+      const raw = await callClaude([m1], null, lang, null, () => {}, undefined);
       const pd = parsePlanData(raw);
       if (pd) setPlanData(pd);
       setMessages([m1, { role: 'assistant', content: stripPlanData(raw) }]);
@@ -1598,11 +1487,9 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   }, []);
 
   const clearSession = () => {
-    blobUrlRef.current = null;
-    setCachedPlanText(null);
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
-    setCalcExpanded(false); setDocType(null);
+    setCalcExpanded(false); setDocType(null); setStreamingText('');
     pendingFileRef.current = null;
     setStage(STAGE.CLEARED);
   };
@@ -1624,33 +1511,30 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     abortRef.current = new AbortController();
     try {
       // Convert PDF to base64 and send directly to Edge function (no body size limit)
-      setUploadStatus('ai');
       const base64 = await fileToBase64(f);
       pendingFileRef.current = null;
 
       if (docType === "statement") {
         const m1 = { role: "user", content: t.stmtFirstMessage };
-        const raw = await callClaude([m1], base64, lang, null, abortRef.current.signal);
+        const raw = await callClaude([m1], base64, lang, null, () => {}, abortRef.current.signal);
         const sd = parseStmtData(raw);
         if (sd) setStmtData(sd);
         setMessages([m1, { role: "assistant", content: stripStmtData(raw) }]);
         setStage(STAGE.STMT_DASHBOARD);
       } else {
         const m1 = { role: "user", content: t.firstMessage };
-        const raw = await callClaude([m1], base64, lang, null, abortRef.current.signal);
+        const raw = await callClaude([m1], base64, lang, null, () => {}, abortRef.current.signal);
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
         setStage(STAGE.DASHBOARD);
       }
-      setUploadStatus('');
       abortRef.current = null;
     } catch (e) {
-      if ((e as any).name === "AbortError") { setUploadStatus(''); return; }
+      if ((e as any).name === "AbortError") { return; }
       console.error('[processUpload] Upload failed:', (e as any).message, e);
       pendingFileRef.current = null;
       abortRef.current = null;
-      setUploadStatus('');
 
       let userMsg: string = t.errorRead;
       const status = (e as any).status;
@@ -1674,22 +1558,24 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const startFreshUpload = () => {
     setMessages([]); setPlanData(null); setStmtData(null);
     setFileName(""); setInput(""); setLoading(false); setCalcExpanded(false);
-    blobUrlRef.current = null; pendingFileRef.current = null;
+    setStreamingText(''); pendingFileRef.current = null;
     addDocRef.current?.click();
   };
 
   const sendMessage = async text => {
     if (!text.trim() || loading) return;
-    const um = { role: "user", content: text.trim() }; const nm = [...messages, um]; setMessages(nm); setInput(""); setLoading(true);
+    const um = { role: "user", content: text.trim() }; const nm = [...messages, um]; setMessages(nm); setInput(""); setLoading(true); setStreamingText('');
     if (stage === STAGE.DASHBOARD || stage === STAGE.STMT_DASHBOARD) setStage(STAGE.CHAT);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      const raw = await callClaude(nm, null, lang, planData, abortRef.current.signal);
+      const raw = await callClaude(nm, null, lang, planData, chunk => setStreamingText(prev => prev + chunk), abortRef.current.signal);
+      setStreamingText('');
       const cleaned = docType === "statement" ? stripStmtData(raw) : stripPlanData(raw);
       setMessages([...nm, { role: "assistant", content: cleaned }]);
       abortRef.current = null;
     } catch (e) {
+      setStreamingText('');
       if (e.name === "AbortError") { abortRef.current = null; setLoading(false); return; }
       console.error('[sendMessage] Failed — status:', (e as any).status, 'message:', e.message, e);
       let replyMsg = t.errorReply;
@@ -1844,19 +1730,11 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Uploading ──
   if (stage === "uploading") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
     <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid rgba(212,168,83,.2)` }}>
-      {uploadStatus === 'blob'
-        ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-        : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
-      }
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
     </div>
-    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>
-      {uploadStatus === 'blob' ? "Uploading document…" : t.readingTitle}
-    </h2>
+    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.readingTitle}</h2>
     <p style={{ color: C.textMuted, fontSize: 14, margin: 0 }}>
-      {uploadStatus === 'blob'
-        ? <><span style={{ color: C.accent }}>{fileName}</span> is being securely uploaded</>
-        : <>{t.readingSubPrefix} <span style={{ color: C.accent }}>{fileName}</span> {t.readingSubSuffix}</>
-      }
+      {t.readingSubPrefix} <span style={{ color: C.accent }}>{fileName}</span> {t.readingSubSuffix}
     </p>
     <style>{`@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.75}}`}</style></div>;
 
@@ -1926,8 +1804,20 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           </div>
         </div>
       ))}
-      {loading && <div style={{ display: "flex" }}><div style={{ padding: "12px 15px", borderRadius: "16px 16px 16px 4px", background: C.aiBubble, border: `1px solid ${C.border}`, display: "flex", gap: 6 }}>
-        {[0, 1, 2].map(i => <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent, opacity: .5, animation: `bounce 1.2s ease-in-out ${i * .15}s infinite` }} />)}</div></div>}
+      {loading && (
+        <div style={{ display: "flex" }}>
+          {streamingText ? (
+            <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: "16px 16px 16px 4px", background: C.aiBubble, border: `1px solid ${C.border}`, fontSize: 14, lineHeight: 1.6 }}>
+              <Md text={streamingText} />
+              <span style={{ display: "inline-block", width: 2, height: "1em", background: C.accent, verticalAlign: "text-bottom", marginLeft: 2, animation: "blink 1s step-end infinite" }} />
+            </div>
+          ) : (
+            <div style={{ padding: "12px 15px", borderRadius: "16px 16px 16px 4px", background: C.aiBubble, border: `1px solid ${C.border}`, display: "flex", gap: 6 }}>
+              {[0, 1, 2].map(i => <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent, opacity: .5, animation: `bounce 1.2s ease-in-out ${i * .15}s infinite` }} />)}
+            </div>
+          )}
+        </div>
+      )}
       {showChips && <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", padding: "4px 0 8px" }}>
         {t.quickAsks.map(q => <button key={q} onClick={() => sendMessage(q)}
           style={{ padding: "7px 13px", borderRadius: 100, fontSize: 12, background: C.accentDim, color: C.accent, border: `1px solid rgba(212,168,83,.18)`, cursor: "pointer", fontFamily: F.body, transition: "all .15s", whiteSpace: "nowrap" }}
@@ -1956,6 +1846,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     <style>{`
       @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
       @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+      @keyframes blink{50%{opacity:0}}
       *{box-sizing:border-box;margin:0}
       ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}
       textarea::placeholder{color:${C.textDim}}

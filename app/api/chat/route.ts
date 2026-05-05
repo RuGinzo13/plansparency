@@ -7,14 +7,9 @@ function jsonError(msg: string, status = 500): NextResponse {
   return NextResponse.json({ error: msg }, { status });
 }
 
-async function safeJsonParse(res: Response): Promise<any> {
-  const text = await res.text();
-  try { return JSON.parse(text); } catch { return { error: text.slice(0, 300) }; }
-}
-
 // ── Route ─────────────────────────────────────────────────────────────────────
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function POST(req: NextRequest): Promise<Response> {
   // ── 1. Auth ──────────────────────────────────────────────────────────────────
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return jsonError('API key not configured', 500);
@@ -53,15 +48,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return { role: m.role as 'user' | 'assistant', content: m.content };
   });
 
-  // ── 5. Call Anthropic (25 s abort — Edge limit 30 s) ─────────────────────────
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25_000);
-
+  // ── 5. Call Anthropic with streaming ─────────────────────────────────────────
+  // Streaming keeps the connection alive as tokens arrive, bypassing the
+  // Edge 30 s wall-clock limit that kills large non-streaming requests.
   let anthropicRes: Response;
   try {
     anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -71,33 +64,73 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 1500,
+        stream: true,
         system: buildSystemPrompt(lang, planData),
         messages: anthropicMessages,
       }),
     });
   } catch (e: any) {
-    clearTimeout(timer);
-    if (e.name === 'AbortError')
-      return jsonError('Request timed out — try a smaller document or ask a shorter question.', 504);
+    if (e.name === 'AbortError') return jsonError('Request timed out', 504);
     return jsonError(`Network error: ${e.message}`, 502);
   }
-  clearTimeout(timer);
 
+  // ── 6. Non-ok → return JSON error ────────────────────────────────────────────
   if (!anthropicRes.ok) {
-    const err = await safeJsonParse(anthropicRes);
-    const msg = err?.error?.message || err?.error || JSON.stringify(err);
+    const text = await anthropicRes.text();
+    let err: any = {};
+    try { err = JSON.parse(text); } catch {}
+    const msg = err?.error?.message || err?.error || text.slice(0, 300);
     return jsonError(String(msg), 502);
   }
 
-  const data = await safeJsonParse(anthropicRes);
-  if (!data?.content) return jsonError('Unexpected response from AI service', 502);
+  // ── 7. Pipe Anthropic SSE → plain text stream of token chunks ────────────────
+  const stream = new ReadableStream({
+    async start(controller) {
+      const reader = anthropicRes.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-  const text = (data.content as any[])
-    .filter((b: any) => b.type === 'text')
-    .map((b: any) => b.text)
-    .join('\n');
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-  return NextResponse.json({ text });
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6).trim();
+            if (!data || data === '[DONE]') continue;
+
+            let parsed: any;
+            try { parsed = JSON.parse(data); } catch { continue; }
+
+            if (
+              parsed.type === 'content_block_delta' &&
+              parsed.delta?.type === 'text_delta' &&
+              typeof parsed.delta.text === 'string'
+            ) {
+              controller.enqueue(new TextEncoder().encode(parsed.delta.text));
+            }
+          }
+        }
+      } catch {
+        // Stream ended unexpectedly — close without propagating
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
 }
 
 // ── System prompt ──────────────────────────────────────────────────────────────
