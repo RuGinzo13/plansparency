@@ -140,6 +140,29 @@ Fill in based on the actual plan document:
     suggestionSubmit: "Submit Suggestion",
     suggestionThanks: "Thanks! Suggestion submitted.",
     suggestionAdd: "Add Another Suggestion",
+    navYourPlan: "Your Plan",
+    navCalculator: "Calculator",
+    navKeyTerms: "Key Terms",
+    navAsk: "Ask",
+    keyTermsTitle: "Key Terms & Definitions",
+    keyTermsSubtitle: "Plain-English explanations of 401(k) language",
+    keyTerms: [
+      { term: "401(k)", def: "A retirement savings account your employer sponsors. Your contributions come out of your paycheck before taxes — so you pay less in taxes today. Your money grows tax-deferred, meaning you pay taxes when you withdraw it in retirement." },
+      { term: "Contribution", def: "The money you put in from your paycheck. You choose a percentage or dollar amount. The more you put in, the more your money can grow over time." },
+      { term: "Employer Match", def: "Free money your employer adds when you contribute. Example: '50% match on the first 6%' means for every $1 you put in (up to 6% of your pay), your employer adds $0.50. That's an instant 50% return — hard to beat." },
+      { term: "Safe Harbor Contribution", def: "A guaranteed employer contribution required by law. It's immediately 100% yours — no vesting wait. Unlike a regular match, a nonelective safe harbor doesn't require you to contribute to receive it." },
+      { term: "Profit Sharing", def: "An extra employer contribution based on company performance. It's discretionary — the employer decides each year whether to give it and how much. Not guaranteed like a safe harbor." },
+      { term: "Vesting", def: "The process of earning full ownership of your employer's contributions over time. Your own contributions are always 100% yours immediately. Employer contributions may have a waiting period." },
+      { term: "Vesting Schedule", def: "The timeline that determines what percentage of employer contributions you keep if you leave. Example: '3-year cliff' = you get 0% if you leave before year 3, then 100% at year 3. 'Graded' means you earn it gradually year by year." },
+      { term: "Pre-Tax (Traditional)", def: "You contribute money before paying income taxes on it. This lowers your taxable income today. You pay taxes when you withdraw in retirement. Good choice if you expect to be in a lower tax bracket in retirement." },
+      { term: "Roth", def: "You contribute money you've already paid taxes on. Your money grows completely tax-free, and qualified withdrawals in retirement are tax-free too. Good choice if you expect to be in a higher tax bracket in retirement." },
+      { term: "IRS Contribution Limit", def: "The maximum you're allowed to put in per year, set by the IRS. For 2025 it's $23,500. This limit is for your contributions only — employer contributions don't count toward it." },
+      { term: "Catch-Up Contribution", def: "Extra contributions allowed if you're age 50 or older. In 2025: $7,500 extra for ages 50–59 and 64+, and $11,250 extra for ages 60–63 (a SECURE 2.0 boost). Your plan must allow catch-ups." },
+      { term: "Rollover", def: "Moving money from one retirement account to another — like from an old job's 401(k) to an IRA or new employer's plan — without paying taxes. Must be done correctly (direct rollover) to avoid a tax hit." },
+      { term: "Required Minimum Distribution (RMD)", def: "Starting at age 73, the IRS requires you to withdraw a minimum amount from your 401(k) each year, whether you need the money or not. Skipping it triggers a steep penalty." },
+      { term: "Hardship Withdrawal", def: "Taking money out while still employed due to a serious financial emergency. Usually subject to income tax plus a 10% early withdrawal penalty if you're under age 59½. This is generally a last resort." },
+      { term: "Plan Loan", def: "Borrowing from your own 401(k) balance. You repay yourself with interest. There are limits (usually up to 50% of your vested balance, max $50,000) and risks — if you leave your job, the loan may become due immediately." },
+    ],
     suggestionTopicPlaceholder: "e.g. Loan process, Roth explanation...",
     suggestionDetailsPlaceholder: "What would you like to see improved or explained differently?",
     // Chooser
@@ -275,6 +298,29 @@ Llena cada campo. period = solo período del estado. ytd = año calendario compl
     stmtPerformance: "Rendimiento",
     stmtPeriod: "Período del Estado",
     stmtDisclaimer: "Este es un resumen educativo de tu estado de cuenta. No es asesoría financiera.",
+    navYourPlan: "Tu Plan",
+    navCalculator: "Calculadora",
+    navKeyTerms: "Términos",
+    navAsk: "Preguntar",
+    keyTermsTitle: "Términos y Definiciones Clave",
+    keyTermsSubtitle: "Explicaciones claras del lenguaje de los planes 401(k)",
+    keyTerms: [
+      { term: "401(k)", def: "Una cuenta de ahorro para el retiro patrocinada por tu empleador. Tus contribuciones salen de tu cheque antes de impuestos — pagas menos impuestos hoy. Tu dinero crece con impuestos diferidos hasta que lo retires en el retiro." },
+      { term: "Contribución", def: "El dinero que aportas de tu cheque de pago. Tú eliges el porcentaje o la cantidad en dólares. Cuanto más aportes, más puede crecer tu dinero con el tiempo." },
+      { term: "Match del Empleador", def: "Dinero gratis que tu empleador agrega cuando contribuyes. Ejemplo: '50% en los primeros 6%' significa que por cada $1 que pones (hasta el 6% de tu salario), tu empleador agrega $0.50. Es un retorno inmediato del 50%." },
+      { term: "Contribución Safe Harbor", def: "Una contribución garantizada del empleador requerida por ley. Es 100% tuya inmediatamente — sin período de espera de vesting. El safe harbor no electivo no requiere que contribuyas para recibirlo." },
+      { term: "Profit Sharing", def: "Una contribución adicional del empleador basada en el desempeño de la empresa. Es discrecional — el empleador decide cada año si la da y cuánto. No está garantizada como el safe harbor." },
+      { term: "Vesting", def: "El proceso de ganar la propiedad total de las contribuciones de tu empleador con el tiempo. Tus propias contribuciones siempre son 100% tuyas de inmediato." },
+      { term: "Calendario de Vesting", def: "El cronograma que determina qué porcentaje de las contribuciones del empleador conservas si te vas. Ejemplo: '3 años cliff' = obtienes 0% si te vas antes del año 3, luego 100% al año 3." },
+      { term: "Pre-Impuesto (Tradicional)", def: "Contribuyes dinero antes de pagar impuestos sobre él. Esto reduce tu ingreso gravable hoy. Pagas impuestos cuando retiras en la jubilación." },
+      { term: "Roth", def: "Contribuyes dinero sobre el que ya pagaste impuestos. Tu dinero crece completamente libre de impuestos, y los retiros calificados en la jubilación también son libres de impuestos." },
+      { term: "Límite de Contribución del IRS", def: "El máximo que puedes aportar por año, establecido por el IRS. Para 2025 es $23,500. Este límite es solo para tus contribuciones — las del empleador no cuentan." },
+      { term: "Contribución de Recuperación (Catch-Up)", def: "Contribuciones adicionales permitidas si tienes 50 años o más. En 2025: $7,500 extra para edades 50–59 y 64+, y $11,250 extra para edades 60–63. Tu plan debe permitirlas." },
+      { term: "Rollover (Transferencia)", def: "Mover dinero de una cuenta de retiro a otra — como de un 401(k) anterior a una IRA o plan de nuevo empleador — sin pagar impuestos. Debe hacerse correctamente (rollover directo)." },
+      { term: "Distribución Mínima Requerida (RMD)", def: "A partir de los 73 años, el IRS requiere que retires una cantidad mínima de tu 401(k) cada año. Saltarte el retiro activa una multa importante." },
+      { term: "Retiro por Dificultad", def: "Retirar dinero mientras sigues empleado debido a una emergencia financiera grave. Generalmente sujeto al impuesto sobre la renta más una penalidad del 10% si tienes menos de 59½ años." },
+      { term: "Préstamo del Plan", def: "Pedir prestado de tu propio saldo del 401(k). Te reembolsas a ti mismo con intereses. Hay límites (normalmente hasta el 50% de tu saldo investido, máx $50,000) y riesgos." },
+    ],
   },
 };
 
@@ -383,6 +429,148 @@ function Logo({ small }) {
 }
 function Shield({ color, sz = 18 }) { return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>; }
 function Modal({ children }) { return <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(0,0,0,.75)", backdropFilter: "blur(8px)" }}><div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, maxWidth: 520, width: "100%", maxHeight: "85vh", overflowY: "auto", padding: "32px 28px", boxShadow: "0 24px 80px rgba(0,0,0,.6)" }}>{children}</div></div>; }
+
+function TabBar({ activeTab, setActiveTab, t }) {
+  const tabs = [
+    {
+      id: "dashboard",
+      label: t.navYourPlan,
+      icon: (active) => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      ),
+    },
+    {
+      id: "calculator",
+      label: t.navCalculator,
+      icon: (active) => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="2" width="16" height="20" rx="2"/>
+          <line x1="8" y1="6" x2="16" y2="6"/>
+          <line x1="8" y1="10" x2="16" y2="10"/>
+          <line x1="8" y1="14" x2="11" y2="14"/>
+          <line x1="13" y1="14" x2="16" y2="14"/>
+          <line x1="8" y1="18" x2="11" y2="18"/>
+          <line x1="13" y1="18" x2="16" y2="18"/>
+        </svg>
+      ),
+    },
+    {
+      id: "keyterms",
+      label: t.navKeyTerms,
+      icon: (active) => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          <line x1="9" y1="7" x2="15" y2="7"/>
+          <line x1="9" y1="11" x2="15" y2="11"/>
+          <line x1="9" y1="15" x2="12" y2="15"/>
+        </svg>
+      ),
+    },
+    {
+      id: "chat",
+      label: t.navAsk,
+      icon: (active) => (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <div style={{
+      display: "flex",
+      borderBottom: `1px solid ${C.border}`,
+      background: C.surface,
+      flexShrink: 0,
+    }}>
+      {tabs.map(tab => {
+        const active = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              flex: 1,
+              padding: "10px 4px 8px",
+              background: "none",
+              border: "none",
+              borderBottom: `2px solid ${active ? C.accent : "transparent"}`,
+              cursor: "pointer",
+              fontFamily: F.body,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 4,
+              transition: "all .15s",
+              color: active ? C.accent : C.textMuted,
+            }}
+            onMouseEnter={e => { if (!active) e.currentTarget.style.color = C.text; }}
+            onMouseLeave={e => { if (!active) e.currentTarget.style.color = C.textMuted; }}
+          >
+            {tab.icon(active)}
+            <span style={{
+              fontSize: 10,
+              fontWeight: active ? 700 : 500,
+              letterSpacing: ".03em",
+              textTransform: "uppercase",
+            }}>{tab.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Key Terms Panel ──
+function KeyTermsPanel({ t }) {
+  const [openIndex, setOpenIndex] = React.useState(null);
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 32px" }}>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: C.text, fontFamily: F.head }}>{t.keyTermsTitle}</div>
+        <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>{t.keyTermsSubtitle}</div>
+      </div>
+      {t.keyTerms.map((item, i) => {
+        const open = openIndex === i;
+        return (
+          <div key={i} style={{
+            borderRadius: 10,
+            border: `1px solid ${open ? C.accent : C.border}`,
+            marginBottom: 8,
+            overflow: "hidden",
+            background: open ? `${C.accent}08` : C.surface,
+            transition: "border-color .15s, background .15s",
+          }}>
+            <button
+              onClick={() => setOpenIndex(open ? null : i)}
+              style={{
+                width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+                padding: "12px 14px", background: "none", border: "none", cursor: "pointer",
+                fontFamily: F.body, textAlign: "left",
+              }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 600, color: open ? C.accent : C.text }}>{item.term}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={open ? C.accent : C.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ flexShrink: 0, transition: "transform .2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {open && (
+              <div style={{ padding: "0 14px 14px", fontSize: 13, color: C.textMuted, lineHeight: 1.6, animation: "fadeIn .2s" }}>
+                {item.def}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── TOC Section Icons ──
 function SectionIcon({ type, sz = 20 }) {
@@ -618,21 +806,6 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
   // All feature tiles
   const tiles = useMemo(() => {
     const list = [];
-
-    // Key Terms & Definitions — always first
-    list.push({
-      id: "keyTerms",
-      emoji: "📖",
-      title: es ? "Términos Clave" : "Key Terms & Definitions",
-      status: es ? "Glosario en lenguaje sencillo" : "Plain-English glossary",
-      desc: es
-        ? "Las palabras del 401(k) que verás en todas partes, explicadas en términos simples."
-        : "401(k) words you'll see everywhere, explained simply.",
-      accent: C.accent, bg: C.accentDim,
-      prompt: es
-        ? "Por favor explica los términos más importantes del 401(k) en lenguaje sencillo. Cubre: vesting, safe harbor, match discrecional, profit sharing, pre-impuesto vs Roth, contribuciones catch-up, retiro por dificultad, transferencia, RMD, y año del plan. Para cada término da una definición en una oración y un ejemplo del mundo real."
-        : "Please explain the most important 401(k) terms in plain English. Cover: vesting, safe harbor, discretionary match, profit sharing, pre-tax vs Roth, catch-up contributions, hardship withdrawal, rollover, RMD, and plan year. For each term give a one-sentence plain-English definition and a quick real-world example.",
-    });
 
     if (hasSafeHarbor) list.push({
       id: "safeHarbor", emoji: "🎁",
@@ -935,7 +1108,7 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
 }
 
 // ── Calculator (High Contrast) ──
-function CalcPanel({ t, planData, expanded, setExpanded, lang }) {
+function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) {
   const [salary, setSalary] = useState(50000);
   const [pct, setPct] = useState(6);
   const [dob, setDob] = useState("");
@@ -1014,30 +1187,37 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang }) {
   else if (catchUpActive) { catchUpDisplay = t.calcYes + (limits.enhanced ? " (60-63)" : " (50+)"); catchUpColor = "#2E7D52"; }
   else { catchUpDisplay = t.calcNo; catchUpColor = "#B84A3A"; }
 
-  return (
-    <div style={{ flexShrink: 0, borderBottom: `2px solid ${C.calcBorder}`, background: C.calcBg, boxShadow: "0 4px 20px rgba(0,0,0,.15)" }}>
-      <button onClick={() => setExpanded(!expanded)} style={{
-        width: "100%", padding: "12px 16px", background: "none", border: "none", cursor: "pointer",
-        display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: F.body,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: `linear-gradient(135deg,${C.accent},#B8863A)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F1621" strokeWidth="2.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
-          </div>
-          <span style={{ fontSize: 14, fontWeight: 700, color: C.calcText, fontFamily: F.display, letterSpacing: ".01em" }}>{t.calcTitle}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          {!expanded && planData && <div style={{ display: "flex", gap: 16, fontSize: 13, flexWrap: "wrap" }}>
-            <span style={{ color: C.calcMuted }}>{t.calcYourContrib}: <strong style={{ color: C.calcText }}>{fmtRounded(empContrib)}</strong></span>
-            {hasSH && <span style={{ color: C.calcMuted }}>Safe Harbor: <strong style={{ color: "#2E7D52" }}>{fmtRounded(shAmt)}</strong></span>}
-            <span style={{ color: "#8B6914", fontWeight: 700 }}>{fmtRounded(total)}/yr</span>
-          </div>}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.calcMuted} strokeWidth="2" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9" /></svg>
-        </div>
-      </button>
+  const showExpanded = asTab ? true : expanded;
 
-      {expanded && (
-        <div style={{ padding: "0 16px 18px" }}>
+  return (
+    <div style={asTab
+      ? { flex: 1, overflowY: "auto", background: C.calcBg }
+      : { flexShrink: 0, borderBottom: `2px solid ${C.calcBorder}`, background: C.calcBg, boxShadow: "0 4px 20px rgba(0,0,0,.15)" }
+    }>
+      {!asTab && (
+        <button onClick={() => setExpanded(!expanded)} style={{
+          width: "100%", padding: "12px 16px", background: "none", border: "none", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: F.body,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: `linear-gradient(135deg,${C.accent},#B8863A)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F1621" strokeWidth="2.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: C.calcText, fontFamily: F.display, letterSpacing: ".01em" }}>{t.calcTitle}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {!expanded && planData && <div style={{ display: "flex", gap: 16, fontSize: 13, flexWrap: "wrap" }}>
+              <span style={{ color: C.calcMuted }}>{t.calcYourContrib}: <strong style={{ color: C.calcText }}>{fmtRounded(empContrib)}</strong></span>
+              {hasSH && <span style={{ color: C.calcMuted }}>Safe Harbor: <strong style={{ color: "#2E7D52" }}>{fmtRounded(shAmt)}</strong></span>}
+              <span style={{ color: "#8B6914", fontWeight: 700 }}>{fmtRounded(total)}/yr</span>
+            </div>}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.calcMuted} strokeWidth="2" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9" /></svg>
+          </div>
+        </button>
+      )}
+
+      {showExpanded && (
+        <div style={{ padding: asTab ? "16px 16px 32px" : "0 16px 18px" }}>
           {!planData && <div style={{ padding: "16px", textAlign: "center", color: C.calcMuted, fontSize: 13, background: "#F3EDE3", borderRadius: 10, border: `1px dashed ${C.calcBorder}` }}>{t.calcWaiting}</div>}
 
           {planData && <>
@@ -1444,6 +1624,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [dragOver, setDragOver] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [calcExpanded, setCalcExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [planData, setPlanData] = useState(null);
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
@@ -1470,7 +1651,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       const pd = parsePlanData(raw);
       if (pd) setPlanData(pd);
       setMessages([m1, { role: 'assistant', content: stripPlanData(raw) }]);
-      setStage(STAGE.DASHBOARD);
+      setStage("app");
     } catch (e: any) {
       if (e.name === 'AbortError') return;
       console.error('[processVersionB] Failed — status:', e.status, 'message:', e.message, e);
@@ -1489,7 +1670,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const clearSession = () => {
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
-    setCalcExpanded(false); setDocType(null); setStreamingText('');
+    setCalcExpanded(false); setActiveTab("dashboard"); setDocType(null); setStreamingText('');
     pendingFileRef.current = null;
     setStage(STAGE.CLEARED);
   };
@@ -1504,7 +1685,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (!f || f.type !== "application/pdf") { setUploadError(t.errorFormat); return; }
     if (resetState) {
       setMessages([]); setPlanData(null); setStmtData(null);
-      blobUrlRef.current = null; setCalcExpanded(false);
+      setCalcExpanded(false);
     }
     setUploadError(""); setFileName(f.name); setStage(STAGE.UPLOADING);
     if (abortRef.current) abortRef.current.abort();
@@ -1527,7 +1708,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
-        setStage(STAGE.DASHBOARD);
+        setStage("app");
       }
       abortRef.current = null;
     } catch (e) {
@@ -1544,7 +1725,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       else if ((e as any).message) userMsg = (e as any).message;
 
       setUploadError(userMsg);
-      setStage(resetState ? (docType === "statement" ? STAGE.STMT_DASHBOARD : STAGE.DASHBOARD) : STAGE.LANDING);
+      setStage(resetState ? (docType === "statement" ? STAGE.STMT_DASHBOARD : "app") : STAGE.LANDING);
     }
   // lang and docType are stable during an upload; t is derived from lang
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1565,7 +1746,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const sendMessage = async text => {
     if (!text.trim() || loading) return;
     const um = { role: "user", content: text.trim() }; const nm = [...messages, um]; setMessages(nm); setInput(""); setLoading(true); setStreamingText('');
-    if (stage === STAGE.DASHBOARD || stage === STAGE.STMT_DASHBOARD) setStage(STAGE.CHAT);
+    if (stage === "app") setActiveTab("chat");
+    else if (stage === STAGE.STMT_DASHBOARD) setStage(STAGE.CHAT);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
@@ -1739,28 +1921,108 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     <style>{`@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.75}}`}</style></div>;
 
   // ── Dashboard (TOC) ──
-  if (stage === "dashboard") return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
+  // ── SPD App (dashboard + calculator + key terms + chat) ──
+  if (stage === "app") {
+    const chatPanel = (
+      <>
+        <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+          {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
+              <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? "rgba(212,168,83,.1)" : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
+                {msg.role === "assistant" ? <Md text={msg.content} /> : msg.content}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div style={{ display: "flex" }}>
+              {streamingText ? (
+                <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: "16px 16px 16px 4px", background: C.aiBubble, border: `1px solid ${C.border}`, fontSize: 14, lineHeight: 1.6 }}>
+                  <Md text={streamingText} />
+                  <span style={{ display: "inline-block", width: 2, height: "1em", background: C.accent, verticalAlign: "text-bottom", marginLeft: 2, animation: "blink 1s step-end infinite" }} />
+                </div>
+              ) : (
+                <div style={{ padding: "12px 15px", borderRadius: "16px 16px 16px 4px", background: C.aiBubble, border: `1px solid ${C.border}`, display: "flex", gap: 6 }}>
+                  {[0, 1, 2].map(i => <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent, opacity: .5, animation: `bounce 1.2s ease-in-out ${i * .15}s infinite` }} />)}
+                </div>
+              )}
+            </div>
+          )}
+          {showChips && <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", padding: "4px 0 8px" }}>
+            {t.quickAsks.map(q => <button key={q} onClick={() => sendMessage(q)}
+              style={{ padding: "7px 13px", borderRadius: 100, fontSize: 12, background: C.accentDim, color: C.accent, border: `1px solid rgba(212,168,83,.18)`, cursor: "pointer", fontFamily: F.body, transition: "all .15s", whiteSpace: "nowrap" }}
+              onMouseEnter={e => e.currentTarget.style.background = C.accentGlow} onMouseLeave={e => e.currentTarget.style.background = C.accentDim}
+            >{q}</button>)}</div>}
+          <div ref={chatEndRef} />
+        </div>
+
+        <div style={{ padding: "10px 16px 12px", borderTop: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", background: C.bg, borderRadius: 14, padding: "4px 4px 4px 14px", border: `1px solid ${C.border}` }}>
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.inputPlaceholder} rows={1}
+              style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 14, fontFamily: F.body, resize: "none", padding: "9px 0", lineHeight: 1.5, maxHeight: 100, minHeight: 18 }}
+              onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }} />
+            <button onClick={() => sendMessage(input)} disabled={!input.trim() || loading}
+              style={{ width: 38, height: 38, borderRadius: 10, border: "none", background: input.trim() && !loading ? `linear-gradient(135deg,${C.accent},#B8863A)` : C.border, cursor: input.trim() && !loading ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !loading ? "#0F1621" : C.textDim} strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+            </button>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+            <span style={{ fontSize: 10, color: C.textDim }}>{t.footerDisclaimer}</span>
+            <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, padding: "3px 10px", fontSize: 10, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = ".7"}>{t.clearSession}</button>
+          </div>
+        </div>
+      </>
+    );
+
+    return (
+      <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
         <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) initiateUpload(e.target.files[0]); e.target.value = ""; }} />
 
-    <AppHeader accentColor={C.accent} title={planData?.planName || fileName || "Your Plan"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
+        {showClearConfirm && <Modal>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: C.dangerDim, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+            </div>
+            <h3 style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h3>
+          </div>
+          <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 24 }}>{t.clearConfirmBody}</p>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button onClick={() => setShowClearConfirm(false)} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>{t.clearConfirmNo}</button>
+            <button onClick={clearSession} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: C.danger, color: "#fff" }}>{t.clearConfirmYes}</button>
+          </div>
+        </Modal>}
 
-    <PlanDashboard
-      t={t} planData={planData} lang={lang}
-      onSectionClick={(prompt) => sendMessage(prompt)}
-      onChat={() => setStage("chat")}
-      onUploadAnother={startFreshUpload}
-    />
+        <AppHeader accentColor={C.accent} title={planData?.planName || fileName || "Your Plan"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
 
-    {/* ── Static provision disclaimer — always visible, all tabs ── */}
-    <div style={{
-      flexShrink: 0, padding: "8px 16px",
-      background: C.surfaceAlt, borderTop: `1px solid ${C.border}`,
-      display: "flex", alignItems: "flex-start", gap: 7,
-    }}>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textDim} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <p style={{ margin: 0, fontSize: 10, color: C.textDim, lineHeight: 1.6 }}>{t.planProvisionDisclaimer}</p>
-    </div>
-  </div>;
+        <TabBar activeTab={activeTab} setActiveTab={setActiveTab} t={t} />
+
+        {activeTab === "dashboard" && <PlanDashboard t={t} planData={planData} lang={lang} onSectionClick={(prompt) => sendMessage(prompt)} onChat={() => setActiveTab("chat")} onUploadAnother={startFreshUpload} />}
+        {activeTab === "calculator" && <CalcPanel t={t} planData={planData} expanded={true} setExpanded={() => {}} lang={lang} asTab={true} />}
+        {activeTab === "keyterms" && <KeyTermsPanel t={t} />}
+        {activeTab === "chat" && chatPanel}
+
+        {activeTab !== "chat" && (
+          <div style={{ flexShrink: 0, padding: "8px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: 7 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textDim} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <p style={{ margin: 0, fontSize: 10, color: C.textDim, lineHeight: 1.6 }}>{t.planProvisionDisclaimer}</p>
+          </div>
+        )}
+
+        <style>{`
+          @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+          @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+          @keyframes blink{50%{opacity:0}}
+          *{box-sizing:border-box;margin:0}
+          ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}
+          textarea::placeholder{color:${C.textDim}}
+          input[type=range]{-webkit-appearance:none;appearance:none;background:#C8BFAE;border-radius:6px;outline:none;height:10px}
+          input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},#B8863A);cursor:pointer;border:3px solid #FBF7F0;box-shadow:0 0 10px rgba(212,168,83,.4)}
+          input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},#B8863A);cursor:pointer;border:3px solid #FBF7F0;box-shadow:0 0 10px rgba(212,168,83,.4)}
+          select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237A6B5D' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+        `}</style>
+      </div>
+    );
+  }
 
   // ── Statement Dashboard ──
   if (stage === "stmtDashboard") return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
@@ -1775,7 +2037,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     />
   </div>;
 
-  // ── Chat ──
+  // ── Statement Chat ──
   return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
         {showClearConfirm && <Modal><div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}><div style={{ width: 36, height: 36, borderRadius: 10, background: C.dangerDim, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></div>
       <h3 style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h3></div>
@@ -1786,15 +2048,13 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       </div></Modal>}
 
     <AppHeader
-      accentColor={docType === "statement" ? C.green : C.accent}
-      title={docType === "statement" ? (stmtData?.planName || fileName || "Your Statement") : (planData?.planName || fileName || "Your Plan")}
-      onBack={() => setStage(docType === "statement" ? STAGE.STMT_DASHBOARD : STAGE.DASHBOARD)}
-      backLabel={docType === "statement" ? (lang === "es" ? "Tu Estado" : "Your Statement") : (lang === "es" ? "Guía del Plan" : "Plan Guide")}
+      accentColor={C.green}
+      title={stmtData?.planName || fileName || "Your Statement"}
+      onBack={() => setStage(STAGE.STMT_DASHBOARD)}
+      backLabel={lang === "es" ? "Tu Estado" : "Your Statement"}
       lang={lang} setLang={setLang} loading={loading} t={t}
       advisorLogo={advisorLogo} advisorFirmName={advisorFirmName}
     />
-
-    {docType !== "statement" && <CalcPanel t={t} planData={planData} expanded={calcExpanded} setExpanded={setCalcExpanded} lang={lang} />}
 
     <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
       {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
