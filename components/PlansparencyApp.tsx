@@ -976,30 +976,6 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-      {/* ── Pill Tab Bar ── */}
-      <div style={{
-        flexShrink: 0, display: "flex", gap: 6, padding: "10px 16px",
-        background: C.surface, borderBottom: `1px solid ${C.border}`, overflowX: "auto",
-      }}>
-        {[
-          { id: "guide", label: es ? "Mi Plan" : "My Plan" },
-          { id: "calc",  label: es ? "Calculadora" : "Calculator" },
-          { id: "ask",   label: es ? "Preguntar" : "Ask" },
-        ].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-            padding: "7px 20px", borderRadius: 20, cursor: "pointer",
-            fontFamily: F.body, fontWeight: 600, fontSize: 13,
-            whiteSpace: "nowrap", transition: "all .18s",
-            border: activeTab === tab.id ? "none" : `1.5px solid ${C.border}`,
-            background: activeTab === tab.id ? C.accent : "transparent",
-            color: activeTab === tab.id ? "#FFF" : C.textMuted,
-            boxShadow: activeTab === tab.id ? `0 2px 8px ${C.accentGlow}` : "none",
-          }}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
       {/* ── Tab Panel: My Plan ── */}
       {activeTab === "guide" && (
         <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 20px" }}>
