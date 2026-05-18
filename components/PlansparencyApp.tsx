@@ -766,6 +766,8 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
   const matchDesc = noMatch ? null : tiers.map(tier => `${tier.pct}% on first ${tier.upTo}%`).join(" + ");
   const hasSafeHarbor = pd.safeHarbor && pd.safeHarbor.type !== "none";
   const hasProfitSharing = pd.profitSharing?.available;
+  // Claude may output either "hasRoth" or "rothAvailable" — check both, same question
+  const planHasRoth = pd.hasRoth ?? pd.rothAvailable ?? false;
 
   const es = lang === "es";
 
@@ -792,8 +794,8 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
     {
       emoji: "☀️",
       label: "Roth",
-      value: pd.hasRoth ? (es ? "Sí" : "Yes") : (es ? "No" : "No"),
-      color: pd.hasRoth ? C.green : C.textDim,
+      value: planHasRoth ? (es ? "Sí" : "Yes") : (es ? "No" : "No"),
+      color: planHasRoth ? C.green : C.textDim,
     },
     {
       emoji: "🏦",
@@ -879,12 +881,12 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
     list.push({
       id: "roth", emoji: "☀️",
       title: es ? "¿Pagar Impuestos Ahora o Después?" : "Pay Taxes Now or Later?",
-      status: pd.hasRoth ? (es ? "Roth disponible ✓" : "Roth available ✓") : (es ? "Solo pre-impuesto" : "Pre-tax only"),
+      status: planHasRoth ? (es ? "Roth disponible ✓" : "Roth available ✓") : (es ? "Solo pre-impuesto" : "Pre-tax only"),
       desc: es
         ? "Pre-impuesto: pagas al retirar. Roth: pagas ahora, retiras libre de impuestos después."
         : "Pre-tax: pay taxes when you withdraw. Roth: pay now, then withdraw tax-free in retirement.",
-      accent: pd.hasRoth ? C.green : C.textDim,
-      bg: pd.hasRoth ? C.greenDim : "rgba(154,136,120,.08)",
+      accent: planHasRoth ? C.green : C.textDim,
+      bg: planHasRoth ? C.greenDim : "rgba(154,136,120,.08)",
       prompt: es
         ? "Explícame las opciones Roth y pre-impuesto en este plan. ¿Cuál es la diferencia en términos simples?"
         : "Explain the Roth and pre-tax options in this plan. What's the difference in simple terms?",
@@ -911,9 +913,9 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
         : pd.loanAvailable === false
           ? (es ? "No disponible" : "Not available")
           : (es ? "Ver documento" : "See your document"),
-      desc: es
-        ? "Puedes pedir prestado de TU propio dinero y devolvértelo a ti mismo con intereses."
-        : "You can borrow from YOUR own savings and pay yourself back with interest.",
+      desc: pd.loanAvailable === false
+        ? (es ? "Este plan no ofrece préstamos del 401(k)." : "This plan does not offer 401(k) loans.")
+        : (es ? "Puedes pedir prestado de TU propio dinero y devolvértelo a ti mismo con intereses." : "You can borrow from YOUR own savings and pay yourself back with interest."),
       accent: pd.loanAvailable ? C.green : C.textDim,
       bg: pd.loanAvailable ? C.greenDim : "rgba(154,136,120,.08)",
       prompt: es
@@ -929,9 +931,9 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
         : pd.hardshipAvailable === false
           ? (es ? "No disponible" : "Not available")
           : (es ? "Ver documento" : "See your document"),
-      desc: es
-        ? "En casos extremos puedes retirar dinero, pero hay impuestos y posibles penalidades."
-        : "In extreme situations you can access your money early — but taxes and penalties may apply.",
+      desc: pd.hardshipAvailable === false
+        ? (es ? "Este plan no permite retiros por dificultad económica." : "This plan does not allow hardship withdrawals.")
+        : (es ? "En casos extremos puedes retirar dinero, pero hay impuestos y posibles penalidades." : "In extreme situations you can access your money early — but taxes and penalties may apply."),
       accent: C.warning, bg: "rgba(184,134,11,.07)",
       prompt: es
         ? "¿Puedo hacer un retiro por dificultad? ¿Cuáles son las reglas y circunstancias que califican?"
@@ -1092,7 +1094,7 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
 
   const tiers = planData?.matchTiers || [];
   const noMatch = planData?.noMatch || tiers.length === 0;
-  const hasRoth = planData?.hasRoth ?? false;
+  const hasRoth = planData?.hasRoth ?? planData?.rothAvailable ?? false;
   const planAllowsCatchUp = planData?.planAllowsCatchUp ?? true;
   const lastDayProvision = planData?.lastDayProvision ?? null;
   const limits = getIRSLimits(dob || null);
