@@ -23,6 +23,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     pdf?: string;       // base64-encoded PDF (first message only)
   };
 
+  // ── Reject oversized bodies before parsing ────────────────────────────────
+  const contentLength = req.headers.get('content-length');
+  if (contentLength && parseInt(contentLength, 10) > 30 * 1024 * 1024) {
+    return jsonError('FILE_TOO_LARGE', 413);
+  }
+
   try { body = await req.json(); }
   catch { return jsonError('Invalid request body', 400); }
 
