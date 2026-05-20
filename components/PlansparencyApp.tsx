@@ -687,6 +687,37 @@ const RISK_MAP = {
 
 const FUND_DISCLAIMER = "This fund list is for educational reference only. Not investment advice or a recommendation of any fund. Consult your plan advisor for investment guidance. Links open fund company materials — Plansparency is not affiliated with any fund listed.";
 
+function DisclosureCallout() {
+  return (
+    <div style={{
+      margin: "12px 16px 4px",
+      padding: "14px 16px",
+      borderLeft: `4px solid ${C.accent}`,
+      background: "rgba(184,134,11,.06)",
+      borderRadius: "0 10px 10px 0",
+      flexShrink: 0,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
+        Educational Use Only — Not Investment Advice
+      </div>
+      <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>
+        <p style={{ margin: "0 0 8px" }}>
+          The funds listed here are taken directly from your plan documents exactly as provided by your employer and recordkeeper. Nothing on this page is a recommendation, endorsement, or suggestion to invest in any specific fund.
+        </p>
+        <p style={{ margin: "0 0 8px" }}>
+          You are responsible for all investment decisions in your plan — including which funds you choose, how much you allocate, and when you make changes. Investment outcomes, including gains and losses, are your responsibility alone.
+        </p>
+        <p style={{ margin: "0 0 8px" }}>
+          Plansparency does not evaluate, compare, or assess whether any fund is right for your situation. Any links go to fund company materials published by the fund manager — Plansparency has no relationship with any fund listed.
+        </p>
+        <p style={{ margin: 0, fontWeight: 600, color: C.textMuted }}>
+          If you need guidance on how to invest your 401(k), please speak with your plan advisor or a qualified financial professional.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function InvestmentsPanel({ fundsData, lang }) {
   const [sortBy, setSortBy] = useState("category");
   const hasExpenseRatios = fundsData.some(f => f.expenseRatio !== null && f.expenseRatio !== undefined);
@@ -694,6 +725,7 @@ function InvestmentsPanel({ fundsData, lang }) {
   if (fundsData.length === 0) {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <DisclosureCallout />
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
           <div style={{ textAlign: "center", maxWidth: 360 }}>
             <div style={{
@@ -775,6 +807,8 @@ function InvestmentsPanel({ fundsData, lang }) {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <DisclosureCallout />
+
       {/* Sort controls */}
       <div style={{ padding: "10px 16px", display: "flex", gap: 6, alignItems: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface }}>
         <span style={{ fontSize: 10, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", marginRight: 4 }}>Sort:</span>
