@@ -582,6 +582,230 @@ function KeyTermsPanel({ t }) {
   );
 }
 
+// ── Plan Guide / Investments 2-Tab Bar ──
+function PlanGuideTabBar({ activeTab, setActiveTab, hasFunds }) {
+  const tabs = [
+    { id: "guide", label: "Plan Guide" },
+    { id: "investments", label: "Investments" },
+  ];
+  return (
+    <div style={{ display: "flex", background: C.surface, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+      {tabs.map(tab => {
+        const active = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              flex: 1, padding: "11px 8px 9px",
+              background: active ? C.accentDim : "transparent",
+              border: "none",
+              borderBottom: `2px solid ${active ? C.accent : "transparent"}`,
+              cursor: "pointer", fontFamily: F.body,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              transition: "all .15s",
+              color: active ? C.accent : C.textMuted,
+            }}
+            onMouseEnter={e => { if (!active) e.currentTarget.style.color = C.text; }}
+            onMouseLeave={e => { if (!active) e.currentTarget.style.color = C.textMuted; }}
+          >
+            <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, letterSpacing: ".03em", textTransform: "uppercase" }}>
+              {tab.label}
+            </span>
+            {tab.id === "investments" && !hasFunds && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, background: C.accentDim, color: C.accent,
+                border: `1px solid ${C.accent}44`, borderRadius: 100, padding: "1px 6px",
+                textTransform: "uppercase", letterSpacing: ".04em",
+              }}>
+                UPLOAD DOC
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Fund Row ──
+function FundRow({ fund, showCategory, riskMap }) {
+  const risk = riskMap[fund.category] || { label: "—", color: C.textDim };
+  const erPct = fund.expenseRatio !== null && fund.expenseRatio !== undefined
+    ? (fund.expenseRatio * 100).toFixed(2) + "%"
+    : null;
+  return (
+    <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: showCategory && fund.category ? 2 : 0, lineHeight: 1.3 }}>{fund.name}</div>
+        {showCategory && fund.category && (
+          <div style={{ fontSize: 10, color: C.textDim }}>{fund.category}</div>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <span style={{
+          fontSize: 10, fontWeight: 700, color: risk.color,
+          background: `${risk.color}18`, border: `1px solid ${risk.color}30`,
+          borderRadius: 100, padding: "2px 8px", whiteSpace: "nowrap",
+        }}>
+          {risk.label}
+        </span>
+        {erPct && (
+          <span style={{ fontSize: 11, color: C.textMuted, whiteSpace: "nowrap" }}>{erPct}</span>
+        )}
+        {fund.factSheetUrl && (
+          <a
+            href={fund.factSheetUrl} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 11, color: C.accent, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}
+            onMouseEnter={e => (e.currentTarget.style.textDecoration = "underline")}
+            onMouseLeave={e => (e.currentTarget.style.textDecoration = "none")}
+          >
+            View Summary →
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Investments Panel ──
+const CATEGORY_ORDER = [
+  "Cash & Stable Value", "Bonds", "Large Cap", "Mid Cap", "Small Cap",
+  "International", "Specialty", "Asset Allocation", "Target Date",
+];
+const RISK_MAP = {
+  "Cash & Stable Value": { label: "Low Risk",  color: C.green },
+  "Bonds":               { label: "Low–Med",   color: C.textMuted },
+  "Target Date":         { label: "Varies",    color: C.accent },
+  "Asset Allocation":    { label: "Varies",    color: C.accent },
+  "Large Cap":           { label: "Medium",    color: C.accent },
+  "Mid Cap":             { label: "Med–High",  color: C.accent },
+  "Small Cap":           { label: "High Risk", color: C.danger },
+  "International":       { label: "Med–High",  color: C.accent },
+  "Specialty":           { label: "High Risk", color: C.danger },
+};
+
+const FUND_DISCLAIMER = "This fund list is for educational reference only. Not investment advice or a recommendation of any fund. Consult your plan advisor for investment guidance. Links open fund company materials — Plansparency is not affiliated with any fund listed.";
+
+function InvestmentsPanel({ fundsData, lang }) {
+  const [sortBy, setSortBy] = useState("category");
+  const hasExpenseRatios = fundsData.some(f => f.expenseRatio !== null && f.expenseRatio !== undefined);
+
+  if (fundsData.length === 0) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
+          <div style={{ textAlign: "center", maxWidth: 360 }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 16, background: C.accentDim,
+              border: `1px solid ${C.accent}22`, display: "flex", alignItems: "center",
+              justifyContent: "center", margin: "0 auto 16px",
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            </div>
+            <h3 style={{ fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.text, margin: "0 0 10px" }}>
+              Fund lineup not found in this document
+            </h3>
+            <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6, margin: 0 }}>
+              Upload your enrollment booklet, investment guide, or 404(a)(5) fee disclosure to load your fund lineup.
+            </p>
+          </div>
+        </div>
+        <div style={{ padding: "10px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, fontSize: 10, color: C.textDim, lineHeight: 1.6, flexShrink: 0 }}>
+          {FUND_DISCLAIMER}
+        </div>
+      </div>
+    );
+  }
+
+  const sortedFunds = [...fundsData].sort((a, b) => {
+    if (sortBy === "category") {
+      const ai = CATEGORY_ORDER.indexOf(a.category);
+      const bi = CATEGORY_ORDER.indexOf(b.category);
+      if (ai !== bi) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      return a.name.localeCompare(b.name);
+    }
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "expense") {
+      const av = a.expenseRatio ?? Infinity;
+      const bv = b.expenseRatio ?? Infinity;
+      return av - bv;
+    }
+    return 0;
+  });
+
+  const sortOpts = [
+    { id: "category", label: "By Category" },
+    { id: "name", label: "A–Z" },
+    ...(hasExpenseRatios ? [{ id: "expense", label: "Expense Ratio" }] : []),
+  ];
+
+  let listContent;
+  if (sortBy === "category") {
+    const grouped: Record<string, typeof fundsData> = {};
+    sortedFunds.forEach(f => {
+      const cat = f.category || "Other";
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(f);
+    });
+    const cats = CATEGORY_ORDER.filter(c => grouped[c]);
+    // Tack on any uncategorized
+    Object.keys(grouped).filter(c => !CATEGORY_ORDER.includes(c)).forEach(c => cats.push(c));
+    listContent = cats.map(cat => (
+      <React.Fragment key={cat}>
+        <div style={{
+          padding: "7px 16px 5px", background: C.surfaceAlt,
+          borderBottom: `1px solid ${C.borderLight}`,
+          position: "sticky", top: 0, zIndex: 1,
+        }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em" }}>{cat}</span>
+        </div>
+        {grouped[cat].map((fund, i) => (
+          <FundRow key={i} fund={fund} showCategory={false} riskMap={RISK_MAP} />
+        ))}
+      </React.Fragment>
+    ));
+  } else {
+    listContent = sortedFunds.map((fund, i) => (
+      <FundRow key={i} fund={fund} showCategory={true} riskMap={RISK_MAP} />
+    ));
+  }
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Sort controls */}
+      <div style={{ padding: "10px 16px", display: "flex", gap: 6, alignItems: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface }}>
+        <span style={{ fontSize: 10, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", marginRight: 4 }}>Sort:</span>
+        {sortOpts.map(opt => (
+          <button key={opt.id} onClick={() => setSortBy(opt.id)} style={{
+            padding: "5px 12px", borderRadius: 100,
+            border: `1px solid ${sortBy === opt.id ? C.accent : C.border}`,
+            background: sortBy === opt.id ? C.accentDim : "transparent",
+            color: sortBy === opt.id ? C.accent : C.textMuted,
+            fontSize: 11, fontWeight: sortBy === opt.id ? 700 : 500, fontFamily: F.body,
+            cursor: "pointer", transition: "all .15s",
+          }}>
+            {opt.label}
+          </button>
+        ))}
+        <span style={{ marginLeft: "auto", fontSize: 10, color: C.textDim }}>{fundsData.length} {fundsData.length === 1 ? "fund" : "funds"}</span>
+      </div>
+
+      {/* Fund list */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {listContent}
+      </div>
+
+      {/* Pinned disclaimer */}
+      <div style={{ padding: "10px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, fontSize: 10, color: C.textDim, lineHeight: 1.6, flexShrink: 0 }}>
+        {FUND_DISCLAIMER}
+      </div>
+    </div>
+  );
+}
+
 // ── TOC Section Icons ──
 function SectionIcon({ type, sz = 20 }) {
   const s = { width: sz, height: sz, viewBox: "0 0 24 24", fill: "none", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" };
@@ -1614,6 +1838,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [calcExpanded, setCalcExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [planData, setPlanData] = useState(null);
+  const [planGuideTab, setPlanGuideTab] = useState<"guide" | "investments">("guide");
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
   const [streamingText, setStreamingText] = useState('');
@@ -1658,7 +1883,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const clearSession = () => {
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
-    setCalcExpanded(false); setActiveTab("dashboard"); setDocType(null); setStreamingText('');
+    setCalcExpanded(false); setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText('');
     pendingFileRef.current = null;
     setStage(STAGE.CLEARED);
   };
@@ -1719,7 +1944,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, docType, t]);
 
-  const proceedAfterConsent = () => processUpload(pendingFileRef.current, false);
+  const proceedAfterConsent = () => { setPlanGuideTab("guide"); processUpload(pendingFileRef.current, false); };
   const handleAdditionalUpload = f => processUpload(f, true);
 
   // Complete fresh-start re-upload: wipe all state then open file picker.
@@ -1984,7 +2209,21 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
         <TabBar activeTab={activeTab} setActiveTab={setActiveTab} t={t} />
 
-        {activeTab === "dashboard" && <PlanDashboard t={t} planData={planData} lang={lang} onSectionClick={(prompt) => sendMessage(prompt)} onChat={() => setActiveTab("chat")} onUploadAnother={startFreshUpload} />}
+        {activeTab === "dashboard" && (
+          <>
+            <PlanGuideTabBar
+              activeTab={planGuideTab}
+              setActiveTab={setPlanGuideTab}
+              hasFunds={(planData?.fundsData || []).length > 0}
+            />
+            {planGuideTab === "guide" && (
+              <PlanDashboard t={t} planData={planData} lang={lang} onSectionClick={(prompt) => sendMessage(prompt)} onChat={() => setActiveTab("chat")} onUploadAnother={startFreshUpload} />
+            )}
+            {planGuideTab === "investments" && (
+              <InvestmentsPanel fundsData={planData?.fundsData || []} lang={lang} />
+            )}
+          </>
+        )}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} expanded={true} setExpanded={() => {}} lang={lang} asTab={true} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} />}
         {activeTab === "chat" && chatPanel}
