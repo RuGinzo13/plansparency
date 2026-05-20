@@ -1889,7 +1889,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   };
   const initiateUpload = f => {
     if (!f || f.type !== "application/pdf") { setUploadError(t.errorFormat); return; }
-    if (f.size > 10 * 1024 * 1024) { setUploadError("Please upload a PDF under 10 MB. Most plan documents are well under this limit."); return; }
+    if (f.size > 25 * 1024 * 1024) { setUploadError("This PDF is too large. Please try a document under 25 MB."); return; }
     setUploadError(""); pendingFileRef.current = f; setStage(STAGE.PRIVACY);
   };
 
@@ -1934,7 +1934,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       const status = (e as any).status;
       if (status === 429) userMsg = "Too many requests — please wait a minute and try again.";
       else if (status === 504) userMsg = "The AI took too long. Try a shorter document or simpler question.";
-      else if (status === 413) userMsg = "This PDF is too large to upload. Please try a smaller document (under 20 MB).";
+      else if (status === 413) userMsg = "This PDF is too large. Please try a document under 25 MB.";
       else if ((e as any).message) userMsg = (e as any).message;
 
       setUploadError(userMsg);
