@@ -1240,15 +1240,9 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planData, lang]);
 
-  const [activeTab, setActiveTab] = useState("guide");
-  const [calcExpanded, setCalcExpanded] = useState(true);
-
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-
-      {/* ── Tab Panel: My Plan ── */}
-      {activeTab === "guide" && (
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 20px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 20px" }}>
 
           {/* Hero banner */}
           <div style={{
@@ -1304,51 +1298,6 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
             ))}
           </div>
         </div>
-      )}
-
-      {/* ── Tab Panel: Calculator ── */}
-      {activeTab === "calc" && (
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          <CalcPanel t={t} planData={planData} expanded={calcExpanded} setExpanded={setCalcExpanded} lang={lang} />
-        </div>
-      )}
-
-      {/* ── Tab Panel: Ask ── */}
-      {activeTab === "ask" && (
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px 16px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-            <button onClick={onChat} style={{
-              padding: "16px 20px", background: `linear-gradient(135deg, ${C.accent}, #7A5510)`,
-              border: "none", borderRadius: 16, cursor: "pointer", fontFamily: F.body,
-              display: "flex", alignItems: "center", gap: 12,
-              boxShadow: `0 4px 16px ${C.accentGlow}`, transition: "all .15s",
-            }}>
-              <div style={{ fontSize: 22, width: 38, height: 38, borderRadius: 10, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>💬</div>
-              <div style={{ textAlign: "left" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#FFF" }}>{t.dashStartChat}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,.75)" }}>{es ? "Pregunta lo que quieras sobre tu plan" : "Ask anything about your plan"}</div>
-              </div>
-              <svg style={{ marginLeft: "auto", flexShrink: 0 }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.8)" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-            <button onClick={onUploadAnother} style={{
-              padding: "13px 20px", background: C.surface, border: `1.5px solid ${C.border}`,
-              borderRadius: 16, cursor: "pointer", fontFamily: F.body,
-              display: "flex", alignItems: "center", gap: 12, transition: "all .15s",
-            }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = C.accent; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
-            >
-              <div style={{ fontSize: 20, width: 36, height: 36, borderRadius: 10, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>📄</div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{t.dashUploadAnother}</span>
-            </button>
-          </div>
-          <SuggestionBox t={t} />
-          <div style={{ textAlign: "center", marginTop: 16, padding: "10px", fontSize: 10, color: C.textDim, lineHeight: 1.5 }}>
-            {t.footerDisclaimer}
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
@@ -1917,7 +1866,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const clearSession = () => {
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
-    setCalcExpanded(false); setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText('');
+    setCalcExpanded(false); setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText(''); setUploadError("");
     pendingFileRef.current = null;
     setStage(STAGE.CLEARED);
   };
