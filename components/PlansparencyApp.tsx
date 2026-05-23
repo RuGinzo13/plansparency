@@ -367,7 +367,7 @@ function fileToBase64(f) {
     reader.readAsDataURL(f);
   });
 }
-// Uploads a PDF to the Anthropic Files API via our edge route and returns the file_id.
+// Uploads a PDF to the Anthropic Files API via our Node.js serverless route and returns the file_id.
 // Throws on failure so callers can decide whether to fallback to base64.
 async function uploadFile(f: File): Promise<string> {
   const formData = new FormData();
@@ -1963,7 +1963,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       const status = (e as any).status;
       if (status === 429) userMsg = "Too many requests — please wait a minute and try again.";
       else if (status === 504) userMsg = "The AI took too long. Try a shorter document or simpler question.";
-      else if (status === 413) userMsg = "This PDF is too large. Please try a document under 25 MB.";
+      else if (status === 413) userMsg = "Upload failed — the file may be too large for the current upload path. Please try again or contact support.";
       else if ((e as any).message) userMsg = (e as any).message;
 
       setUploadError(userMsg);
