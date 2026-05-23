@@ -1114,7 +1114,22 @@ export default function Plansparency() {
   useEffect(() => { if (stage === "chat" && !loading) inputRef.current?.focus(); }, [stage, loading]);
 
   const clearSession = () => { setPdfBase64(null); setFileName(""); setMessages([]); setInput(""); setLoading(false); setShowClearConfirm(false); setPlanData(null); setCalcExpanded(false); setActiveTab("guide"); pendingFileRef.current = null; setStage("cleared"); };
-  const initiateUpload = f => { if (!f || f.type !== "application/pdf") { alert(t.errorFormat); return; } pendingFileRef.current = f; setStage("privacy"); };
+  const initiateUpload = f => {
+    if (!f || f.type !== "application/pdf") { alert(t.errorFormat); return; }
+    // Base64 encoding inflates file by ~33%. Total payload limit is ~7MB.
+    // Files over 4.5MB raw will exceed the limit after encoding + request overhead.
+    const MAX_RAW_BYTES = 4.5 * 1024 * 1024; // 4.5 MB
+    if (f.size > MAX_RAW_BYTES) {
+      const sizeMB = (f.size / 1048576).toFixed(1);
+      const msg = lang === "es"
+        ? `Este documento tiene ${sizeMB} MB. Por el momento, el límite es ~4.5 MB. Prueba con una versión comprimida del PDF, o el sistema completo (sin esta limitación) estará disponible pronto.`
+        : `This document is ${sizeMB} MB. The current limit is ~4.5 MB. Try a compressed version of the PDF, or the full system (without this limit) will be available shortly.`;
+      alert(msg);
+      return;
+    }
+    pendingFileRef.current = f;
+    setStage("privacy");
+  };
 
   const proceedAfterConsent = async () => {
     const f = pendingFileRef.current; if (!f) return;
@@ -1133,6 +1148,14 @@ export default function Plansparency() {
   // Upload additional document
   const handleAdditionalUpload = async (f) => {
     if (!f || f.type !== "application/pdf") { alert(t.errorFormat); return; }
+    if (f.size > 4.5 * 1024 * 1024) {
+      const sizeMB = (f.size / 1048576).toFixed(1);
+      alert(lang === "es"
+        ? `Documento de ${sizeMB} MB excede el límite de ~4.5 MB.`
+        : `Document is ${sizeMB} MB — exceeds the ~4.5 MB limit for this version.`
+      );
+      return;
+    }
     setFileName(prev => prev + " + " + f.name);
     setStage("uploading");
     try {
