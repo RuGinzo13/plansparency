@@ -367,7 +367,30 @@ function fileToBase64(f) {
     reader.readAsDataURL(f);
   });
 }
-// pdf: base64-encoded PDF string (first call only); null for follow-up questions
+// Uploads a PDF to the Anthropic Files API via our edge route and returns the file_id.
+// Throws on failure so callers can decide whether to fallback to base64.
+async function uploadFile(f: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', f, f.name || 'upload.pdf');
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+    // Do NOT set Content-Type — browser sets it with multipart boundary automatically
+  });
+  if (!response.ok) {
+    let data: any = {};
+    try { data = await response.json(); } catch {}
+    const err: any = new Error(data?.error || `Upload failed: HTTP ${response.status}`);
+    err.status = response.status;
+    throw err;
+  }
+  const data = await response.json();
+  if (!data?.fileId) throw new Error('No fileId returned from upload');
+  return data.fileId as string;
+}
+
+// pdf: base64-encoded PDF string (small-file fallback only); null for follow-up questions
+// fileId: Anthropic Files API file_id (preferred for all uploads); null if not available
 // onChunk: called with each streamed text token as it arrives
 async function callClaude(
   msgs: any[],
@@ -375,12 +398,19 @@ async function callClaude(
   lang: string,
   planData: any,
   onChunk: (chunk: string) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  fileId?: string | null
 ): Promise<string> {
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: msgs, pdf: pdf ?? undefined, lang, planData }),
+    body: JSON.stringify({
+      messages: msgs,
+      pdf: pdf ?? undefined,
+      fileId: fileId ?? undefined,
+      lang,
+      planData,
+    }),
     signal,
   });
 
@@ -1887,20 +1917,36 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      // Convert PDF to base64 and send directly to Edge function (no body size limit)
-      const base64 = await fileToBase64(f);
+      // ── Upload PDF to Anthropic Files API (preferred) or fall back to base64 ──
+      // Files API: raw binary multipart — no base64 inflation, supports up to 500 MB.
+      // Fallback: base64 for very small files only if Files API upload fails.
+      let fileId: string | null = null;
+      let base64: string | null = null;
+
+      try {
+        fileId = await uploadFile(f);
+      } catch (uploadErr: any) {
+        // Only attempt base64 fallback for small files (< 5 MB); large ones can't fit in the body
+        if (f.size <= 5 * 1024 * 1024) {
+          console.warn('[processUpload] Files API upload failed, falling back to base64:', uploadErr.message);
+          base64 = await fileToBase64(f) as string;
+        } else {
+          throw uploadErr; // Re-throw — base64 won't work for large files
+        }
+      }
+
       pendingFileRef.current = null;
 
       if (docType === "statement") {
         const m1 = { role: "user", content: t.stmtFirstMessage };
-        const raw = await callClaude([m1], base64, lang, null, () => {}, abortRef.current.signal);
+        const raw = await callClaude([m1], base64, lang, null, () => {}, abortRef.current.signal, fileId);
         const sd = parseStmtData(raw);
         if (sd) setStmtData(sd);
         setMessages([m1, { role: "assistant", content: stripStmtData(raw) }]);
         setStage(STAGE.STMT_DASHBOARD);
       } else {
         const m1 = { role: "user", content: t.firstMessage };
-        const raw = await callClaude([m1], base64, lang, null, () => {}, abortRef.current.signal);
+        const raw = await callClaude([m1], base64, lang, null, () => {}, abortRef.current.signal, fileId);
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
