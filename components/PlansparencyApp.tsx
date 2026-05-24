@@ -1921,6 +1921,42 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       } else {
         const m1 = { role: "user", content: t.firstMessage };
         const raw = await callClaude([m1], null, lang, null, () => {}, abortRef.current.signal, fileId);
+
+        // ── DEBUG: Step 1 — confirm raw response ──────────────────────────────
+        console.log('[PLANDATA DEBUG] Step1 raw length:', raw?.length);
+        console.log('[PLANDATA DEBUG] Step1 raw tail:', raw?.slice(-800));
+
+        // ── DEBUG: Step 2 — inspect regex match and JSON parse ────────────────
+        const debugMatch = raw?.match(/<!--PLANDATA:([\s\S]*?)-->/);
+        console.log('[PLANDATA DEBUG] Step2 regex matched:', !!debugMatch);
+        if (debugMatch) {
+          console.log('[PLANDATA DEBUG] Step2 extracted text:', debugMatch[1]);
+          try {
+            const debugParsed = JSON.parse(debugMatch[1]);
+            // ── DEBUG: Step 3 — audit schema against dashboard expectations ──
+            console.log('[PLANDATA DEBUG] Step3 JSON OK - full object:', JSON.stringify(debugParsed, null, 2));
+            console.log('[PLANDATA DEBUG] Step3 safeHarbor.type:', debugParsed.safeHarbor?.type);
+            console.log('[PLANDATA DEBUG] Step3 typeof loanAvailable:', typeof debugParsed.loanAvailable, '=', debugParsed.loanAvailable);
+            console.log('[PLANDATA DEBUG] Step3 typeof hardshipAvailable:', typeof debugParsed.hardshipAvailable, '=', debugParsed.hardshipAvailable);
+            console.log('[PLANDATA DEBUG] Step3 typeof vestingSchedule:', typeof debugParsed.vestingSchedule, '=', debugParsed.vestingSchedule);
+            console.log('[PLANDATA DEBUG] Step3 matchTiers:', JSON.stringify(debugParsed.matchTiers));
+            console.log('[PLANDATA DEBUG] Step3 noMatch:', debugParsed.noMatch);
+            console.log('[PLANDATA DEBUG] Step3 profitSharing.available:', debugParsed.profitSharing?.available);
+          } catch (jsonErr: any) {
+            console.error('[PLANDATA DEBUG] Step2 JSON.parse FAILED:', jsonErr.message);
+            const posMatch = jsonErr.message.match(/position (\d+)/);
+            if (posMatch) {
+              const pos = parseInt(posMatch[1]);
+              console.error('[PLANDATA DEBUG] Step2 JSON context around error:', debugMatch[1].slice(Math.max(0, pos - 60), pos + 60));
+            }
+          }
+        } else {
+          console.warn('[PLANDATA DEBUG] Step2 NO MATCH - searching for partial marker...');
+          console.log('[PLANDATA DEBUG] Step2 contains "PLANDATA":', raw?.includes('PLANDATA'));
+          console.log('[PLANDATA DEBUG] Step2 contains "<!--":', raw?.includes('<!--'));
+        }
+        // ── END DEBUG ─────────────────────────────────────────────────────────
+
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
