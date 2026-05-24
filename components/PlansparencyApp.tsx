@@ -21,7 +21,7 @@ const C = {
 const F = { display: "'Cormorant Garamond','Georgia',serif", body: "'DM Sans','Segoe UI',sans-serif" };
 
 // ── Stage constants ──
-const STAGE = Object.freeze({ CHOOSER:"chooser", LANDING:"landing", PRIVACY:"privacy", UPLOADING:"uploading", DASHBOARD:"dashboard", STMT_DASHBOARD:"stmtDashboard", CHAT:"chat", CLEARED:"cleared" });
+const STAGE = Object.freeze({ CHOOSER:"chooser", LANDING:"landing", PRIVACY:"privacy", UPLOADING:"uploading", APP:"app", DASHBOARD:"dashboard", STMT_DASHBOARD:"stmtDashboard", CHAT:"chat", CLEARED:"cleared" });
 
 // ── Module-level formatters ──
 const fmtRounded = (n: number) => "$" + Math.round(n || 0).toLocaleString();
@@ -426,8 +426,8 @@ async function callClaude(
 
   return full;
 }
-function parsePlanData(text) { const m = text.match(/<!--PLANDATA:(.*?)-->/); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } }
-function stripPlanData(text) { return text.replace(/<!--PLANDATA:.*?-->/g, "").trim(); }
+function parsePlanData(text) { const m = text.match(/<!--PLANDATA:(.*?)-->/s); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } }
+function stripPlanData(text) { return text.replace(/<!--PLANDATA:.*?-->/gs, "").trim(); }
 
 // ── Markdown ──
 function Md({ text }) {
@@ -1848,6 +1848,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const pendingFileRef = useRef(null);
   const addDocRef = useRef(null);
   const abortRef = useRef(null);
+  const fileIdRef = useRef<string | null>(null);
 
   const t = i18n[lang];
 
@@ -1864,7 +1865,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       const pd = parsePlanData(raw);
       if (pd) setPlanData(pd);
       setMessages([m1, { role: 'assistant', content: stripPlanData(raw) }]);
-      setStage("app");
+      setStage(STAGE.APP);
     } catch (e: any) {
       if (e.name === 'AbortError') return;
       console.error('[processVersionB] Failed — status:', e.status, 'message:', e.message, e);
@@ -1906,6 +1907,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     try {
       // ── Upload PDF via Vercel Blob (client-direct) → Anthropic Files API ──────
       const fileId = await uploadFile(f);
+      fileIdRef.current = fileId;
 
       pendingFileRef.current = null;
 
@@ -1922,7 +1924,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
-        setStage("app");
+        setStage(STAGE.APP);
       }
       abortRef.current = null;
     } catch (e) {
@@ -1939,7 +1941,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       else if ((e as any).message) userMsg = (e as any).message;
 
       setUploadError(userMsg);
-      setStage(resetState ? (docType === "statement" ? STAGE.STMT_DASHBOARD : "app") : STAGE.LANDING);
+      setStage(resetState ? (docType === "statement" ? STAGE.STMT_DASHBOARD : STAGE.APP) : STAGE.LANDING);
     }
   // lang and docType are stable during an upload; t is derived from lang
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1960,12 +1962,12 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const sendMessage = async text => {
     if (!text.trim() || loading) return;
     const um = { role: "user", content: text.trim() }; const nm = [...messages, um]; setMessages(nm); setInput(""); setLoading(true); setStreamingText('');
-    if (stage === "app") setActiveTab("chat");
+    if (stage === STAGE.APP) setActiveTab("chat");
     else if (stage === STAGE.STMT_DASHBOARD) setStage(STAGE.CHAT);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      const raw = await callClaude(nm, null, lang, planData, chunk => setStreamingText(prev => prev + chunk), abortRef.current.signal);
+      const raw = await callClaude(nm, null, lang, planData, chunk => setStreamingText(prev => prev + chunk), abortRef.current.signal, fileIdRef.current);
       setStreamingText('');
       const cleaned = docType === "statement" ? stripStmtData(raw) : stripPlanData(raw);
       setMessages([...nm, { role: "assistant", content: cleaned }]);
@@ -2136,7 +2138,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   // ── Dashboard (TOC) ──
   // ── SPD App (dashboard + calculator + key terms + chat) ──
-  if (stage === "app") {
+  if (stage === STAGE.APP) {
     const chatPanel = (
       <>
         <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>

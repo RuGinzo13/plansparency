@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 export const maxDuration = 60;
 
 import { del } from '@vercel/blob';
