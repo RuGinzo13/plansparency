@@ -86,6 +86,7 @@ Fill in based on the actual plan document:
   * expenseRatio: decimal if stated in document (0.0045 = 0.45%), else null
   * factSheetUrl: official fund company fact sheet URL only if you are certain of the exact URL for this fund and share class. For Vanguard: https://investor.vanguard.com/investment-products/mutual-funds/profile/{TICKER}#overview. For iShares: https://www.ishares.com/us/products/{TICKER}/. For Fidelity: https://fundresearch.fidelity.com/mutual-funds/summary/{TICKER}. Return null for all other fund families unless certain. NEVER guess — a missing link is better than a broken one.`,
     errorRead: "Something went wrong reading your document. Please try again.",
+    errorPlanData: "We couldn't extract your plan data. This sometimes happens with scanned or image-based PDFs. Please try uploading again — if the problem continues, try a different copy of your plan document.",
     errorReply: "The document you uploaded may not contain that specific answer. Try uploading additional plan documents for more detail, or log into your account for more information.",
     errorFormat: "Please upload a PDF file of your plan document.",
     clearSession: "End Session & Clear Data",
@@ -232,6 +233,7 @@ Llena según el plan real. matchTiers = solo match DISCRECIONAL. safeHarbor y pr
   * expenseRatio: decimal si está en el documento (0.0045 = 0.45%), o null
   * factSheetUrl: URL oficial de la ficha del fondo solo si estás seguro de la URL exacta. Para Vanguard: https://investor.vanguard.com/investment-products/mutual-funds/profile/{TICKER}#overview. Para iShares: https://www.ishares.com/us/products/{TICKER}/. Para Fidelity: https://fundresearch.fidelity.com/mutual-funds/summary/{TICKER}. Devuelve null para otras familias. NUNCA adivines.`,
     errorRead: "Error al leer. Intenta de nuevo.",
+    errorPlanData: "No pudimos extraer los datos del plan. Esto puede ocurrir con PDFs escaneados. Por favor intenta subir de nuevo.",
     errorReply: "Es posible que el documento que subiste no contenga esa respuesta específica.",
     errorFormat: "Sube un PDF.",
     clearSession: "Terminar sesión",
@@ -428,6 +430,118 @@ async function callClaude(
 }
 function parsePlanData(text) { const m = text.match(/<!--PLANDATA:(.*?)-->/s); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } }
 function stripPlanData(text) { return text.replace(/<!--PLANDATA:.*?-->/gs, "").trim(); }
+
+// ── normalizePlanData ──────────────────────────────────────────────────────
+// Single validation + coercion layer between raw Claude output and the dashboard.
+// Accepts the parsed object (or null) and returns a clean, type-safe object or null.
+// Prevents: boolean strings, wrong safeHarbor enum values, object vestingSchedule,
+// missing safeHarbor.type, and wrong matchTier field names from breaking the UI.
+function normalizePlanData(raw: any): any {
+  if (!raw || typeof raw !== 'object') return null;
+
+  // ── booleans: coerce "true"/"false"/1/0 strings to real booleans ──────────
+  const toBool = (v: any, fallback: boolean | null = null): boolean | null => {
+    if (typeof v === 'boolean') return v;
+    if (v === 'true' || v === 1 || v === 'yes') return true;
+    if (v === 'false' || v === 0 || v === 'no') return false;
+    return fallback;
+  };
+
+  // ── safeHarbor.type: normalize to exact enum the calculator expects ────────
+  const SAFE_HARBOR_ENUM = ['nonelective', 'basic_match', 'enhanced_match', 'qaca', 'none'];
+  const normalizeSHType = (t: any): string => {
+    if (!t || typeof t !== 'string') return 'none';
+    const lower = t.toLowerCase().replace(/[^a-z_]/g, '');
+    if (SAFE_HARBOR_ENUM.includes(lower)) return lower;
+    // Common Claude variations → canonical enum
+    if (lower.includes('nonelective') || lower.includes('non_elective') || lower === '3') return 'nonelective';
+    if (lower.includes('basic')) return 'basic_match';
+    if (lower.includes('enhanced')) return 'enhanced_match';
+    if (lower.includes('qaca')) return 'qaca';
+    return 'none';
+  };
+
+  // ── vestingSchedule: must be a string ────────────────────────────────────
+  const normalizeVesting = (v: any): string | undefined => {
+    if (typeof v === 'string' && v.trim()) return v.trim();
+    if (v && typeof v === 'object') {
+      // Claude sometimes outputs {type:"graded", years:6} — flatten to readable string
+      const parts: string[] = [];
+      if (v.type) parts.push(String(v.type));
+      if (v.years) parts.push(`${v.years}-year`);
+      if (v.schedule) parts.push(String(v.schedule));
+      if (v.description) parts.push(String(v.description));
+      const joined = parts.join(' ').trim();
+      return joined || undefined;
+    }
+    return undefined;
+  };
+
+  // ── matchTiers: normalize pct/upTo field names ────────────────────────────
+  // Claude may use: percentage/pct/matchPct/rate AND upToPercent/upTo/cap/maxPct
+  const normalizeTiers = (tiers: any): any[] => {
+    if (!Array.isArray(tiers)) return [];
+    return tiers.map(t => {
+      if (typeof t !== 'object' || !t) return null;
+      const pct = t.pct ?? t.percentage ?? t.matchPct ?? t.rate ?? t.matchPercentage;
+      const upTo = t.upTo ?? t.upToPercent ?? t.cap ?? t.maxPct ?? t.upToPercentage ?? t.limit;
+      if (pct == null || upTo == null) return null;
+      return { pct: Number(pct), upTo: Number(upTo) };
+    }).filter(Boolean);
+  };
+
+  const sh = raw.safeHarbor && typeof raw.safeHarbor === 'object' ? raw.safeHarbor : {};
+  const ps = raw.profitSharing && typeof raw.profitSharing === 'object' ? raw.profitSharing : {};
+  const ce = raw.contribEligibility && typeof raw.contribEligibility === 'object' ? raw.contribEligibility : {};
+
+  return {
+    // identity
+    planName: typeof raw.planName === 'string' ? raw.planName.trim() : undefined,
+    ein: raw.ein ?? undefined,
+    planNumber: raw.planNumber ?? undefined,
+    recordkeeperName: typeof raw.recordkeeperName === 'string' ? raw.recordkeeperName.trim() : undefined,
+    recordkeeperUrl: typeof raw.recordkeeperUrl === 'string' ? raw.recordkeeperUrl.trim() : undefined,
+    // match
+    matchTiers: normalizeTiers(raw.matchTiers),
+    noMatch: toBool(raw.noMatch, false),
+    lastDayProvision: toBool(raw.lastDayProvision, null),
+    // safe harbor — type MUST be a valid enum string
+    safeHarbor: {
+      type: normalizeSHType(sh.type),
+      formula: typeof sh.formula === 'string' ? sh.formula.trim() : '',
+      vestingImmediate: toBool(sh.vestingImmediate, true),
+    },
+    // profit sharing
+    profitSharing: {
+      available: toBool(ps.available, false),
+      type: typeof ps.type === 'string' ? ps.type : 'discretionary',
+      formula: typeof ps.formula === 'string' ? ps.formula.trim() : '',
+      lastDayApplies: toBool(ps.lastDayApplies, null),
+    },
+    // eligibility
+    contribEligibility: {
+      requirement: typeof ce.requirement === 'string' ? ce.requirement.trim() : undefined,
+      entryDates: typeof ce.entryDates === 'string' ? ce.entryDates.trim() : undefined,
+      autoEnroll: toBool(ce.autoEnroll, false),
+      autoEnrollPct: typeof ce.autoEnrollPct === 'number' ? ce.autoEnrollPct : 0,
+    },
+    matchEligibility: raw.matchEligibility ?? undefined,
+    // features — booleans coerced
+    loanAvailable: toBool(raw.loanAvailable, null),
+    hardshipAvailable: toBool(raw.hardshipAvailable, null),
+    // rothAvailable / hasRoth — accept either field name
+    hasRoth: toBool(raw.hasRoth ?? raw.rothAvailable, false),
+    rothAvailable: toBool(raw.rothAvailable ?? raw.hasRoth, false),
+    planAllowsCatchUp: toBool(raw.planAllowsCatchUp, true),
+    // vesting — must be a string
+    vestingSchedule: normalizeVesting(raw.vestingSchedule),
+    // text fields
+    investmentOptions: typeof raw.investmentOptions === 'string' ? raw.investmentOptions.trim() : undefined,
+    distributionInfo: raw.distributionInfo ?? undefined,
+    // funds — must be an array
+    fundsData: Array.isArray(raw.fundsData) ? raw.fundsData : [],
+  };
+}
 
 // ── Markdown ──
 function Md({ text }) {
@@ -1049,7 +1163,7 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
   const tiers = pd.matchTiers || [];
   const noMatch = pd.noMatch || tiers.length === 0;
   const matchDesc = noMatch ? null : tiers.map(tier => `${tier.pct}% on first ${tier.upTo}%`).join(" + ");
-  const hasSafeHarbor = pd.safeHarbor && pd.safeHarbor.type !== "none";
+  const hasSafeHarbor = pd.safeHarbor?.type && pd.safeHarbor.type !== "none";
   const hasProfitSharing = pd.profitSharing?.available;
   // Claude may output either "hasRoth" or "rothAvailable" — check both, same question
   const planHasRoth = pd.hasRoth ?? pd.rothAvailable ?? false;
@@ -1886,6 +2000,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
     setCalcExpanded(false); setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText(''); setUploadError("");
     pendingFileRef.current = null;
+    fileIdRef.current = null;
     setStage(STAGE.CLEARED);
   };
   const initiateUpload = f => {
@@ -1921,46 +2036,15 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       } else {
         const m1 = { role: "user", content: t.firstMessage };
         const raw = await callClaude([m1], null, lang, null, () => {}, abortRef.current.signal, fileId);
-
-        // ── DEBUG: Step 1 — confirm raw response ──────────────────────────────
-        console.log('[PLANDATA DEBUG] Step1 raw length:', raw?.length);
-        console.log('[PLANDATA DEBUG] Step1 raw tail:', raw?.slice(-800));
-
-        // ── DEBUG: Step 2 — inspect regex match and JSON parse ────────────────
-        const debugMatch = raw?.match(/<!--PLANDATA:([\s\S]*?)-->/);
-        console.log('[PLANDATA DEBUG] Step2 regex matched:', !!debugMatch);
-        if (debugMatch) {
-          console.log('[PLANDATA DEBUG] Step2 extracted text:', debugMatch[1]);
-          try {
-            const debugParsed = JSON.parse(debugMatch[1]);
-            // ── DEBUG: Step 3 — audit schema against dashboard expectations ──
-            console.log('[PLANDATA DEBUG] Step3 JSON OK - full object:', JSON.stringify(debugParsed, null, 2));
-            console.log('[PLANDATA DEBUG] Step3 safeHarbor.type:', debugParsed.safeHarbor?.type);
-            console.log('[PLANDATA DEBUG] Step3 typeof loanAvailable:', typeof debugParsed.loanAvailable, '=', debugParsed.loanAvailable);
-            console.log('[PLANDATA DEBUG] Step3 typeof hardshipAvailable:', typeof debugParsed.hardshipAvailable, '=', debugParsed.hardshipAvailable);
-            console.log('[PLANDATA DEBUG] Step3 typeof vestingSchedule:', typeof debugParsed.vestingSchedule, '=', debugParsed.vestingSchedule);
-            console.log('[PLANDATA DEBUG] Step3 matchTiers:', JSON.stringify(debugParsed.matchTiers));
-            console.log('[PLANDATA DEBUG] Step3 noMatch:', debugParsed.noMatch);
-            console.log('[PLANDATA DEBUG] Step3 profitSharing.available:', debugParsed.profitSharing?.available);
-          } catch (jsonErr: any) {
-            console.error('[PLANDATA DEBUG] Step2 JSON.parse FAILED:', jsonErr.message);
-            const posMatch = jsonErr.message.match(/position (\d+)/);
-            if (posMatch) {
-              const pos = parseInt(posMatch[1]);
-              console.error('[PLANDATA DEBUG] Step2 JSON context around error:', debugMatch[1].slice(Math.max(0, pos - 60), pos + 60));
-            }
-          }
-        } else {
-          console.warn('[PLANDATA DEBUG] Step2 NO MATCH - searching for partial marker...');
-          console.log('[PLANDATA DEBUG] Step2 contains "PLANDATA":', raw?.includes('PLANDATA'));
-          console.log('[PLANDATA DEBUG] Step2 contains "<!--":', raw?.includes('<!--'));
-        }
-        // ── END DEBUG ─────────────────────────────────────────────────────────
-
-        const pd = parsePlanData(raw);
+        const pd = normalizePlanData(parsePlanData(raw));
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
-        setStage(STAGE.APP);
+        if (!pd) {
+          setUploadError(t.errorPlanData);
+          setStage(STAGE.LANDING);
+        } else {
+          setStage(STAGE.APP);
+        }
       }
       abortRef.current = null;
     } catch (e) {
@@ -1991,7 +2075,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const startFreshUpload = () => {
     setMessages([]); setPlanData(null); setStmtData(null);
     setFileName(""); setInput(""); setLoading(false); setCalcExpanded(false);
-    setStreamingText(''); pendingFileRef.current = null;
+    setStreamingText(''); pendingFileRef.current = null; fileIdRef.current = null;
     addDocRef.current?.click();
   };
 
