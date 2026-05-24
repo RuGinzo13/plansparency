@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { upload } from '@vercel/blob/client';
 
 
 // ── Colors ──
@@ -347,44 +348,30 @@ function getIRSLimits(dob) {
 }
 
 // ── Helpers ──
-function fileToBase64(f) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== 'string') {
-        reject(new Error('FileReader returned unexpected type'));
-        return;
-      }
-      const base64 = result.split(',')[1];
-      if (!base64) {
-        reject(new Error('Could not extract base64 data from file'));
-        return;
-      }
-      resolve(base64);
-    };
-    reader.onerror = () => reject(new Error(`Failed to read file: ${f?.name ?? 'unknown'}`));
-    reader.readAsDataURL(f);
-  });
-}
-// Uploads a PDF to the Anthropic Files API via our Node.js serverless route and returns the file_id.
-// Throws on failure so callers can decide whether to fallback to base64.
+// Uploads a PDF directly to Vercel Blob (no Lambda body), then exchanges the blob URL
+// for an Anthropic Files API file_id via /api/ingest (server-to-server, no size limit).
 async function uploadFile(f: File): Promise<string> {
-  const formData = new FormData();
-  formData.append('file', f, f.name || 'upload.pdf');
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
-    // Do NOT set Content-Type — browser sets it with multipart boundary automatically
+  // Step 1: direct client → Vercel Blob upload (bypasses Lambda entirely)
+  const blob = await upload(f.name || 'upload.pdf', f, {
+    access: 'public',
+    handleUploadUrl: '/api/upload',
+    contentType: 'application/pdf',
   });
-  if (!response.ok) {
+
+  // Step 2: server fetches from Vercel Blob → Anthropic Files API → deletes blob
+  const res = await fetch('/api/ingest', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ blobUrl: blob.url }),
+  });
+  if (!res.ok) {
     let data: any = {};
-    try { data = await response.json(); } catch {}
-    const err: any = new Error(data?.error || `Upload failed: HTTP ${response.status}`);
-    err.status = response.status;
+    try { data = await res.json(); } catch {}
+    const err: any = new Error(data?.error || `Upload failed: HTTP ${res.status}`);
+    err.status = res.status;
     throw err;
   }
-  const data = await response.json();
+  const data = await res.json();
   if (!data?.fileId) throw new Error('No fileId returned from upload');
   return data.fileId as string;
 }
@@ -1917,36 +1904,21 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      // ── Upload PDF to Anthropic Files API (preferred) or fall back to base64 ──
-      // Files API: raw binary multipart — no base64 inflation, supports up to 500 MB.
-      // Fallback: base64 for very small files only if Files API upload fails.
-      let fileId: string | null = null;
-      let base64: string | null = null;
-
-      try {
-        fileId = await uploadFile(f);
-      } catch (uploadErr: any) {
-        // Only attempt base64 fallback for small files (< 5 MB); large ones can't fit in the body
-        if (f.size <= 5 * 1024 * 1024) {
-          console.warn('[processUpload] Files API upload failed, falling back to base64:', uploadErr.message);
-          base64 = await fileToBase64(f) as string;
-        } else {
-          throw uploadErr; // Re-throw — base64 won't work for large files
-        }
-      }
+      // ── Upload PDF via Vercel Blob (client-direct) → Anthropic Files API ──────
+      const fileId = await uploadFile(f);
 
       pendingFileRef.current = null;
 
       if (docType === "statement") {
         const m1 = { role: "user", content: t.stmtFirstMessage };
-        const raw = await callClaude([m1], base64, lang, null, () => {}, abortRef.current.signal, fileId);
+        const raw = await callClaude([m1], null, lang, null, () => {}, abortRef.current.signal, fileId);
         const sd = parseStmtData(raw);
         if (sd) setStmtData(sd);
         setMessages([m1, { role: "assistant", content: stripStmtData(raw) }]);
         setStage(STAGE.STMT_DASHBOARD);
       } else {
         const m1 = { role: "user", content: t.firstMessage };
-        const raw = await callClaude([m1], base64, lang, null, () => {}, abortRef.current.signal, fileId);
+        const raw = await callClaude([m1], null, lang, null, () => {}, abortRef.current.signal, fileId);
         const pd = parsePlanData(raw);
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
