@@ -174,6 +174,51 @@
 
 ---
 
+## May 24, 2026 — Code Review Findings: Direct Upload (5 Open Items)
+*From /code-review run after deploying direct FormData upload. Fix these before raising the file size ceiling.*
+
+| # | Severity | File | Issue | Status |
+|---|----------|------|-------|--------|
+| 1 | High | `ingest/route.ts:4` | `maxDuration=60` — server kills TCP at 60s; browser sees "Failed to fetch" not a 504; user gets raw browser error string | ⚠️ Open |
+| 2 | High | `ingest/route.ts` | Vercel platform ~4.5 MB payload cap still rejects large PDFs before route runs (direct upload path inherits this constraint) | ⚠️ Open |
+| 3 | Medium | `PlansparencyApp.tsx:367` | `AbortSignal.any` fallback silently drops caller's abort on Safari <17.4 / Chrome <116 / Firefox <124 — cancel doesn't stop upload | ⚠️ Open |
+| 4 | Low | `PlansparencyApp.tsx:2087` | `abortRef.current` can be replaced between uploadFile resolve and callClaude — second upload's signal bleeds into first | ⚠️ Open |
+| 5 | Low | `ingest/route.ts:96` | `parsed?.error` fallback can be an object → `String()` → `"[object Object]"` error message | ⚠️ Open |
+
+See ERRORS.md for full diagnosis and suggested fixes for each.
+
+---
+
+## May 24, 2026 — Upload Flow: Vercel Blob Client-Side Upload
+**What was decided:** Replace Lambda-proxied PDF upload with Vercel Blob client-side direct upload. `/api/upload` is now a token generator only. New `/api/ingest` route handles blob URL → Anthropic Files API. Base64 fallback removed.
+**Why:** AWS Lambda 6MB payload cap was blocking uploads above ~5.9MB. `serverActions.bodySizeLimit: '50mb'` in `next.config.mjs` does not apply to Route Handlers — it was a no-op. Client-side Vercel Blob upload bypasses Lambda entirely.
+**What was rejected:** Keeping the Lambda-proxied route with a higher limit — no clean way to raise AWS Lambda's hard cap for serverless functions.
+
+---
+
+## May 24, 2026 — No Local Dev Environment
+**What was decided:** Ross does not run the app locally. All development ships directly to Vercel via GitHub push. `.env.local` exists but all values are blank except `NEXT_PUBLIC_POSTHOG_HOST` and `BLOB_READ_WRITE_TOKEN` (added May 24).
+**Why:** No terminal knowledge; no local Node version configured for this project (system Node is v12.3.1, too old; Node@25 is installed at `/usr/local/opt/node@25/bin/` but not on PATH by default).
+**What was rejected:** Local dev server testing — not feasible given setup.
+**Note:** When npm is needed, use `PATH="/usr/local/opt/node@25/bin:$PATH" npm ...`
+
+---
+
+## May 24, 2026 — Component Map (Reference for All Future Sessions)
+The 10 addressable sections of the app:
+1. **Upload Flow** — `app/api/upload/route.ts`, `app/api/ingest/route.ts`, `uploadFile()` in PlansparencyApp.tsx
+2. **AI / Chat Engine** — `app/api/chat/route.ts` (Anthropic call, streaming, system prompt)
+3. **Plan Dashboard** — `PlanDashboard` component, PlansparencyApp.tsx ~line 1047 (tile cards after SPD upload)
+4. **Contribution Calculator** — `CalcPanel` component, PlansparencyApp.tsx ~line 1323
+5. **Statement Dashboard** — `StatementDashboard` component, PlansparencyApp.tsx ~line 1629
+6. **Chat Interface** — `Plansparency` main function, PlansparencyApp.tsx ~line 1828 (CHAT/UPLOADING stages)
+7. **Privacy & Consent Screen** — `STAGE.PRIVACY` logic, PlansparencyApp.tsx ~line 1976
+8. **Investments Panel** — `InvestmentsPanel` + `FundRow`, PlansparencyApp.tsx ~line 738
+9. **Key Terms** — `KeyTermsPanel` + `i18n.en.keyTerms`, PlansparencyApp.tsx ~line 557 / line 154
+10. **Advisor & Participant Pages** — `app/advisor/`, `app/p/[slug]/[planId]/page.tsx`, `lib/supabase.ts`
+
+---
+
 ## Session Summary, May 20, 2026
 **Worked on:** Investments tab architecture — fund extraction, sortable lineup, TabBar design; file size fix; version drift diagnosis.
 **Completed:** All architecture decisions finalized; 3 Claude Code prompts written and corrected to target PlansparencyApp.tsx; TO-DO list established; version drift problem diagnosed and resolved conceptually.
