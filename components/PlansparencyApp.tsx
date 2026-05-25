@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { upload } from '@vercel/blob/client';
+// @vercel/blob client-side upload removed — browser now POSTs FormData directly to /api/ingest
 
 
 // ── Colors ──
@@ -350,32 +350,79 @@ function getIRSLimits(dob) {
 }
 
 // ── Helpers ──
-// Uploads a PDF directly to Vercel Blob (no Lambda body), then exchanges the blob URL
-// for an Anthropic Files API file_id via /api/ingest (server-to-server, no size limit).
-async function uploadFile(f: File): Promise<string> {
-  // Step 1: direct client → Vercel Blob upload (bypasses Lambda entirely)
-  const blob = await upload(f.name || 'upload.pdf', f, {
-    access: 'public',
-    handleUploadUrl: '/api/upload',
-    contentType: 'application/pdf',
-  });
+// Sends the PDF as FormData directly to /api/ingest (Node.js route).
+// No Vercel Blob intermediary — eliminates the SDK retry-loop hang.
+// onProgress(pct) fires with 0..100 as the upload progresses.
+async function uploadFile(
+  f: File,
+  onProgress?: (pct: number) => void,
+  abortSignal?: AbortSignal,
+): Promise<string> {
+  // 3-minute hard timeout; also respects the caller's AbortSignal
+  const localCtrl = new AbortController();
+  const timeoutId = setTimeout(() => localCtrl.abort(), 180_000);
 
-  // Step 2: server fetches from Vercel Blob → Anthropic Files API → deletes blob
-  const res = await fetch('/api/ingest', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ blobUrl: blob.url }),
-  });
-  if (!res.ok) {
-    let data: any = {};
-    try { data = await res.json(); } catch {}
-    const err: any = new Error(data?.error || `Upload failed: HTTP ${res.status}`);
-    err.status = res.status;
-    throw err;
+  // Combine caller signal + our timeout signal
+  const signal = abortSignal
+    ? AbortSignal.any
+      ? (AbortSignal as any).any([abortSignal, localCtrl.signal])
+      : localCtrl.signal          // fallback: use timeout-only signal
+    : localCtrl.signal;
+
+  // Fake progress animation (fetch doesn't expose upload progress)
+  let fakeProgress = 0;
+  let progressTimer: ReturnType<typeof setInterval> | null = null;
+  if (onProgress) {
+    onProgress(0);
+    progressTimer = setInterval(() => {
+      // Asymptotically approach 80 % so it never reaches 100 before we're done
+      fakeProgress = fakeProgress + (80 - fakeProgress) * 0.12;
+      onProgress(Math.round(fakeProgress));
+    }, 350);
   }
-  const data = await res.json();
-  if (!data?.fileId) throw new Error('No fileId returned from upload');
-  return data.fileId as string;
+
+  const clearProgress = () => {
+    if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+    clearTimeout(timeoutId);
+  };
+
+  try {
+    const formData = new FormData();
+    formData.append('file', f, f.name || 'upload.pdf');
+
+    const res = await fetch('/api/ingest', {
+      method: 'POST',
+      body: formData,
+      signal,
+    });
+
+    clearProgress();
+    if (onProgress) onProgress(90); // ingest received; Anthropic upload in progress
+
+    if (!res.ok) {
+      let data: any = {};
+      try { data = await res.json(); } catch {}
+      const err: any = new Error(data?.error || `Upload failed: HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+
+    const data = await res.json();
+    if (!data?.fileId) throw new Error('No fileId returned from upload');
+    if (onProgress) onProgress(100);
+    return data.fileId as string;
+
+  } catch (e: any) {
+    clearProgress();
+    if (e.name === 'AbortError') {
+      const te: any = new Error(
+        'Upload timed out — please check your internet connection and try again.'
+      );
+      te.status = 504;
+      throw te;
+    }
+    throw e;
+  }
 }
 
 // pdf: base64-encoded PDF string (small-file fallback only); null for follow-up questions
@@ -1955,6 +2002,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [planGuideTab, setPlanGuideTab] = useState<"guide" | "investments">("guide");
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0); // 0-100 during upload phase
+  const [uploadPhase, setUploadPhase] = useState<'uploading'|'analyzing'>('uploading'); // label shown during UPLOADING stage
   const [streamingText, setStreamingText] = useState('');
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -2016,13 +2065,20 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       setMessages([]); setPlanData(null); setStmtData(null);
       setCalcExpanded(false);
     }
-    setUploadError(""); setFileName(f.name); setStage(STAGE.UPLOADING);
+    setUploadError(""); setFileName(f.name);
+    setUploadProgress(0); setUploadPhase('uploading');
+    setStage(STAGE.UPLOADING);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      // ── Upload PDF via Vercel Blob (client-direct) → Anthropic Files API ──────
-      const fileId = await uploadFile(f);
+      // ── Upload PDF directly to /api/ingest (Node.js) → Anthropic Files API ──
+      const fileId = await uploadFile(
+        f,
+        (pct) => setUploadProgress(pct),
+        abortRef.current.signal,
+      );
       fileIdRef.current = fileId;
+      setUploadPhase('analyzing');
 
       pendingFileRef.current = null;
 
@@ -2251,9 +2307,17 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
     </div>
     <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.readingTitle}</h2>
-    <p style={{ color: C.textMuted, fontSize: 14, margin: 0 }}>
-      {t.readingSubPrefix} <span style={{ color: C.accent }}>{fileName}</span> {t.readingSubSuffix}
+    <p style={{ color: C.textMuted, fontSize: 14, margin: "0 0 20px" }}>
+      {uploadPhase === 'uploading'
+        ? <>{lang === "es" ? "Enviando" : "Uploading"} <span style={{ color: C.accent }}>{fileName}</span>…</>
+        : <>{lang === "es" ? "Leyendo" : "Reading"} <span style={{ color: C.accent }}>{fileName}</span>…</>}
     </p>
+    {/* Progress bar — visible during file upload phase */}
+    {uploadPhase === 'uploading' && uploadProgress > 0 && (
+      <div style={{ width: "100%", maxWidth: 280, height: 6, background: C.surfaceAlt, borderRadius: 3, overflow: "hidden", marginBottom: 8 }}>
+        <div style={{ height: "100%", width: `${uploadProgress}%`, background: `linear-gradient(90deg,${C.accent},#D4A853)`, borderRadius: 3, transition: "width .3s ease" }} />
+      </div>
+    )}
     <style>{`@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.75}}`}</style></div>;
 
   // ── Dashboard (TOC) ──
