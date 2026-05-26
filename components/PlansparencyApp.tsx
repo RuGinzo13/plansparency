@@ -1264,12 +1264,32 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
     : pd.loanAvailable === false ? (es ? "No" : "No")
     : "N/A";
 
-  // Quick-glance stat chips shown in the hero
+  // Quick-glance stat chips shown in the hero — each is clickable to ask Claude for detail
   const quickStats = [
-    { emoji: "💰", label: es ? "Dinero Gratis" : "Free Money", value: freeMoney, color: freeMoneyColor },
-    { emoji: "⏳", label: "Vesting", value: vestingValue, color: C.accent },
-    { emoji: "☀️", label: "Roth", value: rothValue, color: rothColor },
-    { emoji: "🏦", label: es ? "Préstamos" : "Loans", value: loansValue, color: pd.loanAvailable === true ? C.green : C.textDim },
+    {
+      emoji: "💰", label: es ? "Dinero Gratis" : "Free Money", value: freeMoney, color: freeMoneyColor,
+      prompt: es
+        ? "Explícame en detalle el dinero gratis que ofrece este plan. Distingue entre safe harbor, match discrecional y profit sharing. ¿Cuánto aporta el empleador? ¿Hay condiciones? Usa un ejemplo con $50,000 de salario."
+        : "Explain in detail the free money available in this plan. Distinguish between safe harbor, discretionary match, and profit sharing. How much does the employer contribute? Are there any conditions? Use a $50,000 salary example.",
+    },
+    {
+      emoji: "⏳", label: "Vesting", value: vestingValue, color: C.accent,
+      prompt: es
+        ? "Explícame el calendario de vesting de este plan. ¿Qué contribuciones son inmediatamente 100% mías (como safe harbor)? ¿Cuáles siguen un calendario de vesting? ¿Qué pasa si me voy antes de estar totalmente vestido?"
+        : "Explain the vesting schedule in this plan. Which contributions are immediately 100% mine (like safe harbor)? Which follow a vesting schedule? What happens if I leave before I'm fully vested?",
+    },
+    {
+      emoji: "☀️", label: "Roth", value: rothValue, color: rothColor,
+      prompt: es
+        ? "Explícame las opciones Roth y pre-impuesto en este plan. ¿Cuál es la diferencia práctica? ¿Cuándo conviene elegir Roth? ¿Cuándo conviene pre-impuesto? ¿Qué ofrece exactamente este plan?"
+        : "Explain the Roth and pre-tax options in this plan. What's the practical difference? When does Roth make more sense? When does pre-tax make more sense? What exactly does this plan offer?",
+    },
+    {
+      emoji: "🏦", label: es ? "Préstamos" : "Loans", value: loansValue, color: pd.loanAvailable === true ? C.green : C.textDim,
+      prompt: es
+        ? "¿Puedo tomar un préstamo de mi 401(k)? Explícame las reglas: ¿cuánto puedo pedir, por cuánto tiempo, cómo funciona el repago, y qué riesgos hay si dejo el trabajo?"
+        : "Can I take a loan from my 401(k)? Explain the rules: how much can I borrow, for how long, how does repayment work, and what are the risks if I leave my job?",
+    },
   ];
 
   // All feature tiles
@@ -1563,19 +1583,24 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
           <p style={{ fontSize: 12, color: C.textMuted, margin: "0 0 14px" }}>
             {es ? "Tu guía en lenguaje simple — toca cualquier tarjeta" : "Your plain-English guide — tap any card to learn more"}
           </p>
-          {/* Quick-glance stat chips */}
+          {/* Quick-glance stat chips — clickable */}
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
             {quickStats.map((s, i) => (
-              <div key={i} style={{
-                background: C.surface, borderRadius: 20, padding: "5px 11px",
+              <button key={i} onClick={() => onSectionClick(s.prompt)} style={{
+                background: C.surface, borderRadius: 20, padding: "5px 11px 5px 9px",
                 border: `1px solid ${s.color}35`, display: "flex", alignItems: "center", gap: 6,
-              }}>
+                cursor: "pointer", fontFamily: F.body, transition: "all .15s",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = `${s.color}12`; e.currentTarget.style.borderColor = `${s.color}60`; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.surface; e.currentTarget.style.borderColor = `${s.color}35`; e.currentTarget.style.transform = "none"; }}
+              >
                 <span style={{ fontSize: 13 }}>{s.emoji}</span>
-                <div>
+                <div style={{ textAlign: "left" }}>
                   <div style={{ fontSize: 9, color: C.textDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", lineHeight: 1 }}>{s.label}</div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: s.color, lineHeight: 1.3 }}>{s.value || "?"}</div>
                 </div>
-              </div>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="2.5" opacity={0.5} style={{ flexShrink: 0, marginLeft: 1 }}><polyline points="9 18 15 12 9 6" /></svg>
+              </button>
             ))}
           </div>
         </div>
