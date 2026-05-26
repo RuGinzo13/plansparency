@@ -38,7 +38,7 @@ const i18n = {
     heroLine1: "Your 401(k),", tagline: "crystal clear",
     subtitle: "Upload your plan document or enrollment booklet. Ask anything. Finally understand your retirement plan.",
     dropTitle: "Drop your plan document here",
-    dropSub: "PDF — Summary Plan Description (SPD) or Enrollment Booklet",
+    dropSub: "PDF — SPD, Enrollment Booklet, or Fee Disclosure",
     trustPrivate: "Document never stored", trustEducation: "Education only, never advice",
     trustPlain: "Plain English answers", trustEncrypted: "Encrypted in transit",
     readingTitle: "Making your plan transparent...",
@@ -176,7 +176,7 @@ Fill in based on the actual plan document:
     chooserTitle: "What are you looking at today?",
     chooserSub: "We'll tailor the experience based on your document type",
     chooserSpd: "Plan Document",
-    chooserSpdSub: "SPD or Enrollment Booklet — learn the rules of your plan",
+    chooserSpdSub: "SPD, Enrollment Booklet, or Fee Disclosure — learn the rules of your plan",
     chooserStmt: "Account Statement",
     chooserStmtSub: "Quarterly or annual statement — see where your money stands",
     // Statement
@@ -213,7 +213,7 @@ Fill EVERY field from the actual statement:
     heroLine1: "Tu 401(k),", tagline: "totalmente claro",
     subtitle: "Sube tu documento del plan o folleto de inscripción. Pregunta lo que quieras.",
     dropTitle: "Arrastra tu documento aquí",
-    dropSub: "PDF — Descripción del Plan (SPD) o Folleto de Inscripción",
+    dropSub: "PDF — SPD, Folleto de Inscripción o Divulgación de Comisiones",
     trustPrivate: "Documento nunca almacenado", trustEducation: "Solo educación",
     trustPlain: "Respuestas claras", trustEncrypted: "Cifrado en tránsito",
     readingTitle: "Haciendo tu plan transparente...",
@@ -292,7 +292,7 @@ Llena según el plan real. matchTiers = solo match DISCRECIONAL. safeHarbor y pr
     chooserTitle: "¿Qué estás viendo hoy?",
     chooserSub: "Adaptaremos la experiencia según tu documento",
     chooserSpd: "Documento del Plan",
-    chooserSpdSub: "SPD o Folleto de Inscripción — aprende las reglas",
+    chooserSpdSub: "SPD, Folleto de Inscripción o Divulgación de Comisiones — aprende las reglas",
     chooserStmt: "Estado de Cuenta",
     chooserStmtSub: "Estado trimestral o anual — ve dónde está tu dinero",
     stmtFirstMessage: `Acabo de subir mi estado de cuenta 401(k). Extrae TODOS los datos financieros. Responde SOLO con el bloque de datos — sin resumen.
@@ -1247,36 +1247,29 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
 
   const planName = pd.planName || (es ? "Tu Plan 401(k)" : "Your 401(k) Plan");
 
+  // Detect whether a field was actually found in the document vs just defaulted
+  const rothKnown = pd.hasRoth != null || pd.rothAvailable != null;
+  const freeMoney = hasSafeHarbor ? "Safe Harbor"
+    : pd.noMatch === true ? (es ? "No hay" : "None")
+    : matchDesc || "N/A";
+  const freeMoneyColor = (hasSafeHarbor || matchDesc) ? C.green : C.textDim;
+  const vestingValue = pd.vestingSchedule
+    ? (pd.vestingSchedule.toLowerCase().includes("immediate") || pd.vestingSchedule.includes("100%")
+        ? (es ? "Inmediato" : "Immediate")
+        : (es ? "Gradual" : "Graded"))
+    : "N/A";
+  const rothValue = !rothKnown ? "N/A" : planHasRoth ? (es ? "Sí" : "Yes") : (es ? "No" : "No");
+  const rothColor = !rothKnown ? C.textDim : planHasRoth ? C.green : C.textDim;
+  const loansValue = pd.loanAvailable === true ? (es ? "Sí" : "Yes")
+    : pd.loanAvailable === false ? (es ? "No" : "No")
+    : "N/A";
+
   // Quick-glance stat chips shown in the hero
   const quickStats = [
-    {
-      emoji: "💰",
-      label: es ? "Dinero Gratis" : "Free Money",
-      value: hasSafeHarbor ? "Safe Harbor" : noMatch ? (es ? "No hay" : "None") : matchDesc,
-      color: (hasSafeHarbor || !noMatch) ? C.green : C.textDim,
-    },
-    {
-      emoji: "⏳",
-      label: es ? "Vesting" : "Vesting",
-      value: pd.vestingSchedule
-        ? (pd.vestingSchedule.toLowerCase().includes("immediate") || pd.vestingSchedule.includes("100%")
-            ? (es ? "Inmediato" : "Immediate")
-            : (es ? "Gradual" : "Graded"))
-        : "?",
-      color: C.accent,
-    },
-    {
-      emoji: "☀️",
-      label: "Roth",
-      value: planHasRoth ? (es ? "Sí" : "Yes") : (es ? "No" : "No"),
-      color: planHasRoth ? C.green : C.textDim,
-    },
-    {
-      emoji: "🏦",
-      label: es ? "Préstamos" : "Loans",
-      value: pd.loanAvailable === true ? (es ? "Sí" : "Yes") : pd.loanAvailable === false ? (es ? "No" : "No") : "?",
-      color: pd.loanAvailable ? C.green : C.textDim,
-    },
+    { emoji: "💰", label: es ? "Dinero Gratis" : "Free Money", value: freeMoney, color: freeMoneyColor },
+    { emoji: "⏳", label: "Vesting", value: vestingValue, color: C.accent },
+    { emoji: "☀️", label: "Roth", value: rothValue, color: rothColor },
+    { emoji: "🏦", label: es ? "Préstamos" : "Loans", value: loansValue, color: pd.loanAvailable === true ? C.green : C.textDim },
   ];
 
   // All feature tiles
