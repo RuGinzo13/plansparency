@@ -363,11 +363,20 @@ async function uploadFile(
   const timeoutId = setTimeout(() => localCtrl.abort(), 180_000);
 
   // Combine caller signal + our timeout signal
-  const signal = abortSignal
-    ? AbortSignal.any
-      ? (AbortSignal as any).any([abortSignal, localCtrl.signal])
-      : localCtrl.signal          // fallback: use timeout-only signal
-    : localCtrl.signal;
+  let signal: AbortSignal;
+  if (!abortSignal) {
+    signal = localCtrl.signal;
+  } else if ((AbortSignal as any).any) {
+    signal = (AbortSignal as any).any([abortSignal, localCtrl.signal]);
+  } else {
+    // AbortSignal.any unavailable: forward caller abort into localCtrl so both are respected
+    if (abortSignal.aborted) {
+      localCtrl.abort(abortSignal.reason);
+    } else {
+      abortSignal.addEventListener('abort', () => localCtrl.abort(abortSignal.reason), { once: true });
+    }
+    signal = localCtrl.signal;
+  }
 
   // Fake progress animation (fetch doesn't expose upload progress)
   let fakeProgress = 0;
@@ -426,7 +435,7 @@ async function uploadFile(
 }
 
 // pdf: base64-encoded PDF string (small-file fallback only); null for follow-up questions
-// fileId: Anthropic Files API file_id (preferred for all uploads); null if not available
+// fileIds: one or more Anthropic Files API file_ids; accepts string (legacy) or string[]
 // onChunk: called with each streamed text token as it arrives
 async function callClaude(
   msgs: any[],
@@ -435,15 +444,16 @@ async function callClaude(
   planData: any,
   onChunk: (chunk: string) => void,
   signal?: AbortSignal,
-  fileId?: string | null
+  fileIds?: string | string[] | null
 ): Promise<string> {
+  const ids: string[] = Array.isArray(fileIds) ? fileIds : (fileIds ? [fileIds] : []);
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       messages: msgs,
       pdf: pdf ?? undefined,
-      fileId: fileId ?? undefined,
+      fileIds: ids.length > 0 ? ids : undefined,
       lang,
       planData,
     }),
@@ -865,33 +875,51 @@ const RISK_MAP = {
 
 const FUND_DISCLAIMER = "This fund list is for educational reference only. Not investment advice or a recommendation of any fund. Consult your plan advisor for investment guidance. Links open fund company materials — Plansparency is not affiliated with any fund listed.";
 
-function DisclosureCallout() {
+function DisclosureCallout({ lang = "en" }) {
+  const [open, setOpen] = useState(false);
+  const es = lang === "es";
+  const title = es
+    ? "Solo Uso Educativo — No Es Asesoría de Inversión"
+    : "Educational Use Only — Not Investment Advice";
   return (
     <div style={{
       margin: "12px 16px 4px",
-      padding: "14px 16px",
       borderLeft: `4px solid ${C.accent}`,
       background: "rgba(184,134,11,.06)",
       borderRadius: "0 10px 10px 0",
       flexShrink: 0,
+      overflow: "hidden",
     }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
-        Educational Use Only — Not Investment Advice
-      </div>
-      <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>
-        <p style={{ margin: "0 0 8px" }}>
-          The funds listed here are taken directly from your plan documents exactly as provided by your employer and recordkeeper. Nothing on this page is a recommendation, endorsement, or suggestion to invest in any specific fund.
-        </p>
-        <p style={{ margin: "0 0 8px" }}>
-          You are responsible for all investment decisions in your plan — including which funds you choose, how much you allocate, and when you make changes. Investment outcomes, including gains and losses, are your responsibility alone.
-        </p>
-        <p style={{ margin: "0 0 8px" }}>
-          Plansparency does not evaluate, compare, or assess whether any fund is right for your situation. Any links go to fund company materials published by the fund manager — Plansparency has no relationship with any fund listed.
-        </p>
-        <p style={{ margin: 0, fontWeight: 600, color: C.textMuted }}>
-          If you need guidance on how to invest your 401(k), please speak with your plan advisor or a qualified financial professional.
-        </p>
-      </div>
+      {/* Always-visible header — tap to expand/collapse */}
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "12px 16px", background: "none", border: "none", cursor: "pointer",
+        fontFamily: F.body, gap: 8,
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: ".05em", textAlign: "left" }}>
+          {title}
+        </span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"
+          style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      {/* Expandable body */}
+      {open && (
+        <div style={{ padding: "0 16px 14px", fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>
+          {es ? (<>
+            <p style={{ margin: "0 0 8px" }}>Los fondos aquí listados provienen directamente de los documentos de tu plan, tal como fueron proporcionados por tu empleador y administrador. Nada en esta página es una recomendación, respaldo o sugerencia de invertir en ningún fondo específico.</p>
+            <p style={{ margin: "0 0 8px" }}>Tú eres responsable de todas las decisiones de inversión en tu plan — incluyendo qué fondos eliges, cuánto asignas y cuándo realizas cambios. Los resultados de tus inversiones, incluyendo ganancias y pérdidas, son tu responsabilidad exclusiva.</p>
+            <p style={{ margin: "0 0 8px" }}>Plansparency no evalúa, compara ni determina si algún fondo es adecuado para tu situación. Los enlaces llevan a materiales publicados por la gestora del fondo — Plansparency no tiene ninguna relación con los fondos listados.</p>
+            <p style={{ margin: 0, fontWeight: 600, color: C.textMuted }}>Si necesitas orientación sobre cómo invertir tu 401(k), habla con el asesor de tu plan o un profesional financiero calificado.</p>
+          </>) : (<>
+            <p style={{ margin: "0 0 8px" }}>The funds listed here are taken directly from your plan documents exactly as provided by your employer and recordkeeper. Nothing on this page is a recommendation, endorsement, or suggestion to invest in any specific fund.</p>
+            <p style={{ margin: "0 0 8px" }}>You are responsible for all investment decisions in your plan — including which funds you choose, how much you allocate, and when you make changes. Investment outcomes, including gains and losses, are your responsibility alone.</p>
+            <p style={{ margin: "0 0 8px" }}>Plansparency does not evaluate, compare, or assess whether any fund is right for your situation. Any links go to fund company materials published by the fund manager — Plansparency has no relationship with any fund listed.</p>
+            <p style={{ margin: 0, fontWeight: 600, color: C.textMuted }}>If you need guidance on how to invest your 401(k), please speak with your plan advisor or a qualified financial professional.</p>
+          </>)}
+        </div>
+      )}
     </div>
   );
 }
@@ -903,7 +931,7 @@ function InvestmentsPanel({ fundsData, lang }) {
   if (fundsData.length === 0) {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <DisclosureCallout />
+        <DisclosureCallout lang={lang} />
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
           <div style={{ textAlign: "center", maxWidth: 360 }}>
             <div style={{
@@ -1418,64 +1446,151 @@ function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, l
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planData, lang]);
 
+  // All sections start collapsed; user taps header to expand
+  const [collapsedSections, setCollapsedSections] = useState<Record<string,boolean>>({
+    yourMoney: true, companyMoney: true, whileEmployed: true, afterEmployment: true,
+  });
+  const toggleSection = (key: string) =>
+    setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+  // ── Four named sections that group all tiles ──────────────────────────────
+  const SECTIONS = [
+    {
+      key: "yourMoney",
+      color: C.green, dim: C.greenDim,
+      icon: "💵",
+      title: es ? "Tu Dinero" : "Your Money",
+      sub: es ? "Tus aportaciones, opciones de cuenta y cómo crece tu dinero" : "Your contributions, account options, and how your money grows",
+      ids: ["eligContrib", "roth", "investments", "enroll"],
+    },
+    {
+      key: "companyMoney",
+      color: C.accent, dim: C.accentDim,
+      icon: "🏢",
+      title: es ? "El Dinero de Tu Empresa" : "Your Company's Money",
+      sub: es ? "Lo que tu empleador aporta — y cuándo es realmente tuyo" : "What your employer puts in for you — and when it's truly yours",
+      ids: ["safeHarbor", "match", "profitSharing", "vesting"],
+    },
+    {
+      key: "whileEmployed",
+      color: "#2C6A9A", dim: "rgba(44,106,154,.11)",
+      icon: "💼",
+      title: es ? "Tu Acceso Mientras Trabajas" : "Your Access While Employed",
+      sub: es ? "Cómo puedes usar tu dinero antes de jubilarte" : "How you can tap your account before you retire",
+      ids: ["loans", "hardship"],
+    },
+    {
+      key: "afterEmployment",
+      color: "#6B5B9A", dim: "rgba(107,91,154,.11)",
+      icon: "🏁",
+      title: es ? "Tu Acceso Al Salir" : "Your Access After Employment Ends",
+      sub: es ? "Qué pasa con tu dinero cuando te vas o te jubilas" : "Your options when you leave or retire",
+      ids: ["distributions"],
+    },
+  ];
+
+  const renderTile = (tile) => (
+    <button key={tile.id} onClick={() => onSectionClick(tile.prompt)} style={{
+      background: C.surface, border: `1.5px solid ${tile.accent}28`, borderRadius: 16,
+      padding: "14px 12px", cursor: "pointer", fontFamily: F.body,
+      textAlign: "left", transition: "all .2s", display: "flex",
+      flexDirection: "column", gap: 8, boxShadow: "0 2px 6px rgba(0,0,0,.04)",
+    }}
+      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 6px 18px ${tile.accent}20`; e.currentTarget.style.borderColor = `${tile.accent}55`; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,.04)"; e.currentTarget.style.borderColor = `${tile.accent}28`; }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 4 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: tile.bg, border: `1px solid ${tile.accent}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{tile.emoji}</div>
+        <div style={{ fontSize: 9, fontWeight: 700, color: tile.accent, background: `${tile.accent}14`, border: `1px solid ${tile.accent}28`, borderRadius: 20, padding: "3px 7px", maxWidth: "56%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", alignSelf: "flex-start", marginTop: 2 }}>{tile.status}</div>
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: C.text, lineHeight: 1.3 }}>{tile.title}</div>
+      <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5 }}>{tile.desc}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: tile.accent, display: "flex", alignItems: "center", gap: 3 }}>
+        {es ? "Toca para saber más" : "Tap to learn more"}
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </button>
+  );
+
+  const renderSection = (sec) => {
+    const sectionTiles = tiles.filter(tile => sec.ids.includes(tile.id));
+    if (sectionTiles.length === 0) return null;
+    const collapsed = collapsedSections[sec.key];
+    return (
+      <div key={sec.key} style={{ marginBottom: collapsed ? 10 : 24 }}>
+        {/* Section header — tap to expand / collapse */}
+        <button onClick={() => toggleSection(sec.key)} style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 10,
+          marginBottom: collapsed ? 0 : 10, padding: "10px 12px",
+          background: sec.dim, borderRadius: 10,
+          border: `1px solid ${sec.color}22`,
+          cursor: "pointer", fontFamily: F.body, textAlign: "left",
+          transition: "margin-bottom .2s",
+        }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+            background: `${sec.color}1A`, border: `1.5px solid ${sec.color}30`,
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17,
+          }}>{sec.icon}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, color: sec.color, lineHeight: 1.2 }}>{sec.title}</div>
+            <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2, lineHeight: 1.4 }}>{sec.sub}</div>
+          </div>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sec.color} strokeWidth="2.5"
+            style={{ flexShrink: 0, transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform .2s" }}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        {/* Cards — hidden when collapsed */}
+        {!collapsed && (
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: sectionTiles.length === 1 ? "1fr" : "1fr 1fr",
+            gap: 10, alignItems: "start",
+          }}>
+            {sectionTiles.map(renderTile)}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 20px" }}>
 
-          {/* Hero banner */}
-          <div style={{
-            margin: "0 -16px 20px", padding: "22px 20px 18px",
-            background: `linear-gradient(160deg, ${C.accentDim} 0%, rgba(244,239,230,0) 70%)`,
-            borderBottom: `1px solid ${C.border}`, textAlign: "center",
-          }}>
-            <div style={{ fontSize: 38, marginBottom: 6 }}>📋</div>
-            <h2 style={{ fontFamily: F.display, fontSize: 21, fontWeight: 700, color: C.text, margin: "0 0 4px", lineHeight: 1.2 }}>{planName}</h2>
-            <p style={{ fontSize: 12, color: C.textMuted, margin: "0 0 14px" }}>
-              {es ? "Tu guía en lenguaje simple — toca cualquier tarjeta" : "Your plain-English guide — tap any card to learn more"}
-            </p>
-            {/* Quick-glance stat chips */}
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-              {quickStats.map((s, i) => (
-                <div key={i} style={{
-                  background: C.surface, borderRadius: 20, padding: "5px 11px",
-                  border: `1px solid ${s.color}35`, display: "flex", alignItems: "center", gap: 6,
-                }}>
-                  <span style={{ fontSize: 13 }}>{s.emoji}</span>
-                  <div>
-                    <div style={{ fontSize: 9, color: C.textDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", lineHeight: 1 }}>{s.label}</div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: s.color, lineHeight: 1.3 }}>{s.value || "?"}</div>
-                  </div>
+        {/* Hero banner */}
+        <div style={{
+          margin: "0 -16px 20px", padding: "22px 20px 18px",
+          background: `linear-gradient(160deg, ${C.accentDim} 0%, rgba(244,239,230,0) 70%)`,
+          borderBottom: `1px solid ${C.border}`, textAlign: "center",
+        }}>
+          <div style={{ fontSize: 38, marginBottom: 6 }}>📋</div>
+          <h2 style={{ fontFamily: F.display, fontSize: 21, fontWeight: 700, color: C.text, margin: "0 0 4px", lineHeight: 1.2 }}>{planName}</h2>
+          <p style={{ fontSize: 12, color: C.textMuted, margin: "0 0 14px" }}>
+            {es ? "Tu guía en lenguaje simple — toca cualquier tarjeta" : "Your plain-English guide — tap any card to learn more"}
+          </p>
+          {/* Quick-glance stat chips */}
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            {quickStats.map((s, i) => (
+              <div key={i} style={{
+                background: C.surface, borderRadius: 20, padding: "5px 11px",
+                border: `1px solid ${s.color}35`, display: "flex", alignItems: "center", gap: 6,
+              }}>
+                <span style={{ fontSize: 13 }}>{s.emoji}</span>
+                <div>
+                  <div style={{ fontSize: 9, color: C.textDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", lineHeight: 1 }}>{s.label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: s.color, lineHeight: 1.3 }}>{s.value || "?"}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 2-col tile grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
-            {tiles.map(tile => (
-              <button key={tile.id} onClick={() => onSectionClick(tile.prompt)} style={{
-                background: C.surface, border: `1.5px solid ${tile.accent}28`, borderRadius: 16,
-                padding: "14px 12px", cursor: "pointer", fontFamily: F.body,
-                textAlign: "left", transition: "all .2s", display: "flex",
-                flexDirection: "column", gap: 8, boxShadow: "0 2px 6px rgba(0,0,0,.04)",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 6px 18px ${tile.accent}20`; e.currentTarget.style.borderColor = `${tile.accent}55`; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,.04)"; e.currentTarget.style.borderColor = `${tile.accent}28`; }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 4 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: tile.bg, border: `1px solid ${tile.accent}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{tile.emoji}</div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: tile.accent, background: `${tile.accent}14`, border: `1px solid ${tile.accent}28`, borderRadius: 20, padding: "3px 7px", maxWidth: "56%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", alignSelf: "flex-start", marginTop: 2 }}>{tile.status}</div>
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.text, lineHeight: 1.3 }}>{tile.title}</div>
-                <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5 }}>{tile.desc}</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: tile.accent, display: "flex", alignItems: "center", gap: 3 }}>
-                  {es ? "Toca para saber más" : "Tap to learn more"}
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>
+
+        {/* Four grouped sections */}
+        {SECTIONS.map(renderSection)}
+
+      </div>
     </div>
   );
 }
@@ -2003,15 +2118,18 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0); // 0-100 during upload phase
-  const [uploadPhase, setUploadPhase] = useState<'uploading'|'analyzing'>('uploading'); // label shown during UPLOADING stage
+  const [uploadPhase, setUploadPhase] = useState<'uploading'|'analyzing'>('uploading');
+  const [uploadDocIndex, setUploadDocIndex] = useState(0);   // which file is uploading (0-based)
+  const [uploadDocCount, setUploadDocCount] = useState(1);   // total files being uploaded
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]); // files queued on landing before privacy
   const [streamingText, setStreamingText] = useState('');
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
-  const pendingFileRef = useRef(null);
+  const pendingFilesRef = useRef<File[]>([]);  // replaces pendingFileRef
   const addDocRef = useRef(null);
   const abortRef = useRef(null);
-  const fileIdRef = useRef<string | null>(null);
+  const fileIdsRef = useRef<string[]>([]);  // replaces fileIdRef; array of all uploaded file IDs
 
   const t = i18n[lang];
 
@@ -2048,50 +2166,77 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
     setCalcExpanded(false); setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText(''); setUploadError("");
-    pendingFileRef.current = null;
-    fileIdRef.current = null;
+    pendingFilesRef.current = [];
+    fileIdsRef.current = [];
+    setStagedFiles([]);
     setStage(STAGE.CLEARED);
   };
-  const initiateUpload = f => {
+
+  // Stage a file on the landing page (does not navigate away)
+  const stageFile = (f: File) => {
     if (!f || f.type !== "application/pdf") { setUploadError(t.errorFormat); return; }
-    if (f.size > 25 * 1024 * 1024) { setUploadError("This PDF is too large. Please try a document under 25 MB."); return; }
-    setUploadError(""); pendingFileRef.current = f; setStage(STAGE.PRIVACY);
+    if (f.size > 25 * 1024 * 1024) { setUploadError(lang === "es" ? "El archivo es demasiado grande. Máximo 25 MB." : "This PDF is too large. Please try a document under 25 MB."); return; }
+    if (stagedFiles.length >= 3) { setUploadError(lang === "es" ? "Máximo 3 documentos." : "Maximum 3 documents allowed."); return; }
+    setUploadError("");
+    setStagedFiles(prev => [...prev.filter(s => s.name !== f.name), f]);
   };
 
-  // Shared upload processor — used by both first upload (resetState=false) and "upload another" (resetState=true)
-  const processUpload = useCallback(async (f, resetState = false) => {
-    if (!f || f.type !== "application/pdf") { setUploadError(t.errorFormat); return; }
+  // Proceed to privacy screen with all staged files
+  const initiateUpload = (f?: File) => {
+    if (f) stageFile(f);
+    // If files are already staged, go to privacy now (called by "Continue" button)
+  };
+
+  const proceedToPrivacy = () => {
+    if (stagedFiles.length === 0) return;
+    pendingFilesRef.current = stagedFiles;
+    setStage(STAGE.PRIVACY);
+  };
+
+  // Shared upload processor — accepts an array of files
+  const processUpload = useCallback(async (files: File[], resetState = false) => {
+    if (!files?.length) return;
     if (resetState) {
       setMessages([]); setPlanData(null); setStmtData(null);
       setCalcExpanded(false);
     }
-    setUploadError(""); setFileName(f.name);
+    const primaryFile = files[0];
+    setUploadError(""); setFileName(primaryFile.name);
     setUploadProgress(0); setUploadPhase('uploading');
+    setUploadDocIndex(0); setUploadDocCount(files.length);
     setStage(STAGE.UPLOADING);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      // ── Upload PDF directly to /api/ingest (Node.js) → Anthropic Files API ──
-      const fileId = await uploadFile(
-        f,
-        (pct) => setUploadProgress(pct),
-        abortRef.current.signal,
-      );
-      fileIdRef.current = fileId;
-      setUploadPhase('analyzing');
+      const uploadSignal = abortRef.current.signal;
 
-      pendingFileRef.current = null;
+      // ── Upload all files sequentially → collect fileIds ──────────────────
+      const collectedIds: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        setUploadDocIndex(i);
+        setFileName(files[i].name);
+        setUploadProgress(0);
+        const fid = await uploadFile(files[i], (pct) => setUploadProgress(pct), uploadSignal);
+        collectedIds.push(fid);
+      }
+
+      // Capture signal before next await
+      const analyzeSignal = abortRef.current.signal;
+      fileIdsRef.current = collectedIds;
+      setUploadPhase('analyzing');
+      setStagedFiles([]);
+      pendingFilesRef.current = [];
 
       if (docType === "statement") {
         const m1 = { role: "user", content: t.stmtFirstMessage };
-        const raw = await callClaude([m1], null, lang, null, () => {}, abortRef.current.signal, fileId);
+        const raw = await callClaude([m1], null, lang, null, () => {}, analyzeSignal, collectedIds);
         const sd = parseStmtData(raw);
         if (sd) setStmtData(sd);
         setMessages([m1, { role: "assistant", content: stripStmtData(raw) }]);
         setStage(STAGE.STMT_DASHBOARD);
       } else {
         const m1 = { role: "user", content: t.firstMessage };
-        const raw = await callClaude([m1], null, lang, null, () => {}, abortRef.current.signal, fileId);
+        const raw = await callClaude([m1], null, lang, null, () => {}, analyzeSignal, collectedIds);
         const pd = normalizePlanData(parsePlanData(raw));
         if (pd) setPlanData(pd);
         setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
@@ -2106,7 +2251,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     } catch (e) {
       if ((e as any).name === "AbortError") { return; }
       console.error('[processUpload] Upload failed:', (e as any).message, e);
-      pendingFileRef.current = null;
+      pendingFilesRef.current = [];
       abortRef.current = null;
 
       let userMsg: string = t.errorRead;
@@ -2119,21 +2264,69 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       setUploadError(userMsg);
       setStage(resetState ? (docType === "statement" ? STAGE.STMT_DASHBOARD : STAGE.APP) : STAGE.LANDING);
     }
-  // lang and docType are stable during an upload; t is derived from lang
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, docType, t]);
 
-  const proceedAfterConsent = () => { setPlanGuideTab("guide"); processUpload(pendingFileRef.current, false); };
-  const handleAdditionalUpload = f => processUpload(f, true);
+  const proceedAfterConsent = () => { setPlanGuideTab("guide"); processUpload(pendingFilesRef.current, false); };
 
   // Complete fresh-start re-upload: wipe all state then open file picker.
-  // The addDocRef onChange uses initiateUpload, so the user goes through the privacy screen.
+  // addDocRef is used for in-session supplemental uploads (APP/stmtDashboard stages) — bypasses privacy screen.
   const startFreshUpload = () => {
     setMessages([]); setPlanData(null); setStmtData(null);
     setFileName(""); setInput(""); setLoading(false); setCalcExpanded(false);
-    setStreamingText(''); pendingFileRef.current = null; fileIdRef.current = null;
-    addDocRef.current?.click();
+    setStreamingText(''); setStagedFiles([]); pendingFilesRef.current = []; fileIdsRef.current = [];
+    setDocType(null); setStage(STAGE.CHOOSER);
   };
+
+  // Supplemental upload: user already in APP/stmtDashboard — skip privacy, append fileId, ask Claude to review new doc
+  const supplementalUpload = useCallback(async (file: File) => {
+    if (!file) return;
+    setUploadError("");
+    setFileName(file.name);
+    setUploadProgress(0);
+    setUploadPhase('uploading');
+    setUploadDocIndex(0);
+    setUploadDocCount(1);
+    setStage(STAGE.UPLOADING);
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+    try {
+      const uploadSignal = abortRef.current.signal;
+      const fid = await uploadFile(file, (pct) => setUploadProgress(pct), uploadSignal);
+      const updatedIds = [...fileIdsRef.current, fid];
+      fileIdsRef.current = updatedIds;
+      setUploadPhase('analyzing');
+      const analyzeSignal = abortRef.current.signal;
+      const es = lang === "es";
+      const followUp = { role: "user" as const, content: es
+        ? `He añadido otro documento (${file.name}). Por favor revísalo y dime si contiene información adicional sobre el plan, especialmente opciones de inversión, comisiones u otras disposiciones no cubiertas en el documento anterior.`
+        : `I've added another document (${file.name}). Please review it and let me know if it contains any additional plan information — especially investment options, fund lineup, fees, or plan provisions not covered in the original document.`
+      };
+      const updatedMsgs = [...messages, followUp];
+      setMessages(updatedMsgs);
+      setActiveTab("chat");
+      setStage(STAGE.APP);
+      setLoading(true);
+      setStreamingText('');
+      let reply = '';
+      const raw = await callClaude(updatedMsgs, null, lang, planData, (chunk) => {
+        reply += chunk;
+        setStreamingText(reply);
+      }, analyzeSignal, updatedIds);
+      setMessages([...updatedMsgs, { role: "assistant", content: raw }]);
+      setStreamingText('');
+      setLoading(false);
+      abortRef.current = null;
+    } catch (e: any) {
+      if (e.name === "AbortError") { setLoading(false); return; }
+      console.error('[supplementalUpload] failed:', e);
+      setUploadError(e.message || t.errorRead);
+      setStage(STAGE.APP);
+      setLoading(false);
+      abortRef.current = null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, lang, planData, t]);
 
   const sendMessage = async text => {
     if (!text.trim() || loading) return;
@@ -2143,7 +2336,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      const raw = await callClaude(nm, null, lang, planData, chunk => setStreamingText(prev => prev + chunk), abortRef.current.signal, fileIdRef.current);
+      const raw = await callClaude(nm, null, lang, planData, chunk => setStreamingText(prev => prev + chunk), abortRef.current.signal, fileIdsRef.current);
       setStreamingText('');
       const cleaned = docType === "statement" ? stripStmtData(raw) : stripPlanData(raw);
       setMessages([...nm, { role: "assistant", content: cleaned }]);
@@ -2165,7 +2358,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   };
 
   const handleKeyDown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } };
-  const handleDrop = e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files?.[0]) initiateUpload(e.dataTransfer.files[0]); };
+  const handleDrop = e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files?.[0]) stageFile(e.dataTransfer.files[0]); };
   const lastMsg = messages[messages.length - 1];
   const showChips = stage === "chat" && !loading && lastMsg?.role === "assistant";
 
@@ -2275,50 +2468,107 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           ? (lang === "es" ? "Sube tu estado de cuenta trimestral o anual para ver un resumen interactivo." : "Upload your quarterly or annual statement to see an interactive breakdown.")
           : t.subtitle}
       </p>
+      {/* Drop zone — smaller when files are staged */}
       <div onClick={() => fileInputRef.current?.click()} onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop}
-        style={{ border: `2px dashed ${dragOver ? C.accent : C.border}`, borderRadius: 16, padding: "42px 32px", cursor: "pointer", background: dragOver ? C.accentDim : "rgba(23,31,45,.6)", transition: "all .25s", marginBottom: 36 }}>
-        <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) initiateUpload(e.target.files[0]); e.target.value = ""; }} />
+        style={{ border: `2px dashed ${dragOver ? C.accent : (stagedFiles.length > 0 ? C.border : C.border)}`, borderRadius: 16, padding: stagedFiles.length > 0 ? "24px 32px" : "42px 32px", cursor: "pointer", background: dragOver ? C.accentDim : (stagedFiles.length > 0 ? C.surfaceAlt : "rgba(23,31,45,.6)"), transition: "all .25s", marginBottom: stagedFiles.length > 0 ? 12 : 36 }}>
+        <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) stageFile(e.target.files[0]); e.target.value = ""; }} />
         <div style={{ width: 50, height: 50, borderRadius: 14, margin: "0 auto 14px", background: docType === "statement" ? C.greenDim : C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${docType === "statement" ? "rgba(92,184,138,.2)" : "rgba(212,168,83,.2)"}` }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={docType === "statement" ? C.green : C.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
         </div>
         <p style={{ fontSize: 15, fontWeight: 600, margin: "0 0 5px" }}>
-          {docType === "statement"
-            ? (lang === "es" ? "Arrastra tu estado de cuenta aquí" : "Drop your account statement here")
-            : t.dropTitle}
+          {stagedFiles.length > 0
+            ? (lang === "es" ? "+ Agregar otro documento" : "+ Add another document")
+            : docType === "statement"
+              ? (lang === "es" ? "Arrastra tu estado de cuenta aquí" : "Drop your account statement here")
+              : t.dropTitle}
         </p>
         <p style={{ fontSize: 13, color: C.textMuted, margin: 0 }}>
-          {docType === "statement"
-            ? (lang === "es" ? "PDF — Estado de cuenta trimestral o anual" : "PDF — Quarterly or annual account statement")
-            : t.dropSub}
+          {stagedFiles.length > 0
+            ? (lang === "es" ? "p.ej. 408(b)(2), folleto de inversiones" : "e.g. 408(b)(2) fee disclosure, investment guide")
+            : docType === "statement"
+              ? (lang === "es" ? "PDF — Estado de cuenta trimestral o anual" : "PDF — Quarterly or annual account statement")
+              : t.dropSub}
         </p>
       </div>
-      {uploadError && <p style={{ fontSize: 13, color: C.danger, textAlign: "center", margin: "-16px 0 16px", fontWeight: 600 }}>{uploadError}</p>}
+
+      {/* Staged file chips */}
+      {stagedFiles.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+          {stagedFiles.map((f, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.surface, border: `1px solid ${C.accent}33`, borderRadius: 10 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.text, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+              <span style={{ fontSize: 11, color: C.textMuted, flexShrink: 0 }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+              <button onClick={e => { e.stopPropagation(); setStagedFiles(prev => prev.filter((_, j) => j !== i)); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.textDim, padding: "2px 4px", borderRadius: 4, fontSize: 16, lineHeight: 1 }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {uploadError && <p style={{ fontSize: 13, color: C.danger, textAlign: "center", margin: "0 0 16px", fontWeight: 600 }}>{uploadError}</p>}
+
+      {/* Continue button — only shown once at least one file is staged */}
+      {stagedFiles.length > 0 && (
+        <button onClick={proceedToPrivacy} style={{ ...btnBase, width: "100%", padding: "14px", fontSize: 15, background: `linear-gradient(135deg,${C.accent},#B8863A)`, color: "#0F1621", marginBottom: 20 }}>
+          {lang === "es" ? `Analizar ${stagedFiles.length > 1 ? stagedFiles.length + " documentos" : "mi plan"} →` : `Analyze ${stagedFiles.length > 1 ? stagedFiles.length + " documents" : "my plan"} →`}
+        </button>
+      )}
+
       <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap", marginBottom: 20 }}>
         {[[<Shield key="s" color={C.accent} sz={14} />, t.trustPrivate], ["🔒", t.trustEncrypted], ["📚", t.trustEducation], ["💬", t.trustPlain]].map(([ic, lb], i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: C.textMuted }}>{ic}<span>{lb}</span></div>)}
       </div>
-      <button onClick={() => setStage("chooser")} style={{ ...btnBase, padding: "8px 20px", fontSize: 12, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>
+      <button onClick={() => { setStagedFiles([]); setStage("chooser"); }} style={{ ...btnBase, padding: "8px 20px", fontSize: 12, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>
         ← {lang === "es" ? "Cambiar tipo de documento" : "Change document type"}
       </button>
     </div></div>;
 
   // ── Uploading ──
-  if (stage === "uploading") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
-    <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid rgba(212,168,83,.2)` }}>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
-    </div>
-    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.readingTitle}</h2>
-    <p style={{ color: C.textMuted, fontSize: 14, margin: "0 0 20px" }}>
-      {uploadPhase === 'uploading'
-        ? <>{lang === "es" ? "Enviando" : "Uploading"} <span style={{ color: C.accent }}>{fileName}</span>…</>
-        : <>{lang === "es" ? "Leyendo" : "Reading"} <span style={{ color: C.accent }}>{fileName}</span>…</>}
-    </p>
-    {/* Progress bar — visible during file upload phase */}
-    {uploadPhase === 'uploading' && uploadProgress > 0 && (
-      <div style={{ width: "100%", maxWidth: 280, height: 6, background: C.surfaceAlt, borderRadius: 3, overflow: "hidden", marginBottom: 8 }}>
-        <div style={{ height: "100%", width: `${uploadProgress}%`, background: `linear-gradient(90deg,${C.accent},#D4A853)`, borderRadius: 3, transition: "width .3s ease" }} />
+  if (stage === "uploading") {
+    const isMulti = uploadDocCount > 1;
+    const es = lang === "es";
+    return (
+      <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
+        <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid rgba(212,168,83,.2)` }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+        </div>
+        <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 6px", textAlign: "center" }}>{t.readingTitle}</h2>
+
+        {/* Status label */}
+        <p style={{ color: C.textMuted, fontSize: 13, margin: "0 0 16px", textAlign: "center", maxWidth: 320 }}>
+          {uploadPhase === 'uploading' ? (
+            isMulti
+              ? <>{es ? `Enviando documento ${uploadDocIndex + 1} de ${uploadDocCount}` : `Uploading document ${uploadDocIndex + 1} of ${uploadDocCount}`}: <span style={{ color: C.accent }}>{fileName}</span></>
+              : <>{es ? "Enviando" : "Uploading"} <span style={{ color: C.accent }}>{fileName}</span>…</>
+          ) : (
+            <>{es ? "Analizando tu plan" : "Analyzing your plan"}…</>
+          )}
+        </p>
+
+        {/* Progress bar — always visible */}
+        <div style={{ width: "100%", maxWidth: 300, marginBottom: 4 }}>
+          <div style={{ width: "100%", height: 8, background: C.surfaceAlt, borderRadius: 4, overflow: "hidden", border: `1px solid ${C.borderLight}`, position: "relative" }}>
+            {uploadPhase === 'uploading' ? (
+              /* Determinate fill */
+              <div style={{ height: "100%", width: `${uploadProgress}%`, background: `linear-gradient(90deg,${C.accent},#D4A853)`, borderRadius: 4, transition: "width .3s ease" }} />
+            ) : (
+              /* Indeterminate shimmer */
+              <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, transparent 0%, ${C.accent} 40%, #D4A853 60%, transparent 100%)`, animation: "shimmer 1.6s ease-in-out infinite" }} />
+            )}
+          </div>
+        </div>
+
+        {/* Percentage label */}
+        {uploadPhase === 'uploading' && (
+          <p style={{ color: C.textDim, fontSize: 11, margin: 0, fontVariantNumeric: "tabular-nums" }}>{uploadProgress}%</p>
+        )}
+
+        <style>{`
+          @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.75}}
+          @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+        `}</style>
       </div>
-    )}
-    <style>{`@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.75}}`}</style></div>;
+    );
+  }
 
   // ── Dashboard (TOC) ──
   // ── SPD App (dashboard + calculator + key terms + chat) ──
@@ -2376,7 +2626,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
     return (
       <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
-        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) initiateUpload(e.target.files[0]); e.target.value = ""; }} />
+        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUpload(e.target.files[0]); e.target.value = ""; }} />
 
         {showClearConfirm && <Modal>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
@@ -2440,7 +2690,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   // ── Statement Dashboard ──
   if (stage === "stmtDashboard") return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
-        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) initiateUpload(e.target.files[0]); e.target.value = ""; }} />
+        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUpload(e.target.files[0]); e.target.value = ""; }} />
 
     <AppHeader accentColor={C.green} title={stmtData?.planName || fileName || "Your Statement"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
 

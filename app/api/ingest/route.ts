@@ -1,7 +1,7 @@
 // Node.js runtime — handles large request bodies (no Edge 4 MB limit)
 // and supports FormData natively via the Web Fetch API in Node 18+.
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 import { del } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     let errMsg = 'Anthropic upload failed';
     try {
       const parsed = JSON.parse(text);
-      errMsg = parsed?.error?.message || parsed?.error || errMsg;
+      errMsg = parsed?.error?.message || (typeof parsed?.error === 'string' ? parsed.error : errMsg);
     } catch {}
     return jsonError(String(errMsg), 502);
   }

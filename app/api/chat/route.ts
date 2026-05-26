@@ -20,8 +20,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     messages?: { role: 'user' | 'assistant'; content: string }[];
     lang?: string;
     planData?: any;
-    pdf?: string;       // base64-encoded PDF (first message only, legacy fallback)
-    fileId?: string;    // Anthropic Files API file_id (preferred for large PDFs)
+    pdf?: string;        // base64-encoded PDF (legacy fallback)
+    fileId?: string;     // single file_id (legacy — prefer fileIds)
+    fileIds?: string[];  // multiple Files API file_ids (preferred)
   };
 
   // ── Reject oversized bodies before parsing ────────────────────────────────
@@ -33,27 +34,30 @@ export async function POST(req: NextRequest): Promise<Response> {
   try { body = await req.json(); }
   catch { return jsonError('Invalid request body', 400); }
 
-  const { messages, lang = 'en', planData, pdf, fileId } = body;
+  const { messages, lang = 'en', planData, pdf, fileId, fileIds } = body;
   if (!messages?.length) return jsonError('Missing messages', 400);
 
-  // ── 3. PDF source (Files API file_id takes priority over base64) ──────────────
-  const pdfFileId: string | null = fileId ?? null;
-  const pdfBase64: string | null = pdfFileId ? null : (pdf ?? null);
+  // ── 3. PDF source — fileIds array takes priority, then legacy fileId, then base64 ──
+  const pdfFileIds: string[] = fileIds?.length ? fileIds : (fileId ? [fileId] : []);
+  const pdfBase64: string | null = pdfFileIds.length > 0 ? null : (pdf ?? null);
 
-  // ── 4. Build Anthropic messages ───────────────────────────────────────────────
+  // ── 4. Build Anthropic messages — first message gets all document blocks ────────
   const anthropicMessages = messages.map((m, i) => {
-    if (i === 0 && (pdfFileId || pdfBase64)) {
-      const documentSource = pdfFileId
-        ? { type: 'file' as const, file_id: pdfFileId }
-        : { type: 'base64' as const, media_type: 'application/pdf' as const, data: pdfBase64! };
+    if (i === 0 && (pdfFileIds.length > 0 || pdfBase64)) {
+      const documentBlocks = pdfFileIds.length > 0
+        ? pdfFileIds.map(fid => ({
+            type: 'document' as const,
+            source: { type: 'file' as const, file_id: fid },
+          }))
+        : [{
+            type: 'document' as const,
+            source: { type: 'base64' as const, media_type: 'application/pdf' as const, data: pdfBase64! },
+          }];
 
       return {
         role: 'user' as const,
         content: [
-          {
-            type: 'document' as const,
-            source: documentSource,
-          },
+          ...documentBlocks,
           { type: 'text' as const, text: m.content },
         ],
       };
