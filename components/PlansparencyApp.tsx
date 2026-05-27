@@ -2116,22 +2116,27 @@ interface PlansparencyAppProps {
   advisorFirmName?: string;
   planId?: string;
   advisorSlug?: string;
+  // Participant mode — pre-load an existing plan without requiring upload
+  initialPdfBase64?: string | null;
+  initialPlanData?: Record<string, unknown> | null;
+  initialMessages?: Array<{ role: string; content: string }>;
+  initialStage?: string;
 }
 
 // ── Main App ──
-function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advisorFirmName, planId, advisorSlug }: PlansparencyAppProps = {}) {
+function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advisorFirmName, planId, advisorSlug, initialPdfBase64 = null, initialPlanData = null, initialMessages = [], initialStage = STAGE.CHOOSER }: PlansparencyAppProps = {}) {
   const [lang, setLang] = useState("en");
-  const [stage, setStage] = useState(STAGE.CHOOSER);
+  const [stage, setStage] = useState(initialStage);
   const [docType, setDocType] = useState(null); // "spd" or "statement"
   const [fileName, setFileName] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [calcExpanded, setCalcExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [planData, setPlanData] = useState(null);
+  const [planData, setPlanData] = useState(initialPlanData);
   const [planGuideTab, setPlanGuideTab] = useState<"guide" | "investments">("guide");
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
