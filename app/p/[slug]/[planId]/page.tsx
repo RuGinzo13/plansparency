@@ -1,12 +1,13 @@
 import { supabaseAdmin } from '@/lib/supabase';
 import PlansparencyApp from '@/components/PlansparencyApp';
 
-export default async function ParticipantPage({ params }: { params: { slug: string; planId: string } }) {
+export default async function ParticipantPage({ params }: { params: Promise<{ slug: string; planId: string }> }) {
+  const { slug, planId } = await params;
   const { data: plan } = await supabaseAdmin
     .from('plans')
     .select('plan_text, advisor_firm_name, advisor_logo, plan_name')
-    .eq('id', params.planId)
-    .eq('advisor_slug', params.slug)
+    .eq('id', planId)
+    .eq('advisor_slug', slug)
     .eq('status', 'active')
     .single();
 

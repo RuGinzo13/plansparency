@@ -3,11 +3,12 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 import PlansparencyApp from '@/components/PlansparencyApp';
 
 // ── Dynamic metadata — static export cannot reference async data ──────────────
-export async function generateMetadata({ params }: { params: { plan_id: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ plan_id: string }> }) {
+  const { plan_id } = await params;
   const { data: plan } = await supabaseAdmin
     .from('plans')
     .select('employer_name')
-    .eq('plan_id', params.plan_id)
+    .eq('plan_id', plan_id)
     .single();
 
   return {
@@ -37,8 +38,8 @@ function PlanNotFound({ note }: { note?: string }) {
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────────
-export default async function ParticipantPlanPage({ params }: { params: { plan_id: string } }) {
-  const { plan_id } = params;
+export default async function ParticipantPlanPage({ params }: { params: Promise<{ plan_id: string }> }) {
+  const { plan_id } = await params;
 
   // 1. Fetch plan row
   const { data: plan, error: planError } = await supabaseAdmin
