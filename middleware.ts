@@ -1,13 +1,8 @@
-// Clerk auth is imported but not active yet — advisor dashboard is a future feature.
-// /advisor routes return 404 until Clerk env vars are configured and the dashboard is ready.
 import { NextRequest, NextResponse } from 'next/server';
 
-const isAdvisorRoute = /^\/advisor(\/|$)/;
-
-export default function middleware(req: NextRequest) {
-  if (isAdvisorRoute.test(req.nextUrl.pathname)) {
-    return new NextResponse(null, { status: 404 });
-  }
+// All routes are open — Clerk auth is wired in app/advisor/layout.tsx
+// when NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is set.
+export default function middleware(_req: NextRequest) {
   return NextResponse.next();
 }
 
