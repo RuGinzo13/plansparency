@@ -65,7 +65,7 @@ export default function AdvisorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pdfBase64, planData, initialSummary }),
       });
-      if (!saveRes.ok) { const d = await saveRes.json().catch(() => ({})); throw new Error(d.error || `Save error ${saveRes.status}`); }
+      if (!saveRes.ok) { const d = await saveRes.json().catch(() => ({})); throw new Error(d.detail || d.error || `Save error ${saveRes.status}`); }
       const { plan_id, advisor_token, share_url } = await saveRes.json();
 
       // Step 3 — persist locally
