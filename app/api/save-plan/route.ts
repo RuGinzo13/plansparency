@@ -1,7 +1,7 @@
 export const runtime = 'nodejs'; // Node.js, NOT Edge — needed for Buffer operations
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const pdfBuffer = Buffer.from(pdfBase64, 'base64');
     const storagePath = `${plan_id}/plan.pdf`;
 
-    const { error: storageError } = await supabaseAdmin.storage
+    const { error: storageError } = await getSupabaseAdmin().storage
       .from('plan-documents')
       .upload(storagePath, pdfBuffer, {
         contentType: 'application/pdf',
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // ── 4. Insert row into plans table ─────────────────────────────────────────
     const pd = planData as Record<string, any>;
 
-    const { error: dbError } = await supabaseAdmin.from('plans').insert({
+    const { error: dbError } = await getSupabaseAdmin().from('plans').insert({
       plan_id,
       advisor_token,
       employer_name: pd.employerName ?? null,

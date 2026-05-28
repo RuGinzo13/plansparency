@@ -1,11 +1,11 @@
 // Server component — no 'use client'
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import PlansparencyApp from '@/components/PlansparencyApp';
 
 // ── Dynamic metadata — static export cannot reference async data ──────────────
 export async function generateMetadata({ params }: { params: Promise<{ plan_id: string }> }) {
   const { plan_id } = await params;
-  const { data: plan } = await supabaseAdmin
+  const { data: plan } = await getSupabaseAdmin()
     .from('plans')
     .select('employer_name')
     .eq('plan_id', plan_id)
@@ -42,7 +42,7 @@ export default async function ParticipantPlanPage({ params }: { params: Promise<
   const { plan_id } = await params;
 
   // 1. Fetch plan row
-  const { data: plan, error: planError } = await supabaseAdmin
+  const { data: plan, error: planError } = await getSupabaseAdmin()
     .from('plans')
     .select('*')
     .eq('plan_id', plan_id)
@@ -53,7 +53,7 @@ export default async function ParticipantPlanPage({ params }: { params: Promise<
   }
 
   // 2. Fetch PDF from Supabase Storage and convert to base64
-  const { data: blob, error: storageError } = await supabaseAdmin.storage
+  const { data: blob, error: storageError } = await getSupabaseAdmin().storage
     .from('plan-documents')
     .download(plan.pdf_storage_path);
 
@@ -65,7 +65,7 @@ export default async function ParticipantPlanPage({ params }: { params: Promise<
   const base64 = Buffer.from(arrayBuffer).toString('base64');
 
   // 3. Fire-and-forget session row — do not await, don't block the page
-  void supabaseAdmin.from('plan_sessions').insert({ plan_id: plan.plan_id });
+  void getSupabaseAdmin().from('plan_sessions').insert({ plan_id: plan.plan_id });
 
   // 4. Build initial messages from the stored summary
   const initialMessages = [{ role: 'assistant', content: plan.initial_summary }];

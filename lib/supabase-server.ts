@@ -4,9 +4,25 @@
 // SUPABASE_URL
 // SUPABASE_SERVICE_ROLE_KEY
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-export const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+let _client: SupabaseClient | null = null;
+
+export function getSupabaseAdmin(): SupabaseClient {
+  if (_client) return _client;
+
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error(
+      'Missing env vars: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in Vercel dashboard'
+    );
+  }
+
+  _client = createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+
+  return _client;
+}
