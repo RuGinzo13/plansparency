@@ -1,5 +1,5 @@
 # Plansparency — CONTEXT.md (Single Source of Truth)
-*Last updated: May 24, 2026 — Founder: Ross Ginsberg*
+*Last updated: May 28, 2026 — Founder: Ross Ginsberg*
 *Merged from CONTEXT.md (May 2) + AddlCONTEXT.md (May 20). AddlCONTEXT.md is now retired.*
 
 ---
@@ -25,13 +25,16 @@ AI-powered 401(k) plan document interpreter. Participant uploads their SPD or en
 - **Framework**: Next.js (App Router) — migration completed May 3–5, 2026
 - **Repo**: `RuGinzo13/plansparency` (GitHub, private)
 - **Live component**: `components/PlansparencyApp.tsx` ← THE REAL FILE. All Claude Code prompts target this.
-- **App structure**: `app/advisor/`, `app/api/`, `app/p/`, `app/try/`, `app/page.tsx`, `components/PlansparencyApp.tsx`
+- **App structure**: `app/advisor/`, `app/api/`, `app/p/`, `app/try/`, `app/page.tsx`, `components/PlansparencyApp.tsx`, `lib/supabase-server.ts`, `supabase/schema.sql`
 - **Deployment**: Vercel project: `Plansparency-nextjs` (live). Old project `Plansparency` is retired.
 - **⚠️ plansparency-mvp__1_.jsx IS RETIRED** — artifact from pre-Next.js prototype. Do not reference it.
 - **AI**: Claude Sonnet 4 via Anthropic API — proxied through Vercel serverless route. API key never in browser.
-- **Upload**: Client → Vercel Blob direct (bypasses Lambda) → `/api/ingest` fetches blob server-to-server → Anthropic Files API → blob deleted → fileId returned to client. `/api/upload` is token-generator only (no file bytes). Fixed May 24, 2026 (was hitting AWS Lambda 6MB payload cap).
+- **Upload (participant)**: Client → Vercel Blob direct (bypasses Lambda) → `/api/ingest` fetches blob server-to-server → Anthropic Files API → blob deleted → fileId returned to client. `/api/upload` is token-generator only.
+- **Upload (advisor)**: Client → FormData POST to `/api/ingest` (Node.js, no size limit) → Anthropic Files API → fileId → `/api/chat` (edge, fileId only, no PDF bytes) → parse PLANDATA → base64 convert → `/api/save-plan` (Node.js) → Supabase Storage + DB row → shareable `/p/{plan_id}` URL.
 - **Chat**: SSE streaming — stream: true to Anthropic, pipe text_delta chunks to ReadableStream. Mandatory for Vercel Hobby Edge 25s timeout.
-- **Features built**: PDF upload → SSE streaming → Claude, PLANDATA auto-extraction, calculator (PLANDATA-populated), EN/ES toggle, SECURE 2.0 IRS limits, safe harbor vs. discretionary match distinction, recordkeeper URL extraction + redirect, sessionless/no-storage, privacy consent gate, quick-ask chips, topic dashboard (12 sections), last-day provision detection, static Key Terms accordion tab, static top nav TabBar (Plan Guide | Calculator | Key Terms | Ask)
+- **Database**: Supabase project `iqloseaxxpgdpffpsizo`. Tables: `plans`, `plan_sessions`. Storage bucket: `plan-documents` (private). Env vars `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` set in Vercel production + preview.
+- **Auth**: Clerk conditional — enforced when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is set. `/advisor` layout + `/api/save-plan` route both check Clerk session. Production without Clerk key → redirects to `/`.
+- **Features built**: PDF upload → SSE streaming → Claude, PLANDATA auto-extraction, calculator (PLANDATA-populated), EN/ES toggle, SECURE 2.0 IRS limits, safe harbor vs. discretionary match distinction, recordkeeper URL extraction + redirect, sessionless/no-storage, privacy consent gate, quick-ask chips, topic dashboard (12 sections), last-day provision detection, static Key Terms accordion tab, static top nav TabBar (Plan Guide | Calculator | Key Terms | Ask), advisor upload page + plan storage, participant shareable plan page
 - **Test SPDs**: Principal/Baer's Rug (EIN: 11-2570999), Transamerica/Conflict International, EQ/Tierra Sur (EIN: 20-3525109, PN: 001)
 - **Test enrollment booklets**: Equitable (fund lineup on pages 13–14 — ~30 funds), Voya (no fund lineup), Transamerica (no fund lineup)
 
@@ -87,14 +90,18 @@ Equitable enrollment booklet — pages 13–14, ~30 funds, 9 categories. Full fu
 - ✅ ~~Version drift~~ — solved (GitHub is source of truth)
 - ✅ ~~Upload fails above 5.9MB~~ — solved (Vercel Blob client-side upload, May 24, 2026)
 
-### Version B (Not Started)
-- [ ] Advisor dashboard / white-label
-- [ ] AOR lock (EIN+PN in Supabase)
+### Version B (Partially Started)
+- ✅ Supabase database + storage — tables, bucket, env vars live
+- ✅ Advisor upload page + shareable participant URLs — `/advisor` + `/p/[plan_id]`
+- ✅ Clerk auth gates wired (conditional on key — enforces when key added)
+- [ ] Add Clerk publishable key + secret to Vercel env vars to activate auth
+- [ ] AOR lock (EIN+PN first-upload-wins in Supabase)
 - [ ] Session limit enforcement (Supabase + Stripe metered)
 - [ ] Stripe metered overage billing
+- [ ] Advisor dashboard — plan list, session counts, analytics
+- [ ] White-label branding — advisor logo + firm name on participant view
 - [ ] Advisor feedback portal (AI Accuracy Flag + bug report)
 - [ ] DOL EFAST2 auto-verification
-- [ ] Clerk auth
 - [ ] LinkedIn automation
 
 ---
@@ -171,8 +178,8 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | Code Storage | GitHub (RuGinzo13/plansparency) | ✅ Live |
 | Analytics | PostHog | TBD |
 | Privacy Policy | Termly.io free tier | ❌ Not done |
-| Auth | Clerk | ❌ Version B |
-| Database | Supabase | ❌ Version B |
+| Auth | Clerk (conditional — enforced when key is set) | ⚠️ Partial — no Clerk keys configured yet; auth gates are wired and will enforce on first key add |
+| Database | Supabase (`iqloseaxxpgdpffpsizo`) | ✅ Live — plans + plan_sessions tables, plan-documents bucket |
 | Billing | Stripe metered | ❌ Version B |
 | LinkedIn | Buffer → Taplio | ❌ Version B |
 
@@ -192,6 +199,10 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | ✅ Done | Next.js migration | GitHub → Vercel auto-deploy |
 | ✅ Done | Direct FormData upload to /api/ingest | Removes Vercel Blob SDK retry-loop hang — browser POSTs PDF directly to Node.js route → Anthropic |
 | ✅ Done | Static top nav TabBar | Plan Guide, Calculator, Key Terms, Ask |
+| ✅ Done | Supabase backend — plans table + plan_sessions + storage bucket | Tables live, env vars set in Vercel, schema in repo |
+| ✅ Done | Advisor upload page (`/advisor`) | Drag-drop PDF → /api/ingest → /api/chat → /api/save-plan → shareable link |
+| ✅ Done | Participant plan page (`/p/[plan_id]`) | Server component — fetches plan + PDF from Supabase, renders pre-loaded PlansparencyApp |
+| ✅ Done | Auth guards on advisor surface | Clerk conditional in layout + save-plan route; production blocks if Clerk key absent |
 | 🔄 In progress | Investments tab | Prompts written, not yet run |
 | ⚠️ Fix | Upload: Vercel platform payload cap ~4.5 MB | Node.js serverless functions on Vercel still have a platform-level body limit; large enrollment booklets (>4.5 MB) will 413 before route handler runs |
 | ⚠️ Fix | Upload: server timeout 60s vs client 180s | maxDuration=60 in /api/ingest — Vercel kills connection at 60s with a network tear-down, not a 504; user sees raw "Failed to fetch" not a clean timeout message |
@@ -339,7 +350,7 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | 7 | **Privacy & Consent Screen** | `STAGE.PRIVACY` ~line 1976, PlansparencyApp.tsx | Pre-upload privacy disclosure and consent gate |
 | 8 | **Investments Panel** | `InvestmentsPanel` + `FundRow` ~line 738, PlansparencyApp.tsx | Fund lineup — categories, expense ratios, risk labels, fact sheet links |
 | 9 | **Key Terms** | `KeyTermsPanel` ~line 557, `i18n.en.keyTerms` ~line 154, PlansparencyApp.tsx | Glossary accordion — EN/ES 401(k) definitions |
-| 10 | **Advisor & Participant Pages** | `app/advisor/`, `app/p/[slug]/[planId]/page.tsx`, `lib/supabase.ts` | Advisor dashboard (stub), white-labeled participant URLs, plan storage |
+| 10 | **Advisor & Participant Pages** | `app/advisor/page.tsx`, `app/advisor/layout.tsx`, `app/p/[plan_id]/page.tsx`, `app/p/[slug]/[planId]/page.tsx`, `app/api/save-plan/route.ts`, `lib/supabase-server.ts`, `lib/supabase.ts` | Advisor upload + plan list, shareable participant plan pages, Supabase plan storage |
 
 ---
 
@@ -360,8 +371,14 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | `components/PlansparencyApp.tsx` | **Live working code** — all builds target this |
 | `app/page.tsx` | Next.js entry point |
 | `app/api/upload/route.ts` | Vercel Blob token generator — no file bytes |
-| `app/api/ingest/route.ts` | Blob URL → Anthropic Files API → delete blob → return fileId |
+| `app/api/ingest/route.ts` | FormData/Blob URL → Anthropic Files API → delete blob (if from Blob) → return fileId |
 | `app/api/chat/route.ts` | Anthropic streaming call + system prompt |
+| `app/api/save-plan/route.ts` | Validates auth + body, uploads PDF to Supabase Storage, inserts plan row, returns plan_id + advisor_token + share_url |
+| `app/advisor/page.tsx` | Client component — advisor upload UI, plan list, copy/preview shareable links |
+| `app/advisor/layout.tsx` | Clerk auth gate — enforces session when key is set; blocks in production if key absent |
+| `app/p/[plan_id]/page.tsx` | Server component — fetches plan + PDF from Supabase, renders PlansparencyApp pre-loaded |
+| `lib/supabase-server.ts` | Lazy-initialized Supabase admin client (server-only, singleton) |
+| `supabase/schema.sql` | Table definitions for plans + plan_sessions — re-runnable (IF NOT EXISTS) |
 | `401k_Education_Project_Knowledge_Base.md` | Research foundation |
 | `Plansparency-Project-Brief.docx` | Formal project spec v3 |
 | `EQ_SPD_Test.pdf` | Test doc — Tierra Sur (EIN: 20-3525109, PN: 001) |

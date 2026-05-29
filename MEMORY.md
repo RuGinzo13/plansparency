@@ -225,3 +225,63 @@ The 10 addressable sections of the app:
 **In progress:** Claude Code prompts not yet run — Step 1 (fundsData), Step 2 (TabBar + InvestmentsPanel), file size fix.
 **Decisions made:** Fund company fact sheets only; no performance data; medium depth; expense ratio sort conditional; Version A advisor fallback; ERISA attorney required before public launch; GitHub is source of truth; JSX file retired.
 **Next session:** Run the 3 Claude Code prompts in order (file size fix → Step 1 → Step 2). Test with Equitable enrollment booklet. If 404(a)(5) docs are available, upload them and check expense ratio extraction.
+
+---
+
+## May 28, 2026 — Supabase Backend: Full Advisor → Participant Flow
+**What was decided:** Supabase is now the live backend for plan storage and participant delivery.
+**Architecture:**
+- `lib/supabase-server.ts` — lazy-initialized singleton (`getSupabaseAdmin()`), server-only
+- `supabase/schema.sql` — `plans` table (plan_id, advisor_token, employer_name, plan_name, ein, plan_number, plandata_json, initial_summary NOT NULL, pdf_storage_path NOT NULL) + `plan_sessions` table
+- `app/api/save-plan/route.ts` — Node.js runtime; uploads PDF to Storage, inserts plan row; rolls back orphaned blob on DB failure
+- `app/p/[plan_id]/page.tsx` — server component; fetches plan + PDF, renders `PlansparencyApp` pre-loaded with plan data
+- `app/advisor/page.tsx` — client component; full upload flow → /api/ingest → /api/chat → /api/save-plan → localStorage; shows plan list with copy/preview
+**Supabase project:** `iqloseaxxpgdpffpsizo.supabase.co`
+**Storage bucket:** `plan-documents` (private, service-role only)
+**Why:** Enables the core advisor→participant product loop: advisor uploads → shareable `/p/{plan_id}` URL → participant loads pre-analyzed plan without re-uploading.
+**What was rejected:** File-based storage; Vercel KV (not suited for binary blobs); keeping participant upload as the only entry point.
+
+---
+
+## May 28, 2026 — Advisor Upload Flow: /api/ingest → fileId → /api/chat
+**What was decided:** Advisor upload page uses `/api/ingest` (Node.js) to get an Anthropic `fileId` first, then passes `fileIds: [fileId]` to `/api/chat` (edge). Raw base64 is never sent to the edge function.
+**Why:** Vercel Edge Functions have a ~4MB request body cap. A 3MB PDF base64-encodes to ~4MB. Any real-world plan document would hit the cap before the app's own 30MB guard fires. The `/api/ingest` Node.js route (pre-existing) handles large bodies correctly. The `/api/chat` edge route already had a `fileIds` code path — it just wasn't wired up from the advisor page.
+**What was rejected:** Sending raw base64 to the edge function (broken for real documents); creating a new upload route (unnecessary — `/api/ingest` already exists).
+
+---
+
+## May 28, 2026 — Security Hardening: Auth on Save-Plan + Advisor Layout
+**What was decided:** `/api/save-plan` checks Clerk session when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is present. `app/advisor/layout.tsx` blocks `/advisor` in production when Clerk key is absent (redirects to `/`).
+**Why:** The save-plan route had zero auth — any anonymous client could create Supabase rows. The layout had a bypass that silently served the page publicly when Clerk wasn't configured.
+**Pattern (both files):** Conditional on `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — enforces auth when Clerk is configured, allows dev access when key is absent. Layout adds a third case: production without key → redirect `/`.
+**What was rejected:** Unconditional Clerk auth (breaks dev without keys); leaving the bypass as-is (public advisor page in any misconfigured deploy).
+
+---
+
+## May 28, 2026 — Code Review: 6 Findings, All Resolved
+**What was decided:** All 6 findings from the `/code-review` run on the Supabase backend commits were fixed in the same session.
+
+| # | File | Fix |
+|---|------|-----|
+| 1 | `app/api/save-plan/route.ts` | Added Clerk auth guard at route entry |
+| 2 | `app/advisor/layout.tsx` | Block in prod when Clerk key absent; allow in dev |
+| 3 | `app/advisor/page.tsx` | PDF routed through `/api/ingest` → `fileId`; edge body limit bypassed |
+| 4 | `app/api/save-plan/route.ts` | `storage.remove()` rollback on DB insert failure |
+| 5 | `app/p/[plan_id]/page.tsx` + schema | `initial_summary ?? ''` null guard + `NOT NULL` constraint applied live |
+| 6 | `PlansparencyApp.tsx` + `app/api/chat/route.ts` | `body?.getReader()` null-guarded in all remaining locations |
+
+**What was rejected:** Leaving any finding open; deferring to a future session.
+
+---
+
+## Session Summary, May 28, 2026
+**Worked on:** Supabase backend build and integration; Vercel build failure debugging; advisor→participant flow; security hardening; code review and fix of all 6 findings.
+**Completed:**
+- Full Supabase setup (tables, bucket, env vars) done via Management API — no manual SQL/dashboard steps required
+- Advisor upload page live and functional
+- Participant plan page (`/p/[plan_id]`) live
+- 7 consecutive Vercel build failures resolved (3 root causes: lazy Supabase init, params Promise fix, @types/react mismatch)
+- 6 code-review findings resolved across 6 commits
+**In progress:** Nothing blocking.
+**Decisions made:** See May 28 entries above.
+**Next session:** Read MEMORY.md first. Investments tab build (prompts were written May 20 — still pending). Test advisor upload end-to-end with a real plan document.
