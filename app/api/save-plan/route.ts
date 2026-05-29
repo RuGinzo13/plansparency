@@ -1,10 +1,19 @@
 export const runtime = 'nodejs'; // Node.js, NOT Edge — needed for Buffer operations
 
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    // ── 0. Auth — require Clerk session when key is configured ────────────────
+    if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+      const { userId } = await auth();
+      if (!userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     // ── 1. Parse + validate body ───────────────────────────────────────────────
     let body: { pdfBase64?: string; planData?: object; initialSummary?: string };
     try {
