@@ -39,17 +39,25 @@ export default function AdvisorPage() {
     if (!file.type.includes('pdf')) { setError('Please upload a PDF file.'); return; }
     if (file.size > 25 * 1024 * 1024) { setError('File must be under 25 MB.'); return; }
     try {
-      const pdfBase64 = await fileToBase64(file);
+      // Step 1 — upload PDF to Anthropic Files API via Node.js /api/ingest
+      // (avoids sending large base64 through the 4 MB edge function body limit)
+      setStatus('Uploading plan document…');
+      const fd = new FormData();
+      fd.append('file', file);
+      const ingestRes = await fetch('/api/ingest', { method: 'POST', body: fd });
+      if (!ingestRes.ok) { const d = await ingestRes.json().catch(() => ({})); throw new Error(d.error || `Upload error ${ingestRes.status}`); }
+      const { fileId } = await ingestRes.json();
 
-      // Step 1 — call /api/chat, consume full stream
+      // Step 2 — call /api/chat with fileId only (no PDF bytes in body)
       setStatus('Reading plan document…');
       const chatRes = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: FIRST_MSG }], pdf: pdfBase64, lang: 'en', planData: null }),
+        body: JSON.stringify({ messages: [{ role: 'user', content: FIRST_MSG }], fileIds: [fileId], lang: 'en', planData: null }),
       });
       if (!chatRes.ok) { const d = await chatRes.json().catch(() => ({})); throw new Error(d.error || `Chat error ${chatRes.status}`); }
-      const reader = chatRes.body!.getReader();
+      const reader = chatRes.body?.getReader();
+      if (!reader) throw new Error('No response stream from chat API');
       const decoder = new TextDecoder();
       let raw = '';
       while (true) { const { done, value } = await reader.read(); if (done) break; raw += decoder.decode(value, { stream: true }); }
@@ -58,8 +66,9 @@ export default function AdvisorPage() {
       if (!planData) { setError('Could not extract plan data. Try a different copy of the document.'); setStatus(''); return; }
       const initialSummary = stripPlanData(raw);
 
-      // Step 2 — save plan
+      // Step 3 — convert to base64 for Supabase storage, then save plan
       setStatus('Saving plan…');
+      const pdfBase64 = await fileToBase64(file);
       const saveRes = await fetch('/api/save-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
