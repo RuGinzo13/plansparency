@@ -69,6 +69,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     if (dbError) {
+      // Roll back the storage upload so no orphaned blobs accumulate
+      await getSupabaseAdmin().storage
+        .from('plan-documents')
+        .remove([storagePath])
+        .catch(() => {}); // best-effort — don't mask the original DB error
+
       return NextResponse.json(
         { error: 'Database insert failed', detail: dbError.message },
         { status: 500 },
