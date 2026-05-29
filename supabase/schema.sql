@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS plans (
   ein           TEXT,
   plan_number   TEXT,
   plandata_json JSONB,
-  initial_summary TEXT,
-  pdf_storage_path TEXT,
+  initial_summary  TEXT NOT NULL DEFAULT '',
+  pdf_storage_path TEXT NOT NULL,
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 

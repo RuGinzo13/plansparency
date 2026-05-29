@@ -68,7 +68,8 @@ export default async function ParticipantPlanPage({ params }: { params: Promise<
   void getSupabaseAdmin().from('plan_sessions').insert({ plan_id: plan.plan_id });
 
   // 4. Build initial messages from the stored summary
-  const initialMessages = [{ role: 'assistant', content: plan.initial_summary }];
+  // ?? '' guards against a NULL initial_summary column (no NOT NULL constraint in schema)
+  const initialMessages = [{ role: 'assistant', content: plan.initial_summary ?? '' }];
 
   // 5. Render the client app pre-loaded with plan data
   return (
