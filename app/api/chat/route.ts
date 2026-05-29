@@ -103,7 +103,8 @@ export async function POST(req: NextRequest): Promise<Response> {
   // ── 7. Pipe Anthropic SSE → plain text stream of token chunks ────────────────
   const stream = new ReadableStream({
     async start(controller) {
-      const reader = anthropicRes.body!.getReader();
+      const reader = anthropicRes.body?.getReader();
+      if (!reader) { controller.close(); return; }
       const decoder = new TextDecoder();
       let buffer = '';
 

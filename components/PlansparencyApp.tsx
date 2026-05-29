@@ -471,7 +471,8 @@ async function callClaude(
   }
 
   // Success — stream plain-text token chunks from the route
-  const reader = response.body!.getReader();
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Chat API returned a response with no body stream');
   const decoder = new TextDecoder();
   let full = '';
 
