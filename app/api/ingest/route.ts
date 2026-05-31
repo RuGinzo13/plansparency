@@ -5,6 +5,7 @@ export const maxDuration = 120;
 
 import { del } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 function jsonError(msg: string, status = 500): NextResponse {
   return NextResponse.json({ error: msg }, { status });
@@ -17,6 +18,11 @@ export async function POST(req: NextRequest): Promise<Response> {
   // ── 1. Auth ───────────────────────────────────────────────────────────────
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return jsonError('API key not configured', 500);
+
+  // ── 1b. Rate limit (per IP) ──────────────────────────────────────────────
+  // Fails open if Upstash is unconfigured/unreachable. Client surfaces 429.
+  const rl = await checkRateLimit(req, 'ingest');
+  if (!rl.ok) return jsonError('Too many uploads — please wait a minute and try again.', 429);
 
   // ── 2. Resolve the PDF bytes ──────────────────────────────────────────────
   const contentType = req.headers.get('content-type') ?? '';

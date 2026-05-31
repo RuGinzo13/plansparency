@@ -1,6 +1,7 @@
 export const runtime = 'edge';
 export const maxDuration = 60;
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -14,6 +15,12 @@ export async function POST(req: NextRequest): Promise<Response> {
   // ── 1. Auth ──────────────────────────────────────────────────────────────────
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return jsonError('API key not configured', 500);
+
+  // ── 1b. Rate limit (per IP) ──────────────────────────────────────────────────
+  // Client maps 429 → friendly "Too many requests" message. Fails open if Upstash
+  // is not configured or unreachable, so the happy path is unchanged.
+  const rl = await checkRateLimit(req, 'chat');
+  if (!rl.ok) return jsonError('Too many requests — please wait a minute and try again.', 429);
 
   // ── 2. Parse body ────────────────────────────────────────────────────────────
   let body: {
