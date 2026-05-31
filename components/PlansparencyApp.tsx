@@ -1,4 +1,12 @@
-// @ts-nocheck — migrated from app.jsx; type annotations to be added incrementally
+// @ts-nocheck
+// DELIBERATE, DOCUMENTED EXCEPTION (Phase 6): this is the only file in the
+// project that opts out of TypeScript checking. Everything else — API routes,
+// lib/ modules (money math, PLANDATA/STMTDATA parsing, IRS limits), and
+// utilities — is fully type-checked and blocks the build on errors.
+// This presentational monolith is slated for incremental decomposition (Phase 5
+// already extracted the pure logic into typed lib/ modules). Types will be added
+// as the component is broken into smaller pieces, rather than annotating ~2400
+// lines that are about to be split apart.
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
