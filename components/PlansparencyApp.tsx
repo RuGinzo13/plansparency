@@ -594,7 +594,7 @@ function InvestmentsPanel({ fundsData, lang }) {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <DisclosureCallout />
+      <DisclosureCallout lang={lang} />
 
       {/* Sort controls */}
       <div style={{ padding: "10px 16px", display: "flex", gap: 6, alignItems: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface }}>
