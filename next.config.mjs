@@ -5,11 +5,16 @@ const nextConfig = {
       bodySizeLimit: '50mb',
     },
   },
-  // Skip TypeScript and ESLint errors during Vercel build
-  // (PlansparencyApp uses @ts-nocheck; strict type errors are non-blocking)
+  // TypeScript errors now BLOCK the build. All routes, lib modules, and
+  // utilities are fully type-checked. The single exception is
+  // components/PlansparencyApp.tsx, which carries a file-level @ts-nocheck
+  // while it awaits incremental typing/decomposition.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
+  // No ESLint config is present in this project, so the build lint step is a
+  // no-op; left disabled to avoid Next attempting (and failing) to lint
+  // without a configuration.
   eslint: {
     ignoreDuringBuilds: true,
   },
