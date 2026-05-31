@@ -398,20 +398,21 @@ function PlanGuideTabBar({ activeTab, setActiveTab, hasFunds }) {
 }
 
 // ── Fund Row ──
-function FundRow({ fund, showCategory, riskMap }) {
+function FundRow({ fund, showCategory, riskMap, lang }) {
+  const es = lang === "es";
   const risk = riskMap[fund.category] || { label: "—", color: C.textDim };
   const erPct = fund.expenseRatio !== null && fund.expenseRatio !== undefined
     ? (fund.expenseRatio * 100).toFixed(2) + "%"
     : null;
   return (
-    <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
+    <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.borderLight}`, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ flex: 1, minWidth: 150 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: showCategory && fund.category ? 2 : 0, lineHeight: 1.3 }}>{fund.name}</div>
         {showCategory && fund.category && (
           <div style={{ fontSize: 10, color: C.textDim }}>{fund.category}</div>
         )}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginLeft: "auto" }}>
         <span style={{
           fontSize: 10, fontWeight: 700, color: risk.color,
           background: `${risk.color}18`, border: `1px solid ${risk.color}30`,
@@ -420,7 +421,10 @@ function FundRow({ fund, showCategory, riskMap }) {
           {risk.label}
         </span>
         {erPct && (
-          <span style={{ fontSize: 11, color: C.textMuted, whiteSpace: "nowrap" }}>{erPct}</span>
+          <span style={{ display: "flex", alignItems: "baseline", gap: 3, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 8, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: ".04em" }}>{es ? "Costo" : "Exp"}</span>
+            <span style={{ fontSize: 11, color: C.textMuted, fontWeight: 600 }}>{erPct}</span>
+          </span>
         )}
         {fund.factSheetUrl && (
           <a
@@ -429,10 +433,24 @@ function FundRow({ fund, showCategory, riskMap }) {
             onMouseEnter={e => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={e => (e.currentTarget.style.textDecoration = "none")}
           >
-            View Summary →
+            {es ? "Ver resumen →" : "View Summary →"}
           </a>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Summary stat chip (Investments) ──
+function StatChip({ value, label }) {
+  return (
+    <div style={{
+      flex: 1, minWidth: 0, padding: "8px 10px",
+      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
+      display: "flex", flexDirection: "column", gap: 1,
+    }}>
+      <span style={{ fontSize: 16, fontWeight: 700, color: C.text, fontFamily: F.display, lineHeight: 1.1 }}>{value}</span>
+      <span style={{ fontSize: 9, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: ".05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
     </div>
   );
 }
@@ -507,7 +525,13 @@ function DisclosureCallout({ lang = "en" }) {
 
 function InvestmentsPanel({ fundsData, lang }) {
   const [sortBy, setSortBy] = useState("category");
+  const es = lang === "es";
   const hasExpenseRatios = fundsData.some(f => f.expenseRatio !== null && f.expenseRatio !== undefined);
+  const categoryCount = new Set(fundsData.map(f => f.category).filter(Boolean)).size;
+  const erValues = fundsData
+    .filter(f => f.expenseRatio !== null && f.expenseRatio !== undefined)
+    .map(f => f.expenseRatio);
+  const avgEr = erValues.length ? erValues.reduce((s, r) => s + r, 0) / erValues.length : null;
 
   if (fundsData.length === 0) {
     return (
@@ -556,9 +580,9 @@ function InvestmentsPanel({ fundsData, lang }) {
   });
 
   const sortOpts = [
-    { id: "category", label: "By Category" },
+    { id: "category", label: es ? "Por categoría" : "By Category" },
     { id: "name", label: "A–Z" },
-    ...(hasExpenseRatios ? [{ id: "expense", label: "Expense Ratio" }] : []),
+    ...(hasExpenseRatios ? [{ id: "expense", label: es ? "Costo" : "Expense Ratio" }] : []),
   ];
 
   let listContent;
@@ -582,13 +606,13 @@ function InvestmentsPanel({ fundsData, lang }) {
           <span style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em" }}>{cat}</span>
         </div>
         {grouped[cat].map((fund, i) => (
-          <FundRow key={i} fund={fund} showCategory={false} riskMap={RISK_MAP} />
+          <FundRow key={i} fund={fund} showCategory={false} riskMap={RISK_MAP} lang={lang} />
         ))}
       </React.Fragment>
     ));
   } else {
     listContent = sortedFunds.map((fund, i) => (
-      <FundRow key={i} fund={fund} showCategory={true} riskMap={RISK_MAP} />
+      <FundRow key={i} fund={fund} showCategory={true} riskMap={RISK_MAP} lang={lang} />
     ));
   }
 
@@ -596,9 +620,29 @@ function InvestmentsPanel({ fundsData, lang }) {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <DisclosureCallout lang={lang} />
 
+      {/* Summary stats */}
+      <div style={{ display: "flex", gap: 8, padding: "12px 16px 4px", flexShrink: 0 }}>
+        <StatChip
+          value={String(fundsData.length)}
+          label={es ? (fundsData.length === 1 ? "Fondo" : "Fondos") : (fundsData.length === 1 ? "Fund" : "Funds")}
+        />
+        {categoryCount > 0 && (
+          <StatChip
+            value={String(categoryCount)}
+            label={es ? (categoryCount === 1 ? "Categoría" : "Categorías") : (categoryCount === 1 ? "Category" : "Categories")}
+          />
+        )}
+        {avgEr !== null && (
+          <StatChip
+            value={(avgEr * 100).toFixed(2) + "%"}
+            label={es ? "Costo prom." : "Avg expense"}
+          />
+        )}
+      </div>
+
       {/* Sort controls */}
-      <div style={{ padding: "10px 16px", display: "flex", gap: 6, alignItems: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface }}>
-        <span style={{ fontSize: 10, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", marginRight: 4 }}>Sort:</span>
+      <div style={{ padding: "10px 16px", display: "flex", gap: 6, alignItems: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 10, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", marginRight: 4 }}>{es ? "Ordenar:" : "Sort:"}</span>
         {sortOpts.map(opt => (
           <button key={opt.id} onClick={() => setSortBy(opt.id)} style={{
             padding: "5px 12px", borderRadius: 100,
@@ -611,7 +655,6 @@ function InvestmentsPanel({ fundsData, lang }) {
             {opt.label}
           </button>
         ))}
-        <span style={{ marginLeft: "auto", fontSize: 10, color: C.textDim }}>{fundsData.length} {fundsData.length === 1 ? "fund" : "funds"}</span>
       </div>
 
       {/* Fund list */}
