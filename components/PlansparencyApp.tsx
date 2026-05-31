@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-// @vercel/blob client-side upload removed — browser now POSTs FormData directly to /api/ingest
+// Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
 
 // ── Colors ──
