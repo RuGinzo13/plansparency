@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { parsePlanData, stripPlanData } from '@/lib/plan/plandata';
 
 const C = { bg: '#0F1621', surface: '#1A2333', border: '#2A3A50', accent: '#B8860B', accentDim: 'rgba(184,134,11,.15)', text: '#F4EFE6', muted: '#8A9BB0', danger: '#B83232' };
 const F = "'DM Sans','Segoe UI',sans-serif";
@@ -12,8 +13,6 @@ IMPORTANT — include at the very end of your response a hidden data block on it
 
 Fill every field from the actual document. matchTiers: DISCRETIONARY match tiers only (pct, upTo). noMatch: true only if NO discretionary match exists. safeHarbor.type: none|nonelective|basic_match|enhanced_match|qaca. fundsData: fund objects with name/category/expenseRatio/factSheetUrl if a fund lineup is present, else [].`;
 
-const parsePlanData = (t: string) => { const m = t.match(/<!--PLANDATA:(.*?)-->/s); if (!m) return null; try { return JSON.parse(m[1]); } catch { return null; } };
-const stripPlanData = (t: string) => t.replace(/<!--PLANDATA:.*?-->/gs, '').trim();
 const fileToBase64 = (f: File): Promise<string> => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res((r.result as string).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
 
 type StoredPlan = { plan_id: string; share_url: string; employer_name: string; uploaded_at: string };

@@ -5,6 +5,11 @@ export const maxDuration = 120;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
+import {
+  ANTHROPIC_API_VERSION,
+  ANTHROPIC_BETA_FILES,
+  ANTHROPIC_FILES_URL,
+} from '@/lib/anthropic/client';
 
 function jsonError(msg: string, status = 500): NextResponse {
   return NextResponse.json({ error: msg }, { status });
@@ -42,12 +47,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   let anthropicRes: Response;
   try {
-    anthropicRes = await fetch('https://api.anthropic.com/v1/files', {
+    anthropicRes = await fetch(ANTHROPIC_FILES_URL, {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'files-api-2025-04-14',
+        'anthropic-version': ANTHROPIC_API_VERSION,
+        'anthropic-beta': ANTHROPIC_BETA_FILES,
         // Do NOT set Content-Type — fetch sets it automatically with the boundary
       },
       body: upstream,

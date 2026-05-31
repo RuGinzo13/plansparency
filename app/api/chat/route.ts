@@ -2,6 +2,12 @@ export const runtime = 'edge';
 export const maxDuration = 60;
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
+import {
+  ANTHROPIC_API_VERSION,
+  ANTHROPIC_BETA_CHAT,
+  ANTHROPIC_MESSAGES_URL,
+  ANTHROPIC_MODEL,
+} from '@/lib/anthropic/client';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -77,16 +83,16 @@ export async function POST(req: NextRequest): Promise<Response> {
   // Edge 30 s wall-clock limit that kills large non-streaming requests.
   let anthropicRes: Response;
   try {
-    anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+    anthropicRes = await fetch(ANTHROPIC_MESSAGES_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'pdfs-2024-09-25,files-api-2025-04-14',  // pdfs: document type; files: file_id source
+        'anthropic-version': ANTHROPIC_API_VERSION,
+        'anthropic-beta': ANTHROPIC_BETA_CHAT,  // pdfs: document type; files: file_id source
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: ANTHROPIC_MODEL,
         max_tokens: 4000,
         stream: true,
         system: buildSystemPrompt(lang, planData),
