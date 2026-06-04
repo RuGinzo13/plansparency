@@ -1,5 +1,5 @@
 # Plansparency — CONTEXT.md (Single Source of Truth)
-*Last updated: May 28, 2026 — Founder: Ross Ginsberg*
+*Last updated: June 4, 2026 — Founder: Ross Ginsberg*
 *Merged from CONTEXT.md (May 2) + AddlCONTEXT.md (May 20). AddlCONTEXT.md is now retired.*
 
 ---
@@ -25,7 +25,8 @@ AI-powered 401(k) plan document interpreter. Participant uploads their SPD or en
 - **Framework**: Next.js (App Router) — migration completed May 3–5, 2026
 - **Repo**: `RuGinzo13/plansparency` (GitHub, private)
 - **Live component**: `components/PlansparencyApp.tsx` ← THE REAL FILE. All Claude Code prompts target this.
-- **App structure**: `app/advisor/`, `app/api/`, `app/p/`, `app/try/`, `app/page.tsx`, `components/PlansparencyApp.tsx`, `lib/supabase-server.ts`, `supabase/schema.sql`
+- **App structure**: `app/advisor/`, `app/api/`, `app/p/`, `app/try/`, `app/page.tsx`, `components/PlansparencyApp.tsx`, `lib/` (see lib modules below), `supabase/schema.sql`
+- **lib/ modules (extracted in Phase 5, June 4, 2026)**: `lib/plan/plandata.ts`, `lib/plan/stmtdata.ts`, `lib/plan/irs.ts` (PLANDATA/STMTDATA parsing + SECURE 2.0 IRS limits), `lib/i18n/index.ts` (EN/ES strings), `lib/anthropic/client.ts` (Anthropic client setup), `lib/ratelimit.ts` (Upstash rate limiting, fails open), `lib/supabase-server.ts` (lazy admin client)
 - **Deployment**: Vercel project: `Plansparency-nextjs` (live). Old project `Plansparency` is retired.
 - **⚠️ plansparency-mvp__1_.jsx IS RETIRED** — artifact from pre-Next.js prototype. Do not reference it.
 - **AI**: Claude Sonnet 4 via Anthropic API — proxied through Vercel serverless route. API key never in browser.
@@ -33,14 +34,17 @@ AI-powered 401(k) plan document interpreter. Participant uploads their SPD or en
 - **Upload (advisor)**: Client → FormData POST to `/api/ingest` (Node.js, no size limit) → Anthropic Files API → fileId → `/api/chat` (edge, fileId only, no PDF bytes) → parse PLANDATA → base64 convert → `/api/save-plan` (Node.js) → Supabase Storage + DB row → shareable `/p/{plan_id}` URL.
 - **Chat**: SSE streaming — stream: true to Anthropic, pipe text_delta chunks to ReadableStream. Mandatory for Vercel Hobby Edge 25s timeout.
 - **Database**: Supabase project `iqloseaxxpgdpffpsizo`. Tables: `plans`, `plan_sessions`. Storage bucket: `plan-documents` (private). Env vars `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` set in Vercel production + preview.
-- **Auth**: Clerk conditional — enforced when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is set. `/advisor` layout + `/api/save-plan` route both check Clerk session. Production without Clerk key → redirects to `/`.
+- **Auth**: Clerk conditional — enforced when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is set. `/api/save-plan` route checks Clerk session. **⚠️ As of June 4, 2026, `/advisor` is OPEN (pilot mode):** when no Clerk key is configured the layout serves the advisor area to anyone with the URL. This SUPERSEDES the May 28 decision (which redirected to `/` in production without a key) — the May 28 redirect was the root cause of the dead "For Advisors" button. Re-securing `/advisor` before public launch is a tracked TO-DO.
+- **Code quality (June 4, 2026)**: 6-phase cleanup completed — (1) dead-code removal, (2) Upstash rate limiting, (3) dependency prune, (4) collapsed upload paths, (5) extracted `lib/` modules (above), (6) restored type safety. `next.config.mjs` now has `typescript.ignoreBuildErrors: false`; all TS typechecks except `components/PlansparencyApp.tsx`, which keeps a documented `@ts-nocheck` (pure-UI monolith, ~193 deferred errors) pending future decomposition. `tsconfig.json` target bumped `ES2017`→`ES2018` (dotAll regex support; behavior-neutral under SWC). No functional behavior changed in any phase.
 - **Features built**: PDF upload → SSE streaming → Claude, PLANDATA auto-extraction, calculator (PLANDATA-populated), EN/ES toggle, SECURE 2.0 IRS limits, safe harbor vs. discretionary match distinction, recordkeeper URL extraction + redirect, sessionless/no-storage, privacy consent gate, quick-ask chips, topic dashboard (12 sections), last-day provision detection, static Key Terms accordion tab, static top nav TabBar (Plan Guide | Calculator | Key Terms | Ask), advisor upload page + plan storage, participant shareable plan page
 - **Test SPDs**: Principal/Baer's Rug (EIN: 11-2570999), Transamerica/Conflict International, EQ/Tierra Sur (EIN: 20-3525109, PN: 001)
 - **Test enrollment booklets**: Equitable (fund lineup on pages 13–14 — ~30 funds), Voya (no fund lineup), Transamerica (no fund lineup)
 
 ---
 
-## Investments Tab — In Progress (May 20, 2026)
+## Investments Tab — BUILT (May 20 decisions; built + polished June 4, 2026)
+
+> **Status (June 4, 2026):** The Investments tab is fully built — `InvestmentsPanel` + `FundRow` render the sortable, categorized fund lineup with expense ratios and fact-sheet links per the decisions below. June 4 work was **visual/UX polish only** (per user): added a `StatChip` summary strip (fund count / category count / avg expense ratio), localized sort labels + "View Summary →"/"Ver resumen →", `flexWrap` responsiveness, and fixed a bilingual bug (`<DisclosureCallout lang={lang} />` was missing its `lang` prop in the populated fund view). The "Claude Code Prompts — Ready to Run" list below is now historical (already executed). **Still gated: ERISA attorney review before this tab goes live publicly.**
 
 ### Decisions Finalized
 - **Source documents**: Enrollment booklet or 404(a)(5) fee disclosure. SPDs do not contain fund lineups.
@@ -70,10 +74,16 @@ Equitable enrollment booklet — pages 13–14, ~30 funds, 9 categories. Full fu
 
 ## TO-DO List
 
+### Carried Over (added June 4, 2026)
+- [ ] **Rotate the exposed Anthropic API key** (Task #1) — a key was shared in prior context and should be rotated.
+- [ ] **Build advisor login / re-secure `/advisor` before public launch** (Task #2) — `/advisor` is currently OPEN (pilot mode): publicly reachable by URL. Add Clerk keys + `/sign-in`, or a shared-password gate.
+- [ ] Decompose `components/PlansparencyApp.tsx` (~2400 lines) and remove its `@ts-nocheck` (eliminates ~193 deferred type errors). Future work — not yet requested.
+
 ### Investments Tab
-- [ ] Run Step 1 prompt (fundsData extraction)
-- [ ] Run Step 2 prompt (TabBar + InvestmentsPanel)
-- [ ] Run file size fix (25MB)
+- ✅ ~~Run Step 1 prompt (fundsData extraction)~~ — built
+- ✅ ~~Run Step 2 prompt (TabBar + InvestmentsPanel)~~ — built
+- ✅ ~~Run file size fix (25MB)~~ — done
+- ✅ ~~Visual/UX polish~~ — StatChip strip, localized labels, flexWrap, bilingual DisclosureCallout fix (June 4, 2026)
 - [ ] Test with Equitable enrollment booklet
 - [ ] Upload 404(a)(5) fee disclosure documents (unlocks expense ratio data + sort)
 - [ ] ERISA attorney review before Investments tab goes live publicly
@@ -93,7 +103,7 @@ Equitable enrollment booklet — pages 13–14, ~30 funds, 9 categories. Full fu
 ### Version B (Partially Started)
 - ✅ Supabase database + storage — tables, bucket, env vars live
 - ✅ Advisor upload page + shareable participant URLs — `/advisor` + `/p/[plan_id]`
-- ✅ Clerk auth gates wired (conditional on key — enforces when key added)
+- ⚠️ Clerk auth gates: `/api/save-plan` still checks Clerk when key is set, but `/advisor` was OPENED for the pilot June 4, 2026 (no redirect when key absent). Re-secure before public launch (Task #2).
 - [ ] Add Clerk publishable key + secret to Vercel env vars to activate auth
 - [ ] AOR lock (EIN+PN first-upload-wins in Supabase)
 - [ ] Session limit enforcement (Supabase + Stripe metered)
@@ -178,7 +188,7 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | Code Storage | GitHub (RuGinzo13/plansparency) | ✅ Live |
 | Analytics | PostHog | TBD |
 | Privacy Policy | Termly.io free tier | ❌ Not done |
-| Auth | Clerk (conditional — enforced when key is set) | ⚠️ Partial — no Clerk keys configured yet; auth gates are wired and will enforce on first key add |
+| Auth | Clerk (conditional — enforced when key is set) | ⚠️ Partial — no Clerk keys configured. `/api/save-plan` enforces when key added; `/advisor` is OPEN (pilot mode, June 4 2026) — re-secure before public launch (Task #2) |
 | Database | Supabase (`iqloseaxxpgdpffpsizo`) | ✅ Live — plans + plan_sessions tables, plan-documents bucket |
 | Billing | Stripe metered | ❌ Version B |
 | LinkedIn | Buffer → Taplio | ❌ Version B |
@@ -202,8 +212,9 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | ✅ Done | Supabase backend — plans table + plan_sessions + storage bucket | Tables live, env vars set in Vercel, schema in repo |
 | ✅ Done | Advisor upload page (`/advisor`) | Drag-drop PDF → /api/ingest → /api/chat → /api/save-plan → shareable link |
 | ✅ Done | Participant plan page (`/p/[plan_id]`) | Server component — fetches plan + PDF from Supabase, renders pre-loaded PlansparencyApp |
-| ✅ Done | Auth guards on advisor surface | Clerk conditional in layout + save-plan route; production blocks if Clerk key absent |
-| 🔄 In progress | Investments tab | Prompts written, not yet run |
+| ⚠️ Open | Auth guards on advisor surface | `/api/save-plan` checks Clerk when key set. `/advisor` OPENED for pilot June 4 2026 (no redirect when key absent) — publicly reachable by URL. Re-secure before public launch (Task #2) |
+| ✅ Done | Investments tab | Built — `InvestmentsPanel` + `FundRow`, sortable categorized lineup, expense ratios, fact-sheet links; polished June 4 2026 (StatChip strip, localized labels, bilingual fix). ⚠️ ERISA review still required before public launch |
+| ✅ Done | Code-quality cleanup (6 phases) | Dead-code, Upstash rate limiting, dep prune, collapsed upload paths, extracted `lib/` modules, restored type safety (`ignoreBuildErrors: false`). Behavior-neutral. PlansparencyApp.tsx keeps documented `@ts-nocheck` |
 | ⚠️ Fix | Upload: Vercel platform payload cap ~4.5 MB | Node.js serverless functions on Vercel still have a platform-level body limit; large enrollment booklets (>4.5 MB) will 413 before route handler runs |
 | ⚠️ Fix | Upload: server timeout 60s vs client 180s | maxDuration=60 in /api/ingest — Vercel kills connection at 60s with a network tear-down, not a 504; user sees raw "Failed to fetch" not a clean timeout message |
 | ⚠️ Fix | Upload: AbortSignal.any not universally supported | Cancel/session-clear doesn't abort in-flight upload on Safari <17.4, Chrome <116, Firefox <124 — fallback silently drops caller's abort signal |
@@ -375,9 +386,13 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | `app/api/chat/route.ts` | Anthropic streaming call + system prompt |
 | `app/api/save-plan/route.ts` | Validates auth + body, uploads PDF to Supabase Storage, inserts plan row, returns plan_id + advisor_token + share_url |
 | `app/advisor/page.tsx` | Client component — advisor upload UI, plan list, copy/preview shareable links |
-| `app/advisor/layout.tsx` | Clerk auth gate — enforces session when key is set; blocks in production if key absent |
+| `app/advisor/layout.tsx` | Auth gate — enforces Clerk session when key is set; **when key absent, advisor area is OPEN (pilot mode, June 4 2026)** — no redirect. Re-secure before public launch (Task #2) |
 | `app/p/[plan_id]/page.tsx` | Server component — fetches plan + PDF from Supabase, renders PlansparencyApp pre-loaded |
 | `lib/supabase-server.ts` | Lazy-initialized Supabase admin client (server-only, singleton) |
+| `lib/plan/plandata.ts`, `lib/plan/stmtdata.ts`, `lib/plan/irs.ts` | PLANDATA/STMTDATA extraction + SECURE 2.0 IRS limits (Phase 5 extraction, June 4 2026) |
+| `lib/i18n/index.ts` | EN/ES string tables (Phase 5 extraction) |
+| `lib/anthropic/client.ts` | Anthropic client setup (Phase 5 extraction) |
+| `lib/ratelimit.ts` | Upstash rate limiting — fails open (Phase 5 extraction) |
 | `supabase/schema.sql` | Table definitions for plans + plan_sessions — re-runnable (IF NOT EXISTS) |
 | `401k_Education_Project_Knowledge_Base.md` | Research foundation |
 | `Plansparency-Project-Brief.docx` | Formal project spec v3 |

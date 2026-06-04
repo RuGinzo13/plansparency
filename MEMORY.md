@@ -285,3 +285,70 @@ The 10 addressable sections of the app:
 **In progress:** Nothing blocking.
 **Decisions made:** See May 28 entries above.
 **Next session:** Read MEMORY.md first. Investments tab build (prompts were written May 20 — still pending). Test advisor upload end-to-end with a real plan document.
+
+---
+
+## June 4, 2026 — Architecture Cleanup: 6-Phase Behavior-Neutral Refactor
+**What was decided:** Run a 6-phase code-quality cleanup of `plansparency-nextjs` under the hard constraint *"do not change functionality — only improve code quality, scalability, maintainability."* Each phase committed separately and verified live on Vercel (deployment READY) before the next.
+**Phases:** (1) delete dead code; (2) add Upstash rate limiting (fails open); (3) prune unused dependencies; (4) collapse three upload paths into one (`/api/ingest` multipart → Anthropic Files API → fileId); (5) extract pure modules out of the `PlansparencyApp.tsx` monolith into typed `lib/` files; (6) restore type safety.
+**Why:** The monolith carried `@ts-nocheck` + `next.config` `ignoreBuildErrors`/`ignoreDuringBuilds`, masking all type/lint errors. Cleanup reduces regression risk and prepares the file for decomposition.
+**What was rejected:** Big-bang rewrite; changing any user-facing behavior.
+
+---
+
+## June 4, 2026 — Phase 5: New `lib/` Modules Extracted from the Monolith
+**What was decided:** Pure logic now lives in `lib/`, imported by `PlansparencyApp.tsx`:
+- `lib/plan/plandata.ts` — `parsePlanData`, `stripPlanData`, `normalizePlanData` (+ PlanData interfaces)
+- `lib/plan/stmtdata.ts` — `parseStmtData`, `stripStmtData`
+- `lib/plan/irs.ts` — `getIRSLimits` (2025 limits: base $23,500; catch-up $7,500 / $11,250 for 60–63)
+- `lib/i18n/index.ts` — the full EN/ES `i18n` object (~300 lines of pure data)
+- `lib/anthropic/client.ts` — shared Anthropic constants (version, model `claude-sonnet-4-6`, beta headers, URLs)
+- `lib/ratelimit.ts` — lazy Upstash limiters (chat 20/min, ingest 10/min), `checkRateLimit()` fails open
+**Why:** These were duplicated/inlined in the 2,800-line component and in `app/advisor/page.tsx`. Extraction de-duplicates and makes them independently typecheckable.
+**What was rejected:** Leaving logic inline; duplicating parse logic between the component and the advisor page.
+
+---
+
+## June 4, 2026 — Phase 6: Type Safety Gated at Build; Component @ts-nocheck Deferred
+**What was decided:** Flipped `typescript.ignoreBuildErrors` to **false** — every API route, `lib/` module, and utility is now type-checked on each Vercel build and errors BLOCK the build. Bumped tsc `target` to ES2018 (behavior-neutral; Next transpiles via SWC) so the PLANDATA/STMTDATA dotAll regexes type-check. The single remaining `@ts-nocheck` is `components/PlansparencyApp.tsx`, now carrying a documented rationale.
+**Why removing the component's @ts-nocheck was DEFERRED:** Removing it surfaces ~193 type errors on the 2,400-line file. It is pure presentational UI (lowest-risk code) and is slated for decomposition (Phase 5 already pulled its logic into typed `lib/`). Typing 2,400 lines now, only to split the file apart later, is throwaway work and risks behavior changes — violating the "don't change functionality" constraint. All behavior-critical code is already gated. Ross (no coding background) delegated the call: "provide a clean MVP that operates as intended."
+**What was rejected:** Full component typing pass now; leaving `ignoreBuildErrors: true` (kept masking real errors). ESLint sub-commit skipped — no ESLint config exists, so `ignoreDuringBuilds` is a harmless no-op.
+**Commits:** 6a `c8e93f8`, 6b `c17ddb1`.
+
+---
+
+## June 4, 2026 — Investments Tab Was Already Built; Shipped Visual/UX Polish
+**What was decided:** Confirmed the Investments tab is complete end-to-end (extraction prompt → `normalizePlanData` → `InvestmentsPanel`/`FundRow`). Rather than rebuild, shipped a presentation-only polish pass: a summary stats strip (fund count · # categories · avg expense ratio), a labeled per-fund expense ratio ("Exp"/"Costo"), graceful flex-wrap on narrow phones, and Spanish localization of the fact-sheet link / expense label / sort controls. Also fixed a bilingual bug where the populated fund view rendered `DisclosureCallout` without `lang` (Spanish users saw English).
+**Why:** Ross reported the tab as the next item; investigation showed it was built, so the actionable gap was polish (his selection) + the disclosure-language bug.
+**What was rejected:** Re-implementing the tab; adding new features (performance data) — ERISA exposure + out of scope. Note the app uses inline styles only (no media queries), so responsiveness must use flex-wrap.
+**Commits:** disclosure fix `97b1c1c`, polish `8b1241a`.
+
+---
+
+## June 4, 2026 — Advisor Area Opened for Pilot (SUPERSEDES May 28 "redirect to / in prod")
+**What was decided:** `app/advisor/layout.tsx` no longer redirects `/advisor` → `/` when no Clerk key is configured in production. When no Clerk key is present the advisor area is now OPEN (reachable by URL). The Clerk-enforcement branch is intact and re-activates automatically once Clerk keys are added.
+**⚠️ This SUPERSEDES the May 28, 2026 decision** ("Security Hardening: production without Clerk key → redirect('/')"). That redirect was the root cause of the homepage **"For Advisors" button doing nothing** — it bounced straight back to the homepage because no Clerk keys are in Vercel.
+**Why:** Ross chose "Open it now, no login" for the pilot (presented with: open / shared-password / full Clerk login). He has no Clerk keys configured and wanted the button to work now.
+**Trade-off / follow-up:** The advisor upload tool is now publicly reachable by anyone with the URL. Tracked TO-DO: re-secure before public launch (Clerk login or shared-password gate). Advisor login is explicitly on the to-do list "for later."
+**Commit:** `bd522e6`.
+
+---
+
+## June 4, 2026 — Local Typechecking Now Possible via node@25
+**What was decided:** Local `tsc --noEmit` works by prepending node@25 to PATH: `export PATH="/usr/local/opt/node@25/bin:$PATH" && npx tsc --noEmit`. System Node (v12.3.1) is too old and only produces `Unexpected token ?`. This unblocked the Phase 6 baseline. `npm install` under node@25 rewrites the (stale) lockfile and modernizes `node_modules` — that lockfile churn was reverted to keep commits behavior-neutral; only intentional changes were committed.
+**Why:** Enables real type-error baselines locally instead of relying solely on Vercel build feedback.
+**What was rejected:** Committing the regenerated lockfile (unvalidated version drift inside a code-quality phase).
+
+---
+
+## Session Summary, June 4, 2026
+**Worked on:** 6-phase architecture cleanup (Phase 6 finished this session); Investments tab review + polish; "For Advisors" dead-end fix.
+**Completed:**
+- Phase 6 type-safety gate live (`ignoreBuildErrors: false`); single documented `@ts-nocheck` exception on the component
+- `prop-types 2` phantom type-lib error resolved (stray local `node_modules/@types/prop-types 2` dir removed)
+- Investments tab bilingual disclosure bug fixed + visual/UX polish shipped
+- "For Advisors" button fixed (advisor layout opened for pilot)
+- All changes deployed to Vercel and verified READY
+**In progress:** Nothing blocking.
+**Open TO-DOs (tracked):** (1) Rotate the exposed Anthropic API key; (2) Build advisor login / re-secure `/advisor` before public launch.
+**Next session:** Read MEMORY.md first. Consider advisor login (Clerk keys → Vercel + `/sign-in` page, or shared-password gate). Rotate Anthropic key. When ready, decompose `PlansparencyApp.tsx` and type it incrementally (removes the last `@ts-nocheck`).

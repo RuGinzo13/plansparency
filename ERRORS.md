@@ -176,3 +176,49 @@ The old middleware returned 404 for every `/advisor` request, which also interfe
 ### Finding 6 (Low — CONFIRMED, FIXED): `body!.getReader()` non-null assertion in 3 locations
 **What happened:** `response.body!.getReader()` in PlansparencyApp.tsx and `anthropicRes.body!.getReader()` in chat/route.ts — TypeScript silenced, but at runtime a null body throws `TypeError: Cannot read properties of null`. The advisor page fix was done in commit `e5871c6`; two remaining instances fixed here.
 **Fix:** `body?.getReader()` with explicit null check and descriptive thrown error (PlansparencyApp.tsx) or `controller.close()` (chat/route.ts). Commit `e65cb7a`.
+
+---
+
+## Local Typecheck Environment — Stale node_modules + Phantom Type Dirs — June 4, 2026 (multi-attempt)
+*Hit while doing Phase 6 (restore TypeScript type safety) of the 6-phase code-quality cleanup. Goal was to flip `next.config.mjs` `typescript.ignoreBuildErrors` back to `false` and prove `tsc --noEmit` passes for everything except the one intentionally `@ts-nocheck`'d file.*
+
+**What didn't work:**
+- Running `tsc`/`npm run build` against the local `node_modules`: it had been installed under the ancient system Node (v12.3.1), so modern deps (`@upstash/redis`, `@supabase/supabase-js`) reported module-not-found, and dotAll regexes threw `TS1501` (regex `/s` flag needs an ES2018+ target).
+- Leaving `tsconfig.json` `target: "ES2017"`: the PLANDATA/STMTDATA dotAll extraction regexes wouldn't typecheck.
+- Trusting the local `node_modules` tree as-is: a stray duplicate directory `node_modules/@types/prop-types 2` (note the literal " 2" suffix, a Finder/copy artifact) produced a phantom `TS2688` "Cannot find type definition file for 'prop-types 2'". Local-only — never in the repo or on Vercel.
+- Letting `npm install` rewrite `package-lock.json`: a fresh install churned the lockfile (v1→v3 format, 773+/199− lines). A diff script showed it was almost entirely format migration, not verifiable dependency version bumps — so committing it would have muddied an otherwise behavior-neutral cleanup.
+- Trusting stale `.next/types`: the cached route validator still referenced deleted routes (`app/api/upload`, `app/p/[slug]/[planId]`) and reported errors for files that no longer exist.
+
+**What worked:**
+- **node@25 is installed at `/usr/local/opt/node@25/bin/`.** Prefixing it onto PATH for the command makes local typechecking work: `export PATH="/usr/local/opt/node@25/bin:$PATH" && npx tsc --noEmit`. The system Node 12 stays the default; this only overrides it for the one command.
+- Fresh `npm install` under node@25 resolved the module-not-found errors.
+- Bumping `tsconfig.json` `target` `ES2017` → `ES2018` let the dotAll regexes typecheck. Behavior-neutral: Next builds via SWC, not tsc, so the target bump changes nothing at runtime.
+- `rm -rf "node_modules/@types/prop-types 2"` killed the phantom TS2688.
+- `rm -rf .next` cleared the stale route validator cache; it regenerated clean on the next Vercel build. After all of the above, `tsc --noEmit` → exit 0 (save for the deliberately-deferred `@ts-nocheck` monolith).
+- **Reverted the lockfile churn** with `git checkout package-lock.json` per the "don't commit unverifiable changes" rule. Only the `tsconfig.json` target bump was kept from the environment work.
+
+**Note for next time:**
+- To typecheck locally, ALWAYS use node@25: `export PATH="/usr/local/opt/node@25/bin:$PATH" && npx tsc --noEmit`. Plain `tsc` under system Node 12 emits `Unexpected token ?` and is useless.
+- A directory like `name 2` inside `node_modules/@types/` is a copy artifact — delete it; it is not a real package.
+- `npm install` churning `package-lock.json` v1→v3 is mostly format migration. Do NOT commit it inside a behavior-neutral cleanup — revert with `git checkout package-lock.json`.
+- After deleting routes, clear `.next` before trusting a local typecheck.
+
+---
+
+## "For Advisors" Button Dead-End — Production Auth Redirect — June 4, 2026
+**Root cause:** `app/advisor/layout.tsx` carried a three-case auth gate from the May 28 Security Hardening pass. The third case — Clerk key absent AND `NODE_ENV === 'production'` — did `redirect('/')`. No Clerk key is configured in Vercel, so in production every `/advisor` visit silently bounced back to the homepage. Clicking "For Advisors" on the homepage appeared to do nothing (navigate to `/advisor` → immediate redirect to `/`).
+
+**What made it hard to spot:**
+- The button itself (`<a href="/advisor">For Advisors</a>` in `app/page.tsx`) was correct — the dead-end lived one layer down in the layout.
+- It only manifested in production; local dev (the third case's `development` branch) would have let it through.
+- The redirect was a deliberate, logged May 28 decision ("never serve the advisor page publicly without auth"), so it looked intentional.
+
+**What worked:**
+- Confirmed via Vercel env inspection (`/v10/projects/{id}/env`) that no `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` exists in any environment.
+- Per the user's explicit choice ("Open it now, no login"), removed the production `redirect('/')` branch. New logic: Clerk key present → enforce session; key absent → advisor area is OPEN (pilot mode), reachable by URL.
+- **This SUPERSEDES the May 28 decision** (flagged in MEMORY.md per CLAUDE.md Rule 7). Re-securing `/advisor` before public launch is tracked as a TO-DO (advisor login).
+
+**Note for next time:**
+- A "button does nothing" on a route that has a layout = check the layout's auth/redirect logic first, not the button.
+- Auth gates conditioned on `NODE_ENV` behave differently in prod vs. local — a redirect that never fires locally can silently break production.
+- The advisor area is currently publicly reachable by URL. Do not treat `/advisor` as private until the advisor login TO-DO is built.
