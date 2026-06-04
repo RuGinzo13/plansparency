@@ -30,8 +30,8 @@ AI-powered 401(k) plan document interpreter. Participant uploads their SPD or en
 - **Deployment**: Vercel project: `Plansparency-nextjs` (live). Old project `Plansparency` is retired.
 - **⚠️ plansparency-mvp__1_.jsx IS RETIRED** — artifact from pre-Next.js prototype. Do not reference it.
 - **AI**: Claude Sonnet 4 via Anthropic API — proxied through Vercel serverless route. API key never in browser.
-- **Upload (participant)**: Client → Vercel Blob direct (bypasses Lambda) → `/api/ingest` fetches blob server-to-server → Anthropic Files API → blob deleted → fileId returned to client. `/api/upload` is token-generator only.
-- **Upload (advisor)**: Client → FormData POST to `/api/ingest` (Node.js, no size limit) → Anthropic Files API → fileId → `/api/chat` (edge, fileId only, no PDF bytes) → parse PLANDATA → base64 convert → `/api/save-plan` (Node.js) → Supabase Storage + DB row → shareable `/p/{plan_id}` URL.
+- **Upload (unified, as of Phase 4 cleanup June 4 2026)**: Both participant and advisor now use ONE path — browser POSTs `multipart/form-data` (a `file` field) **directly to `/api/ingest`** (Node.js runtime, `maxDuration=120`, per-IP Upstash rate limit) → Anthropic Files API → returns `file_id`. **Vercel Blob and the old `/api/upload` token-generator route were removed** (`@vercel/blob` dropped from `package.json`). Trade-off: bytes pass through the Node serverless function again, so Vercel's platform body cap (~4.5 MB) applies — see ⚠️ Fix rows in Build Status.
+- **Upload (advisor, continued)**: after `/api/ingest` returns `fileId` → `/api/chat` (fileId only, no PDF bytes) → parse PLANDATA → `/api/save-plan` (Node.js) → Supabase Storage + DB row → shareable `/p/{plan_id}` URL.
 - **Chat**: SSE streaming — stream: true to Anthropic, pipe text_delta chunks to ReadableStream. Mandatory for Vercel Hobby Edge 25s timeout.
 - **Database**: Supabase project `iqloseaxxpgdpffpsizo`. Tables: `plans`, `plan_sessions`. Storage bucket: `plan-documents` (private). Env vars `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` set in Vercel production + preview.
 - **Auth**: Clerk conditional — enforced when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is set. `/api/save-plan` route checks Clerk session. **⚠️ As of June 4, 2026, `/advisor` is OPEN (pilot mode):** when no Clerk key is configured the layout serves the advisor area to anyone with the URL. This SUPERSEDES the May 28 decision (which redirected to `/` in production without a key) — the May 28 redirect was the root cause of the dead "For Advisors" button. Re-securing `/advisor` before public launch is a tracked TO-DO.
@@ -182,7 +182,7 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | Developer | Claude Code (VSCode) | ✅ Active |
 | Framework | Next.js App Router | ✅ Live |
 | API Security | Vercel Serverless API Route | ✅ Live — API key never in browser |
-| File Upload | Vercel Blob (`@vercel/blob`) — client-side direct upload | ✅ Live — bypasses Lambda 6MB cap |
+| File Upload | Direct FormData POST → `/api/ingest` (Node.js route) | ✅ Live — Vercel Blob removed in Phase 4; single upload path. Subject to Vercel ~4.5 MB platform body cap |
 | Streaming | SSE (mandatory for Vercel Hobby Edge 25s limit) | ✅ Live |
 | Hosting | Vercel (Plansparency-nextjs project) | ✅ Live |
 | Code Storage | GitHub (RuGinzo13/plansparency) | ✅ Live |
@@ -216,7 +216,7 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | ✅ Done | Investments tab | Built — `InvestmentsPanel` + `FundRow`, sortable categorized lineup, expense ratios, fact-sheet links; polished June 4 2026 (StatChip strip, localized labels, bilingual fix). ⚠️ ERISA review still required before public launch |
 | ✅ Done | Code-quality cleanup (6 phases) | Dead-code, Upstash rate limiting, dep prune, collapsed upload paths, extracted `lib/` modules, restored type safety (`ignoreBuildErrors: false`). Behavior-neutral. PlansparencyApp.tsx keeps documented `@ts-nocheck` |
 | ⚠️ Fix | Upload: Vercel platform payload cap ~4.5 MB | Node.js serverless functions on Vercel still have a platform-level body limit; large enrollment booklets (>4.5 MB) will 413 before route handler runs |
-| ⚠️ Fix | Upload: server timeout 60s vs client 180s | maxDuration=60 in /api/ingest — Vercel kills connection at 60s with a network tear-down, not a 504; user sees raw "Failed to fetch" not a clean timeout message |
+| ⚠️ Fix | Upload: server timeout vs client 180s | `/api/ingest` now `maxDuration=120` (raised from 60). If Anthropic still exceeds 120s on a very large PDF, Vercel tears down the connection (network error, not a clean 504) before the 180s client timer — user sees a raw "Failed to fetch" |
 | ⚠️ Fix | Upload: AbortSignal.any not universally supported | Cancel/session-clear doesn't abort in-flight upload on Safari <17.4, Chrome <116, Firefox <124 — fallback silently drops caller's abort signal |
 | ⚠️ Fix | Privacy policy | Termly.io before Version A launch |
 | ⚠️ Fix | ERISA disclaimer | Attorney review before Investments tab goes live |
@@ -352,7 +352,7 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 
 | # | Name | Files / Location | Scope |
 |---|------|-----------------|-------|
-| 1 | **Upload Flow** | `app/api/upload/route.ts`, `app/api/ingest/route.ts`, `uploadFile()` in PlansparencyApp.tsx | File size limits, supported types, upload errors, Blob/Anthropic handoff |
+| 1 | **Upload Flow** | `app/api/ingest/route.ts`, `uploadFile()` in PlansparencyApp.tsx | File size limits, supported types, upload errors, FormData→Anthropic Files API handoff (single path; Blob/`/api/upload` removed Phase 4) |
 | 2 | **AI / Chat Engine** | `app/api/chat/route.ts` | System prompt, guardrails, answer tone, new topics, streaming |
 | 3 | **Plan Dashboard** | `PlanDashboard` ~line 1047, PlansparencyApp.tsx | Tile cards after SPD upload — eligibility, match, vesting, loans, etc. |
 | 4 | **Contribution Calculator** | `CalcPanel` ~line 1323, PlansparencyApp.tsx | Salary/match/IRS limit math, SECURE 2.0 catch-up logic |
@@ -381,8 +381,7 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | `CLAUDE.md` / `PlanCLAUDE.md` | Operating rules for Claude |
 | `components/PlansparencyApp.tsx` | **Live working code** — all builds target this |
 | `app/page.tsx` | Next.js entry point |
-| `app/api/upload/route.ts` | Vercel Blob token generator — no file bytes |
-| `app/api/ingest/route.ts` | FormData/Blob URL → Anthropic Files API → delete blob (if from Blob) → return fileId |
+| `app/api/ingest/route.ts` | **Sole upload route.** Accepts multipart `file` field → Anthropic Files API → returns fileId. Node.js runtime, `maxDuration=120`, per-IP Upstash rate limit |
 | `app/api/chat/route.ts` | Anthropic streaming call + system prompt |
 | `app/api/save-plan/route.ts` | Validates auth + body, uploads PDF to Supabase Storage, inserts plan row, returns plan_id + advisor_token + share_url |
 | `app/advisor/page.tsx` | Client component — advisor upload UI, plan list, copy/preview shareable links |
