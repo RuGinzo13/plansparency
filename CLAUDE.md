@@ -73,6 +73,13 @@ When writing prompts for Claude Code:
 
 **Never give terminal commands directly to Ross.** Claude Code prompts are what gets handed off — Claude Code runs the commands. If something needs to be done in a dashboard (Supabase, Vercel, Stripe), give step-by-step instructions for the human, not a command.
 
+**Every prompt must run with zero approval clicks (Ross, Sept 28, 2026).** Claude Code runs phases unattended using the allowlist in `plansparency-nextjs/.claude/settings.json` (mode `acceptEdits`: file edits auto-approved; listed git/npm/npx/curl commands auto-approved; force-push, hard reset, rebase, amend, reading `.env*` denied). When writing a phase:
+- Use only command forms on that allowlist. If a phase genuinely needs a new command, add it to `.claude/settings.json` in the same phase-writing session (Cowork edits it) and say so in chat.
+- Claude Code must be opened with `plansparency-nextjs` as the workspace folder, so commands run from the repo root. Never write `cd <dir> && git …` (a `cd` combined with git always prompts).
+- One command per Bash call where possible; no `$(…)` substitutions; no chained `&&` except `export PATH=… && <allowed command>`.
+- Never `git add -A` / `git add .`; list files.
+- Anything that would need approval (installs, deletes outside /tmp, irreversible actions) goes in a separate phase marked 🛑 and flagged in chat first.
+
 **Break complex builds into steps.** One focused concern per STEP and per commit (not per conversation, since Sept 28, 2026). Keep each step small enough to verify on its own; keep a whole phase to roughly 3–4 steps so one conversation doesn't overload. A step that can't be checked automatically (it needs Ross's eyes) goes last or gets a checkpoint.
 
 **Specify the target file.** The live component is components/PlansparencyApp.tsx. The retired prototypes (`plansparency-mvp.jsx`, which exists BOTH in this repo root and one level above it, the `app/` folder one level above this repo, and `plansparency-mvp (1).jsx` in the claude.ai project) must never be referenced or modified. Always name the exact file a prompt should touch.

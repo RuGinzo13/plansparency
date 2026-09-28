@@ -2,7 +2,7 @@
 **Created:** Sept 28, 2026 in Cowork (rewritten same day after Ross's decision)
 **Run:** `Read "PHASE PROMPTS/PHASE-04-privacy-fixes.md" and execute all steps in order.` Unattended. 3 steps, 3 commits, each pushed. No human checkpoints. Step 1 touches the access gate (middleware); it has an automated live check.
 **Open items covered:** OPEN-ITEMS.md #15, #17
-**Status:** Ready
+**Status:** ✅ DONE Sept 28: `d108907`, `66b743a`, `d14fba8`, all Vercel Ready (verified by Cowork). Ross live checks pending.
 
 ---
 

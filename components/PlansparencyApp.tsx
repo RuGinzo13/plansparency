@@ -1,12 +1,22 @@
 // @ts-nocheck
-// DELIBERATE, DOCUMENTED EXCEPTION (Phase 6): this is the only file in the
-// project that opts out of TypeScript checking. Everything else — API routes,
-// lib/ modules (money math, PLANDATA/STMTDATA parsing, IRS limits), and
-// utilities — is fully type-checked and blocks the build on errors.
-// This presentational monolith is slated for incremental decomposition (Phase 5
-// already extracted the pure logic into typed lib/ modules). Types will be added
-// as the component is broken into smaller pieces, rather than annotating ~2400
-// lines that are about to be split apart.
+// This is the main app shell only (ErrorBoundary, the Plansparency component,
+// its props interface, and the default export). Phase 6 (Sept 2026) split the
+// rest of the former ~2,500-line monolith out into smaller files:
+//   lib/format.ts                       fmtRounded, fmtDollars, fmtShortAmt, fmtPctVal
+//   lib/client/api.ts                   uploadFile, callClaude
+//   components/plansparency/theme.ts    C, F, STAGE, btnBase
+//   components/plansparency/ui.tsx      Md, Fm, LangToggle, Logo, Shield, Modal, StatChip, DonutChart
+//   components/plansparency/nav.tsx     TabBar, PlanGuideTabBar, AppHeader
+//   components/plansparency/KeyTermsPanel.tsx
+//   components/plansparency/InvestmentsPanel.tsx   FundRow, DisclosureCallout, CATEGORY_ORDER, RISK_MAP, FUND_DISCLAIMER, InvestmentsPanel
+//   components/plansparency/PlanDashboard.tsx
+//   components/plansparency/CalcPanel.tsx
+//   components/plansparency/StatementDashboard.tsx  SuggestionBox, StatementDashboard
+// SectionIcon, PageBackground, TrustRow, and MiniBar were deleted as unused.
+//
+// DELIBERATE, DOCUMENTED EXCEPTION: this file still opts out of TypeScript
+// checking. The lib/ files and theme.ts above are fully typed; the UI files
+// keep @ts-nocheck for now. Typing happens file by file in a later phase.
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';

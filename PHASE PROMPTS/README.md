@@ -13,6 +13,10 @@ Phase prompt files for Claude Code. Written in Cowork, run in VS Code.
 
 **Structure:** one file per phase (`PHASE-NN-name.md`), split into numbered STEPS. Each step = one commit.
 
+**One-time setup for zero-click runs**
+1. In VS Code: File → Open Folder → `plansparency-nextjs` (the repo itself, not the `Plansparency` folder above it).
+2. In the Claude Code panel, set the permission mode to the one that accepts edits automatically (not Manual, not Auto). The repo's `.claude/settings.json` then pre-approves every command the phases use and blocks the dangerous ones.
+
 **How to run any phase** (one fresh Claude Code conversation, no babysitting):
 
     Read "PHASE PROMPTS/PHASE-NN-name.md" and execute all steps in order.

@@ -43,7 +43,7 @@ UI files that are moved keep a first line `// @ts-nocheck` plus `'use client';` 
 
 ## STEP 1 — Shared basics + delete dead code
 
-**Check the ground:** `git status` clean except Cowork docs (`*.md` in repo root, `PHASE PROMPTS/`); latest commit is PHASE-04's (or PHASE-05's). `grep -n "SectionIcon\|PageBackground\|TrustRow\|MiniBar" components/PlansparencyApp.tsx` shows each only at its own `function` line (unused). If any is used, do NOT delete it; move it with the others and report.
+**Check the ground:** `git status` clean except Cowork docs (`*.md` in repo root, `PHASE PROMPTS/`) and the new `.claude/settings.json` (Cowork; committed in Step 5); latest commit is PHASE-04's (or PHASE-05's). `grep -n "SectionIcon\|PageBackground\|TrustRow\|MiniBar" components/PlansparencyApp.tsx` shows each only at its own `function` line (unused). If any is used, do NOT delete it; move it with the others and report.
 
 **Do:**
 1. Create `lib/format.ts` (the four `fmt*` helpers, typed as they are) and `components/plansparency/theme.ts` (`C`, `F`, `STAGE`, `btnBase`). Export them; import them in `PlansparencyApp.tsx`; delete the originals there.
@@ -69,7 +69,7 @@ Checks → `git add components/plansparency/*.tsx components/PlansparencyApp.tsx
 
 **Do:**
 1. Update the comment block at the top of `components/PlansparencyApp.tsx`: it is now the main app shell only; list where each piece moved (one line each); keep `// @ts-nocheck` + reason ("typing happens file by file in a later phase").
-2. Stage any modified Cowork doc files (`OPEN-ITEMS.md`, `MEMORY.md`, `ERRORS.md`, `CONTEXT.md`, `PHASE PROMPTS/`).
+2. Stage any modified Cowork doc files (`OPEN-ITEMS.md`, `MEMORY.md`, `ERRORS.md`, `CONTEXT.md`, `CLAUDE.md`, `PHASE PROMPTS/`) and `.claude/settings.json`.
 3. Checks → `git add components/PlansparencyApp.tsx` + those docs → commit `docs: record app split layout` → push.
 
 ---

@@ -32,9 +32,9 @@
 | 12 | **PARKED:** upload the 12 MB test file (`Info Source Documents/Upload Size Tests/TEST-12MB-Equitable-x2.pdf`) and re-upload the 5.9 MB booklet | Ross | Decides #7. |
 | 13 | ~~EIN + Plan Number~~ | ✅ (checked) | Sept 28 DB check: advisor flow saves EIN + plan number (3 of 5 rows have both). Participant /try flow is sessionless and doesn't need them. No build needed. |
 | 14 | ~~Delete merged branch~~ | ✅ | Phase 03: only `main` remains locally and on GitHub. |
-| 15 | **Advisor's typed plan name is never saved** | CC | Sept 28 DB check: `employer_name` is empty on all 5 rows. `/advisor` keeps the typed name only in the browser; `/api/save-plan` reads `pd.employerName`, which PLANDATA never has. Result: share pages title as "Your 401(k) Plan". Small fix. → `PHASE-04` Step 3. |
+| 15 | ~~Advisor's typed plan name never saved~~ | ✅ | PHASE-04 `d14fba8`. Confirm with next advisor upload. |
 | 16 | ~~Two firm plans in the database~~ | ✅ | Sept 28: rows deleted (Cowork), stored PDFs deleted (Ross, dashboard). Verified: storage now holds exactly 3 PDFs matching the 3 remaining test plans. Anthropic copies removed by `PHASE-05`. |
-| 17 | **Documents must be deleted from Anthropic when the session ends** | CC | Ross, Sept 28: Anthropic may hold a document only during the active session. `PHASE-04` (rewritten): delete route + deletes on End Session / new upload / tab close / 30-min idle, 2-hour expiry backstop, advisor file deleted after save. Then `PHASE-05` deletes everything already stored. |
+| 17 | ~~Documents deleted from Anthropic when the session ends~~ | ✅ | PHASE-04 (`d108907`, `66b743a`) + PHASE-05 cleanup (`bb7ad25`): 16 old uploads deleted Sept 28. Temp key removed from `.env.local` (verified) and disabled in the console. |
 | 18 | ~~Delete 2 stored PDFs in Supabase~~ | ✅ | Ross, Sept 28; verified by Cowork. |
 
 ## P3 — Pre-launch gate (nothing here goes public until done)

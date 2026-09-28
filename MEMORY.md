@@ -516,3 +516,15 @@ The addressable sections of the app — superseded by the updated Component Map 
 **What this means honestly:** the strongest achievable promise is "never stored as a file; processed per request; deleted within 30 days (or not stored at all with ZDR)." Literal zero also requires ZDR.
 **Superseded:** original PHASE-04 (6-hour expiry). PHASE-04 rewritten around session-scoped deletion. Broader security and confidentiality options for uploaded documents: to be discussed (Ross, Sept 28).
 
+---
+
+## September 28, 2026 — Anthropic File Storage Cleared
+**Done:** PHASE-05 deleted 16 old `upload.pdf` files from Anthropic's Files API (including the two firm plans' copies). Temp key removed from `.env.local` (Cowork verified: no key text in the file, file not tracked by git, no key in recent commits) and disabled by Ross. From now on, uploads live only for the session (PHASE-04).
+
+---
+
+## September 28, 2026 — Zero-Click Phase Runs via Project Permission Allowlist
+**What was decided:** Ross won't approve prompts during phase runs. Cowork created `plansparency-nextjs/.claude/settings.json`: `defaultMode: acceptEdits`, an allowlist of exactly the commands phases use (git status/log/diff/add/commit/push to main, tsc, build, curl, tsx/node in /tmp), `ask` for npm install/uninstall and remote branch deletes, `deny` for force-push, hard reset, clean, rebase, amend, filter-branch, the Vercel CLI, and reading/editing `.env*`. Claude Code must be opened with the repo as the workspace folder (it had been running from the parent `Plansparency` folder, forcing `cd … && git` commands that always prompt). Every phase is now written to stay inside the allowlist.
+**Why:** Auto mode depends on a classifier that was down today; Manual mode needs clicks; `bypassPermissions` skips every safeguard on Ross's own Mac. An allowlist + deny list gives unattended runs with hard stops on the dangerous commands.
+**What was rejected:** `bypassPermissions` (no guardrails, not in an isolated machine); relying on auto mode (outage-prone).
+
