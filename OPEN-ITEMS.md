@@ -19,19 +19,19 @@
 | # | Item | Owner | Notes |
 |---|------|-------|-------|
 | 6 | **IRS limits are 2025 values** → calculator upgrade | CC | **Sept 28:** Ross chose Option B + feature build. Ready: `PHASE PROMPTS/PHASE-02-calculator-2026.md` (3 steps: typed math + year table; wire UI + 2026 label + dead FR/IT removal; limit tracker + Roth catch-up card). 2026 figures verified from IRS/Notice 2025-67. |
-| 7 | **Upload copy contradicts code:** drop zone says "4.5 MB max per doc" (EN + ES, `lib/i18n/index.ts` `dropSub`); code allows 25 MB | CC | Decide the honest number first. Only 5.9 MB is proven in production. |
-| 8 | Stale comment in `app/advisor/layout.tsx` says the advisor area is "OPEN" | CC | Middleware has gated it since June 11. Comment-only fix; fold into another prompt. |
+| 7 | **Upload limit: copy says 4.5 MB, code allows 25 MB** | Ross → CC | **Sept 28 finding:** Vercel's own docs (updated Aug 2026) say function request bodies max out at **4.5 MB** (error 413). That means the 4.5 MB copy may be the honest one and the 25 MB client check the wrong one. But the 5.9 MB Equitable booklet reportedly worked June 11, which contradicts the docs. Decide by test (#12) before changing anything. If >4.5 MB fails, the real fix is architectural (browser uploads straight to storage, server forwards to Anthropic), which touches the "no storage" privacy promise. Talk through first. Also conflicts with CLAUDE.md rule "25MB client-side, do not lower". |
+| 8 | Stale comment in `app/advisor/layout.tsx` says the advisor area is "OPEN" | CC | Middleware has gated it since June 11. Comment-only fix; fold into another prompt. → Phase 03 ready. |
 
 ## P2 — Reliability and testing
 
 | # | Item | Owner | Notes |
 |---|------|-------|-------|
-| 9 | Finding #1 (partial): no friendly message when the upload connection drops | CC | `maxDuration` is already 120. Missing: map `TypeError: Failed to fetch` / `Load failed` to a plain-language timeout message. |
-| 10 | Finding #4: `analyzeSignal` read after the upload `await` | CC | Capture the controller once at the start of the upload handler(s). Low severity. |
+| 9 | Finding #1 (partial): no friendly message when the upload connection drops | CC | `maxDuration` is already 120. Missing: map `TypeError: Failed to fetch` / `Load failed` to a plain-language timeout message. → Phase 03 ready. |
+| 10 | Finding #4: `analyzeSignal` read after the upload `await` | CC | Capture the controller once at the start of the upload handler(s). Low severity. → Phase 03 ready. |
 | 11 | Test Investments tab with the Equitable enrollment booklet (~30 funds, pp. 13–14) | Ross | |
-| 12 | Test an upload above 5.9 MB (15–20 MB scanned booklet) | Ross | Result decides #7. |
+| 12 | **Upload the 12 MB test file** (`Info Source Documents/Upload Size Tests/TEST-12MB-Equitable-x2.pdf`, 88 pages, made by Cowork) on /try and note exactly what happens | Ross | Result decides #7. Also re-upload the 5.9 MB Equitable booklet to confirm June's result still holds. |
 | 13 | EIN + Plan Number: advisor flow extracts and saves them; `/api/chat` system prompt does not mention them | CC | Verify whether the participant flow needs them before building anything. |
-| 14 | Delete merged `dashboard-redesign` branch (local + GitHub) | CC | Housekeeping. |
+| 14 | Delete merged `dashboard-redesign` branch (local + GitHub) | CC | Housekeeping. → Phase 03 ready. |
 
 ## P3 — Pre-launch gate (nothing here goes public until done)
 
@@ -59,10 +59,10 @@
 ## Tech debt (schedule deliberately, not opportunistically)
 
 - [ ] Calculator does not compute non-safe-harbor match formulas (all treated as "discretionary, not calculated" per earlier decision). Many plans have a fixed formula. Revisit only as a deliberate decision (needs PLANDATA to tell fixed vs discretionary, and ERISA-wording care).
-- [ ] Remaining FR/IT dead branches outside CalcPanel in `PlansparencyApp.tsx` (Phase 02 only cleans the calculator).
+- [x] ~~Remaining FR/IT dead branches~~: none left (checked Sept 28; all were in CalcPanel, removed in Phase 02).
 
 - [ ] Decompose `components/PlansparencyApp.tsx` (2,430 lines, `@ts-nocheck`, ~193 deferred type errors). Multi-prompt project; plan it in Cowork first.
-- [ ] Retired prototype `plansparency-mvp.jsx` (110 KB, May 23) is still tracked in the repo root. Nothing should import it; confirm and delete in a future phase step.
+- [ ] Retired prototype `plansparency-mvp.jsx` in repo root → deleted in Phase 03 Step 2.
 - [ ] `Project-Execution-Plan.md` is stale (May 28) and tells Ross to run terminal commands. Retire or rewrite.
 
 ## claude.ai project housekeeping (Ross)

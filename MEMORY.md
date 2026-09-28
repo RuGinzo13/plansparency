@@ -490,3 +490,13 @@ The addressable sections of the app — superseded by the updated Component Map 
 **What was rejected:** Hardcoding 2026 numbers only (repeats every January); inferring the Roth rule from current salary (wrong wage year); calculating non-safe-harbor match formulas (contradicts the existing "discretionary, not calculated" decision; parked in OPEN-ITEMS tech debt); a pre-tax vs Roth tax comparison (needs tax assumptions, drifts toward advice).
 **Uncertainty flagged:** 2026 numbers come from the IRS newsroom (deferral, catch-ups) and a practitioner summary of Notice 2025-67 (comp limit $360,000; Roth threshold $150,000), not read directly from the Notice PDF.
 
+---
+
+## September 28, 2026 — Run Whole Phases by Default
+**What was decided:** Ross runs a full phase in one Claude Code conversation (`execute all steps in order`). Kept from the old rule: one concern per step, one commit + push per step, and automated gates (ground check, type check, build) between steps with stop-on-failure. Exception: phases touching auth/access, secrets, database schema, billing, or data deletion are marked STEP BY STEP with 🛑 checkpoints for Ross to verify live.
+**Why:** Phase 01/02 showed the per-conversation split mostly added waiting. The real protections are small commits and automated checks, which survive. Live human checks matter most where a mistake locks people out, leaks data, or costs money, so those keep checkpoints.
+**What was rejected:** One giant commit per phase (loses rollback granularity); keeping one-step-per-conversation for everything (slow, little added safety for UI/content work).
+**⚠️ Revises** the Sept 27 "one step per fresh conversation" rule in CLAUDE.md (updated).
+
+**Refined same day (Ross):** no babysitting. Every phase runs unattended start to finish; the STEP BY STEP mode is dropped. Per-step commits + pushes are written into each step. Only exception: a 🛑 CHECKPOINT before an irreversible action (prod data delete, schema change, live secret rotation), announced in chat first, with automated checks preferred over human pauses.
+

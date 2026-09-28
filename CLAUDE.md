@@ -62,7 +62,7 @@ All participant-facing content produced for Plansparency must:
 
 ## Claude Code Prompt Rules
 
-**Prompts are files, not chat pastes.** Every prompt lives in `PHASE PROMPTS/PHASE-NN-name.md` (one file per phase, numbered in run order, split into STEPS) using `PHASE PROMPTS/_TEMPLATE-step.md`. Ross starts a fresh Claude Code conversation and types: `Read "PHASE PROMPTS/PHASE-NN-name.md" and execute STEP 1 only.` (one step per fresh conversation) After it ships, the step's Status is set to Done with the commit hash. Prompt files are a history of what was run and why.
+**Prompts are files, not chat pastes.** Every prompt lives in `PHASE PROMPTS/PHASE-NN-name.md` (one file per phase, numbered in run order, split into STEPS) using `PHASE PROMPTS/_TEMPLATE-step.md`. Default run mode (Sept 28, 2026): Ross starts a fresh Claude Code conversation and runs the WHOLE phase: `Read "PHASE PROMPTS/PHASE-NN-name.md" and execute all steps in order.` Each step still gets its own commit and push, and Claude Code must pass the step's automated checks (type check, build, ground check) before starting the next step; any failure = stop and report. Ross does not babysit runs: every phase is written to run start to finish unattended. Every step ends with its own commit + push (the exact `git add` list and commit message are written in the step), and the last step always commits any Cowork doc edits. The only allowed pause is a `🛑 CHECKPOINT` before an action that can't be undone (deleting production data, a database schema change, rotating a live secret); Cowork must say so in chat before writing such a phase, and prefer an automated check (curl, SQL read) over a human pause wherever possible. After it ships, the step's Status is set to Done with the commit hash. Prompt files are a history of what was run and why.
 
 **No hand-pasted code.** Ross never copies code blocks into files by hand. Claude Code applies all code changes. Raw code is only included inside a prompt file when the exact text matters (copy, legal disclaimers, constants).
 
@@ -73,7 +73,7 @@ When writing prompts for Claude Code:
 
 **Never give terminal commands directly to Ross.** Claude Code prompts are what gets handed off — Claude Code runs the commands. If something needs to be done in a dashboard (Supabase, Vercel, Stripe), give step-by-step instructions for the human, not a command.
 
-**Break complex builds into multiple prompts.** One focused task per Claude Code conversation. If a feature requires 4 files, that's 3–4 prompts minimum. Token overload produces broken code.
+**Break complex builds into steps.** One focused concern per STEP and per commit (not per conversation, since Sept 28, 2026). Keep each step small enough to verify on its own; keep a whole phase to roughly 3–4 steps so one conversation doesn't overload. A step that can't be checked automatically (it needs Ross's eyes) goes last or gets a checkpoint.
 
 **Specify the target file.** The live component is components/PlansparencyApp.tsx. The retired prototypes (`plansparency-mvp.jsx`, which exists BOTH in this repo root and one level above it, the `app/` folder one level above this repo, and `plansparency-mvp (1).jsx` in the claude.ai project) must never be referenced or modified. Always name the exact file a prompt should touch.
 

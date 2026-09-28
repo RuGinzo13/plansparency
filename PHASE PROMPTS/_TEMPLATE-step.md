@@ -1,4 +1,8 @@
-<!-- Template for ONE step inside a PHASE-NN file. Copy this block per step. -->
+<!-- Template for ONE step inside a PHASE-NN file. Copy this block per step.
+     Phase header: **Run:** `Read "PHASE PROMPTS/PHASE-NN-name.md" and execute all steps in order.`
+     Every step MUST end with: checks pass -> exact `git add <files>` -> exact commit message -> push.
+     The LAST step MUST also stage any modified Cowork docs (CLAUDE.md, CONTEXT.md, MEMORY.md, ERRORS.md, OPEN-ITEMS.md, PHASE PROMPTS/).
+     Only use a 🛑 CHECKPOINT before an irreversible action. -->
 ## STEP N — Short title
 **Status:** Ready | Done (commit `abc1234`, YYYY-MM-DD)
 **Open item:** OPEN-ITEMS.md #__

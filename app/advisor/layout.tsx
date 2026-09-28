@@ -9,9 +9,9 @@ export default async function AdvisorLayout({ children }: { children: React.Reac
     const { userId } = await auth();
     if (!userId) redirect('/sign-in');
   }
-  // No Clerk key configured — advisor area is OPEN (pilot mode): anyone who
-  // knows the URL can access it. To lock it down later, add a login system
-  // (Clerk keys or a shared-password gate) and this branch will enforce it.
+  // No Clerk key configured: Clerk is skipped here. Access is still protected
+  // by the Basic Auth gate in middleware.ts (all of /advisor always requires
+  // the password).
 
   return <>{children}</>;
 }

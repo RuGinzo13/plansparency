@@ -1,7 +1,7 @@
 # PHASE 02 — Calculator: year-based IRS limits, Roth catch-up rule, limit tracker
 **Created:** Sept 28, 2026 in Cowork
 **Open items covered:** OPEN-ITEMS.md #6 (IRS limits stale). Also cleans dead FR/IT code inside the calculator.
-**Status:** Step 1 DONE (`3697a23`) · Step 2 DONE (`6378a3f`, Ross checks passed) · Step 3 Ready
+**Status:** Step 1 `3697a23` · Step 2 `6378a3f` · Step 3 `b735d77` (Ross live checks for Step 3 pending)
 
 ---
 
