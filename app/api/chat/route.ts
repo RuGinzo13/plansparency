@@ -109,8 +109,16 @@ export async function POST(req: NextRequest): Promise<Response> {
     const text = await anthropicRes.text();
     let err: any = {};
     try { err = JSON.parse(text); } catch {}
-    const msg = err?.error?.message || err?.error || text.slice(0, 300);
-    return jsonError(String(msg), 502);
+    const msg = String(err?.error?.message || err?.error || text.slice(0, 300));
+
+    // A file was deleted (session ended) or never existed by the time Anthropic
+    // looked it up. Tell the client to clear state and re-upload.
+    const isExpiredFile =
+      anthropicRes.status === 404 ||
+      (/file/i.test(msg) && /(not found|does not exist|expired)/i.test(msg));
+    if (isExpiredFile) return jsonError('session_expired', 410);
+
+    return jsonError(msg, 502);
   }
 
   // ── 7. Pipe Anthropic SSE → plain text stream of token chunks ────────────────

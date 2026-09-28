@@ -11,7 +11,10 @@
 //    change needed to reopen the site.
 //
 // /api/keepalive is excluded via the matcher below so the daily Vercel cron
-// can reach it without a password.
+// can reach it without a password. /api/session/end is also excluded: the
+// browser's tab-close signal (sendBeacon/pagehide) can't be relied on to
+// carry the site password, and this route can only delete files, never
+// read them.
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -57,5 +60,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api/keepalive|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api/keepalive|api/session/end|_next/static|_next/image|favicon.ico).*)'],
 };

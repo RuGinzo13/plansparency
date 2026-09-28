@@ -8,6 +8,7 @@ import { Redis } from '@upstash/redis';
 
 let _chatLimiter: Ratelimit | null = null;
 let _ingestLimiter: Ratelimit | null = null;
+let _endLimiter: Ratelimit | null = null;
 let _configChecked = false;
 let _configured = false;
 
@@ -47,6 +48,19 @@ function getIngestLimiter(): Ratelimit | null {
   return _ingestLimiter;
 }
 
+function getEndLimiter(): Ratelimit | null {
+  if (!isConfigured()) return null;
+  if (!_endLimiter) {
+    _endLimiter = new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(30, '1 m'), // 30 session-end calls / IP / minute
+      prefix: 'rl:end',
+      analytics: false,
+    });
+  }
+  return _endLimiter;
+}
+
 // Derive a best-effort client identifier from proxy headers.
 function clientId(req: Request): string {
   const fwd = req.headers.get('x-forwarded-for');
@@ -60,9 +74,9 @@ export type RateLimitResult = { ok: true } | { ok: false };
 // Any error or missing config fails OPEN (returns { ok: true }).
 export async function checkRateLimit(
   req: Request,
-  kind: 'chat' | 'ingest',
+  kind: 'chat' | 'ingest' | 'end',
 ): Promise<RateLimitResult> {
-  const limiter = kind === 'chat' ? getChatLimiter() : getIngestLimiter();
+  const limiter = kind === 'chat' ? getChatLimiter() : kind === 'ingest' ? getIngestLimiter() : getEndLimiter();
   if (!limiter) return { ok: true };
   try {
     const { success } = await limiter.limit(clientId(req));

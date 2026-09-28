@@ -9,6 +9,7 @@ import {
   ANTHROPIC_API_VERSION,
   ANTHROPIC_BETA_FILES,
   ANTHROPIC_FILES_URL,
+  FILE_EXPIRY_SECONDS,
 } from '@/lib/anthropic/client';
 
 function jsonError(msg: string, status = 500): NextResponse {
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   // ── 3. Forward to Anthropic Files API ─────────────────────────────────────
   const upstream = new FormData();
   upstream.append('file', pdfBlob, 'upload.pdf');
+  upstream.append('expires_in_seconds', String(FILE_EXPIRY_SECONDS));
 
   let anthropicRes: Response;
   try {
