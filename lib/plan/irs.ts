@@ -56,15 +56,9 @@ export interface IRSLimits {
   ageAtYearEnd: number | null;
 }
 
-// `year` defaults to 2025 so the one existing caller (CalcPanel, which does
-// not yet pass a year — that wiring is Phase 02 Step 2) keeps getting the
-// same numbers it always has. New callers should pass an explicit year,
-// normally `getLimitYear().year`.
-const DEFAULT_YEAR = 2025;
-
 export function getIRSLimits(
   dob: string | null | undefined,
-  year: number = DEFAULT_YEAR
+  year: number = getLimitYear().year
 ): IRSLimits {
   const resolvedYear = IRS_LIMITS[year] ? year : latestTableYear();
   const isFallback = resolvedYear !== year;

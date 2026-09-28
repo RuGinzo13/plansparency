@@ -1,7 +1,7 @@
 # PHASE 02 — Calculator: year-based IRS limits, Roth catch-up rule, limit tracker
 **Created:** Sept 28, 2026 in Cowork
 **Open items covered:** OPEN-ITEMS.md #6 (IRS limits stale). Also cleans dead FR/IT code inside the calculator.
-**Status:** Step 1 Ready · Step 2 Ready · Step 3 Ready
+**Status:** Step 1 DONE (`3697a23`) · Step 2 Ready (updated Sept 28 after Step 1 review) · Step 3 Ready
 
 ---
 
@@ -106,15 +106,18 @@ Rules:
 **Why:** Switch the calculator onto the typed math, show which year's limits are in use, fix per-paycheck display, and delete the dead French/Italian code inside the calculator.
 
 **Check the ground**
-- `git status` clean; latest commit is Step 1's.
+- `git status`: latest commit is `3697a23` (Step 1). The only allowed uncommitted change is this file, `PHASE PROMPTS/PHASE-02-calculator-2026.md` (Cowork's update). Anything else = STOP.
 - Confirm `lib/plan/calc.ts` exists and exports `safeHarborAmount`, `rothCatchUpStatus`, `contributionSummary`.
 - In `components/PlansparencyApp.tsx`, find `function CalcPanel` by name (do not trust line numbers).
 
-**Files you may change:** `components/PlansparencyApp.tsx` (ONLY inside `function CalcPanel`, plus its import line at the top), `lib/i18n/index.ts` (only the `calcSecureNote` keys and the new keys below).
+**Files you may change:** `components/PlansparencyApp.tsx` (ONLY inside `function CalcPanel`, plus its import lines at the top), `lib/i18n/index.ts` (only the `calcSecureNote` keys and the new keys below), `lib/plan/irs.ts` (only item 0 below).
 
 **Do not touch:** any other component, the chat engine, upload flow, statement dashboard, Investments tab, or any file in `app/`.
 
 **Do this**
+0. **Switch to the current year (this is what makes 2026 show up).** Step 1 left `getIRSLimits` defaulting to 2025 on purpose. Now:
+   - In `lib/plan/irs.ts`: remove `DEFAULT_YEAR` and its comment; make the default for `year` be `getLimitYear().year`.
+   - In CalcPanel: `const limitYear = getLimitYear();` and `const limits = getIRSLimits(dob || null, limitYear.year);` (import `getLimitYear` from `@/lib/plan/irs`). The year label and fallback warning in item 4 use `limitYear.year` / `limitYear.isFallback`, and `{currentYear}` = `new Date().getFullYear()`.
 1. Import `safeHarborAmount` and `contributionSummary` from `@/lib/plan/calc`. Replace the inline safe harbor math in CalcPanel with `safeHarborAmount(sh.type, summary.payForEmployer, pct)`. Replace `empContrib`, `total`, `perPaycheck` with values from `contributionSummary`. `catchUpAllowed` for now = `limits.catchUpEligible && planAllowsCatchUp` (Step 3 adds the Roth rule).
 2. Per-paycheck box shows `summary.perPaycheck` (the real amount taken from each check). "Your annual contribution" shows `summary.annualContribution`.
 3. Inside CalcPanel ONLY: remove every `fr` and `it` branch (e.g. `lang === "fr" ? … : lang === "it" ? …`, and `fr:`/`it:` keys in `shLabels`). Keep the EN and ES text exactly as it is now. The app only supports `en` and `es`.
@@ -124,7 +127,7 @@ Rules:
    - ES: `Los límites mostrados son de {year}. Si cumples 50 años o más antes del 31 de diciembre, puedes agregar contribuciones adicionales ({catchUp50}). Si cumples entre 60 y 63 antes del 31 de diciembre, el monto adicional es mayor ({catchUp6063}).`
    Format dollar amounts with the existing `fmtRounded`.
 6. Type check (`npx tsc --noEmit`) must pass. Build check: `npm run build` must pass.
-7. Stage ONLY `components/PlansparencyApp.tsx lib/i18n/index.ts`. Commit: `feat(calc): 2026 limits, year label, correct catch-up age rule, remove dead FR/IT in calculator`. Push.
+7. Stage ONLY `components/PlansparencyApp.tsx lib/i18n/index.ts lib/plan/irs.ts "PHASE PROMPTS/PHASE-02-calculator-2026.md"`. Commit: `feat(calc): 2026 limits, year label, correct catch-up age rule, remove dead FR/IT in calculator`. Push.
 
 **Ross checks (log in, upload a test SPD, open Calculator tab)**
 - Top label says **Using 2026 IRS limits**.

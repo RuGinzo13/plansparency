@@ -12,7 +12,8 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { parsePlanData, stripPlanData, normalizePlanData } from '@/lib/plan/plandata';
 import { parseStmtData, stripStmtData } from '@/lib/plan/stmtdata';
-import { getIRSLimits } from '@/lib/plan/irs';
+import { getIRSLimits, getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
+import { safeHarborAmount, contributionSummary } from '@/lib/plan/calc';
 import { i18n } from '@/lib/i18n';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
@@ -1249,33 +1250,34 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
   const hasRoth = planData?.hasRoth ?? planData?.rothAvailable ?? false;
   const planAllowsCatchUp = planData?.planAllowsCatchUp ?? true;
   const lastDayProvision = planData?.lastDayProvision ?? null;
-  const limits = getIRSLimits(dob || null);
+  const limitYear = getLimitYear();
+  const limits = getIRSLimits(dob || null, limitYear.year);
+  const yearLimits = IRS_LIMITS[limitYear.year];
+  const currentYear = new Date().getFullYear();
+
+  const tpl = (s, vars) => Object.keys(vars).reduce((acc, k) => acc.split(`{${k}}`).join(String(vars[k])), s);
 
   // Safe Harbor calculation
   const sh = planData?.safeHarbor;
   const hasSH = sh && sh.type !== "none";
-  let shAmt = 0;
-  if (hasSH) {
-    if (sh.type === "nonelective") { shAmt = salary * 0.03; }
-    else if (sh.type === "basic_match") {
-      const t1 = Math.min(pct, 3); const t2 = Math.max(0, Math.min(pct, 5) - 3);
-      shAmt = salary * t1 / 100 * 1.0 + salary * t2 / 100 * 0.5;
-    }
-    else if (sh.type === "enhanced_match") {
-      const t1 = Math.min(pct, 4);
-      shAmt = salary * t1 / 100;
-    }
-    else if (sh.type === "qaca") {
-      const t1 = Math.min(pct, 1); const t2 = Math.max(0, Math.min(pct, 6) - 1);
-      shAmt = salary * t1 / 100 * 1.0 + salary * t2 / 100 * 0.5;
-    }
-  }
-
   const catchUpActive = limits.catchUpEligible && planAllowsCatchUp;
-  const maxContrib = catchUpActive ? limits.total : limits.base;
-  const empContrib = Math.min(salary * pct / 100, maxContrib);
+  const summary = contributionSummary({
+    salary,
+    pct,
+    payPeriods: pp,
+    limits,
+    catchUpAllowed: catchUpActive,
+  });
+  const shAmt = hasSH ? safeHarborAmount(sh.type, summary.payForEmployer, pct) : 0;
+  const empContrib = summary.annualContribution;
   const total = empContrib + shAmt;
-  const perPaycheck = empContrib / pp;
+  const perPaycheck = summary.perPaycheck;
+
+  const secureNote = tpl(t.calcSecureNote, {
+    year: limitYear.year,
+    catchUp50: fmtRounded(yearLimits.catchUp50),
+    catchUp6063: fmtRounded(yearLimits.catchUp6063),
+  });
 
   const iS = {
     backgroundColor: C.calcInput, border: `1px solid ${C.calcInputBorder}`, borderRadius: 8,
@@ -1288,26 +1290,18 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
     nonelective: {
       en: "3% of pay — regardless of your contributions",
       es: "3% del salario — sin importar tus contribuciones",
-      fr: "3% du salaire — quelle que soit votre cotisation",
-      it: "3% della retribuzione — indipendentemente dai tuoi contributi",
     },
     basic_match: {
       en: "100% of first 3% + 50% of next 2%",
       es: "100% del primer 3% + 50% del siguiente 2%",
-      fr: "100% des 3 premiers % + 50% des 2 suivants",
-      it: "100% dei primi 3% + 50% dei successivi 2%",
     },
     enhanced_match: {
       en: sh?.formula || "Enhanced safe harbor match",
       es: sh?.formula || "Match safe harbor mejorado",
-      fr: sh?.formula || "Match safe harbor amélioré",
-      it: sh?.formula || "Match safe harbor migliorato",
     },
     qaca: {
       en: "QACA: 100% of first 1% + 50% of next 5%",
       es: "QACA: 100% del primer 1% + 50% del siguiente 5%",
-      fr: "QACA : 100% du 1er % + 50% des 5 suivants",
-      it: "QACA: 100% del primo 1% + 50% dei successivi 5%",
     },
   };
 
@@ -1351,6 +1345,11 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
           {!planData && <div style={{ padding: "16px", textAlign: "center", color: C.calcMuted, fontSize: 13, background: "#F3EDE3", borderRadius: 10, border: `1px dashed ${C.calcBorder}` }}>{t.calcWaiting}</div>}
 
           {planData && <>
+            <div style={{ fontSize: 11, color: C.calcMuted, marginBottom: 10 }}>
+              <div>{tpl(t.calcLimitsYear, { year: limitYear.year })}</div>
+              {limitYear.isFallback && <div style={{ color: "#B84A3A", marginTop: 2 }}>{tpl(t.calcLimitsFallback, { currentYear })}</div>}
+            </div>
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
               <div><label style={lS}>{t.calcSalary}</label>
                 <div style={{ position: "relative" }}>
@@ -1381,19 +1380,19 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
             {hasSH && (
               <div style={{ marginBottom: 12, padding: "14px 16px", borderRadius: 12, background: "#E8F8EF", border: `2px solid #5CB88A`, position: "relative" }}>
                 <div style={{ position: "absolute", top: -9, left: 14, background: "#5CB88A", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 6, textTransform: "uppercase", letterSpacing: ".06em" }}>
-                  {lang === "es" || lang === "it" ? "Garantizado" : lang === "fr" ? "Garanti" : "Guaranteed"}
+                  {lang === "es" ? "Garantizado" : "Guaranteed"}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 4 }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#1A5C37", marginBottom: 4 }}>
-                      {lang === "es" ? "Contribución Safe Harbor" : lang === "fr" ? "Contribution Safe Harbor" : lang === "it" ? "Contributo Safe Harbor" : "Safe Harbor Contribution"}
+                      {lang === "es" ? "Contribución Safe Harbor" : "Safe Harbor Contribution"}
                     </div>
                     <div style={{ fontSize: 12, color: "#3D7A55", lineHeight: 1.4 }}>
                       {shLabels[sh.type]?.[lang] || sh.formula}
                     </div>
                     <div style={{ fontSize: 10, color: "#5D9A73", marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                      <span>✓ {lang === "es" ? "100% investido inmediatamente" : lang === "fr" ? "100% acquis immédiatement" : lang === "it" ? "100% maturato immediatamente" : "100% vested immediately"}</span>
-                      <span>✓ {lang === "es" ? "No aplica provisión de último día" : lang === "fr" ? "Disposition dernier jour NON applicable" : lang === "it" ? "Clausola ultimo giorno NON applicabile" : "Last-day provision does NOT apply"}</span>
+                      <span>✓ {lang === "es" ? "100% investido inmediatamente" : "100% vested immediately"}</span>
+                      <span>✓ {lang === "es" ? "No aplica provisión de último día" : "Last-day provision does NOT apply"}</span>
                     </div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
@@ -1408,22 +1407,18 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
             {!noMatch && (
               <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 10, background: "#FFFBF2", border: `1px dashed ${C.calcBorder}` }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "#8B6914", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 4 }}>
-                  {lang === "es" ? "Match Discrecional" : lang === "fr" ? "Match Discrétionnaire" : lang === "it" ? "Match Discrezionale" : "Discretionary Match"}
+                  {lang === "es" ? "Match Discrecional" : "Discretionary Match"}
                 </div>
                 <div style={{ fontSize: 13, color: C.calcText, lineHeight: 1.5 }}>
                   {lang === "es"
                     ? "Este plan también ofrece un match discrecional del empleador. Esta contribución es discrecional y no está garantizada — el empleador puede cambiarla o eliminarla en cualquier momento."
-                    : lang === "fr"
-                    ? "Ce régime offre également un match discrétionnaire de l'employeur. Cette contribution est discrétionnaire et non garantie — l'employeur peut la modifier ou l'éliminer à tout moment."
-                    : lang === "it"
-                    ? "Questo piano offre anche un match discrezionale del datore di lavoro. Questo contributo è discrezionale e non garantito — il datore di lavoro può modificarlo o eliminarlo."
                     : "This plan also offers a discretionary employer match. This contribution is discretionary and not guaranteed — the employer can change or eliminate it at any time."}
                 </div>
                 {lastDayProvision && <div style={{ fontSize: 10, color: "#B84A3A", marginTop: 6 }}>
-                  ⚠ {lang === "es" ? "Sujeto a provisión de último día del año y calendario de vesting" : lang === "fr" ? "Soumis à la disposition du dernier jour et au calendrier d'acquisition" : lang === "it" ? "Soggetto alla clausola dell'ultimo giorno e al calendario di maturazione" : "Subject to last-day-of-year provision and vesting schedule"}
+                  ⚠ {lang === "es" ? "Sujeto a provisión de último día del año y calendario de vesting" : "Subject to last-day-of-year provision and vesting schedule"}
                 </div>}
                 {!lastDayProvision && <div style={{ fontSize: 10, color: C.calcMuted, marginTop: 6 }}>
-                  {lang === "es" ? "Sujeto a calendario de vesting" : lang === "fr" ? "Soumis au calendrier d'acquisition" : lang === "it" ? "Soggetto al calendario di maturazione" : "Subject to vesting schedule"}
+                  {lang === "es" ? "Sujeto a calendario de vesting" : "Subject to vesting schedule"}
                 </div>}
               </div>
             )}
@@ -1432,15 +1427,11 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
             {!hasSH && noMatch && (
               <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 10, background: "#FDF2F0", border: `1px solid #E8C4BE` }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "#B84A3A", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 4 }}>
-                  {lang === "es" ? "Contribuciones del Empleador" : lang === "fr" ? "Contributions Patronales" : lang === "it" ? "Contributi del Datore di Lavoro" : "Employer Contributions"}
+                  {lang === "es" ? "Contribuciones del Empleador" : "Employer Contributions"}
                 </div>
                 <div style={{ fontSize: 13, color: "#B84A3A" }}>
                   {lang === "es"
                     ? "Este plan no incluye contribución safe harbor ni match discrecional del empleador."
-                    : lang === "fr"
-                    ? "Ce régime ne comprend pas de contribution safe harbor ni de match discrétionnaire de l'employeur."
-                    : lang === "it"
-                    ? "Questo piano non include un contributo safe harbor né un match discrezionale del datore di lavoro."
                     : "This plan does not include a safe harbor contribution or discretionary employer match."}
                 </div>
               </div>
@@ -1477,9 +1468,9 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
                 <div style={{ fontSize: 17, fontWeight: 700, color: "#1A5C37" }}>{fmtRounded(shAmt)}</div>
               </div>}
               <div style={{ padding: "10px 12px", borderRadius: 10, background: "#FFF8EB", border: `1px solid #EBD9A8` }}>
-                <div style={{ fontSize: 9, color: C.calcMuted, marginBottom: 3, textTransform: "uppercase", letterSpacing: ".04em" }}>{hasSH ? (lang === "es" ? "Total Garantizado / Año" : lang === "fr" ? "Total Garanti / An" : lang === "it" ? "Totale Garantito / Anno" : "Guaranteed Total / Year") : t.calcTotal}</div>
+                <div style={{ fontSize: 9, color: C.calcMuted, marginBottom: 3, textTransform: "uppercase", letterSpacing: ".04em" }}>{hasSH ? (lang === "es" ? "Total Garantizado / Año" : "Guaranteed Total / Year") : t.calcTotal}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#8B6914" }}>{fmtRounded(total)}</div>
-                {!noMatch && <div style={{ fontSize: 9, color: C.calcMuted, marginTop: 2 }}>{lang === "es" ? "+ match discrecional (no calculado)" : lang === "fr" ? "+ match discrétionnaire (non calculé)" : lang === "it" ? "+ match discrezionale (non calcolato)" : "+ discretionary match (not calculated)"}</div>}
+                {!noMatch && <div style={{ fontSize: 9, color: C.calcMuted, marginTop: 2 }}>{lang === "es" ? "+ match discrecional (no calculado)" : "+ discretionary match (not calculated)"}</div>}
               </div>
               <div style={{ padding: "10px 12px", borderRadius: 10, background: "#FFFFFF", border: `1px solid ${C.calcCardBorder}` }}>
                 <div style={{ fontSize: 9, color: C.calcMuted, marginBottom: 3, textTransform: "uppercase", letterSpacing: ".04em" }}>{t.calcPerPaycheck}</div>
@@ -1488,7 +1479,7 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
             </div>
 
             <div style={{ fontSize: 10, color: C.calcMuted, lineHeight: 1.6, marginTop: 6 }}>
-              <p style={{ margin: "0 0 4px" }}>{t.calcSecureNote}</p>
+              <p style={{ margin: "0 0 4px" }}>{secureNote}</p>
               {lastDayProvision !== null && <p style={{ margin: "0 0 4px", color: lastDayProvision ? "#B84A3A" : C.calcMuted }}>
                 {lastDayProvision ? t.calcLastDayYes : t.calcLastDayNo}
               </p>}
