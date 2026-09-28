@@ -5,6 +5,10 @@
 // below counts as activity and resets the idle clock. Read-only, returns no
 // row data — just a count — so it's safe and cheap.
 //
+// The query must use a column that really exists on `plans`. It used to
+// select `id`, which isn't a column on this table (the key is `plan_id`) —
+// every ping failed silently and Supabase paused the project in Sept 2026.
+//
 // Optional protection: if CRON_SECRET is set in Vercel env, the request must
 // carry `Authorization: Bearer <CRON_SECRET>` (Vercel cron sends this header
 // automatically). If CRON_SECRET is unset, the route is open — harmless, since
@@ -29,9 +33,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     // Minimal request: HEAD-style count, no row payload. Registers activity.
     const { error } = await getSupabaseAdmin()
       .from('plans')
-      .select('id', { count: 'exact', head: true });
+      .select('plan_id', { count: 'exact', head: true });
 
     if (error) {
+      console.error('[keepalive] failed:', error.message);
       return NextResponse.json(
         { ok: false, error: error.message },
         { status: 500 }
@@ -40,6 +45,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ ok: true, pingedAt: new Date().toISOString() });
   } catch (e: any) {
+    console.error('[keepalive] failed:', e?.message ?? 'keepalive failed');
     return NextResponse.json(
       { ok: false, error: e?.message ?? 'keepalive failed' },
       { status: 500 }
