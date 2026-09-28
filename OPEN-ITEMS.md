@@ -9,10 +9,10 @@
 | # | Item | Owner | Notes |
 |---|------|-------|-------|
 | 1 | **OBA vs. public demo.** `plansparency.vercel.app` is public, and `/try` lets anyone upload and spend API credit. CLAUDE.md says nothing public-facing before written OBA approval. | Ross + CC | **Sept 28:** Ross has not spoken to compliance yet; building continues meanwhile. Recommended fix is ready: `PHASE PROMPTS/PHASE-01-stabilize.md` Step 3 (whole site behind the existing password, one env var to reopen later). Still open: (a) run Phase 01 Step 3, (b) schedule the compliance conversation. |
-| 2 | **Commit the doc changes** | CC | `PHASE PROMPTS/PHASE-01-stabilize.md` Step 1 is ready. Run it first; it also commits the phase file. |
-| 3 | **Confirm which VS Code panel runs prompts** | Ross | Should be the Claude Code extension. Evidence: `71f9357` has a Claude Code co-author trailer. Confirm, then close this. |
+| 2 | ~~Commit the doc changes~~ | ✅ | Done Sept 28 by hand in VS Code (`6fc4269`, `0fe1d44`), Vercel Ready. Claude Code auto mode was down. A local workspace file got committed by accident; removal is Phase 01 Step 2b. |
+| 3 | ~~Confirm which VS Code panel runs prompts~~ | ✅ | Settled Sept 28: `8d53a79` was written by Claude Code (co-author trailer "Claude Sonnet 5"). The June 11 "wrong tool" theory is retired. |
 | 4 | **Confirm check #5:** incognito → advisor password → upload → share link opens | Ross | Could not have worked since Supabase paused. Do this right after prompts 01 and 02 ship. |
-| 5 | **Supabase keep-alive is broken** | CC | **Sept 28:** project was PAUSED. Root cause found: keep-alive queries `plans.id`, which doesn't exist (key is `plan_id`), so it failed daily since June 4. Cowork restored the project (now ACTIVE_HEALTHY, 4 plan rows intact). Fix: `PHASE PROMPTS/PHASE-01-stabilize.md` Step 2. Must ship within ~7 days or it pauses again. |
+| 5 | ~~Supabase keep-alive is broken~~ | ✅ (verify Oct 5) | Fixed Sept 28: `8d53a79` (queries `plan_id`, logs failures), Vercel Ready, manual cron run returned 200. Cowork re-checks around Oct 5 that the project is still ACTIVE_HEALTHY. |
 
 ## P1 — Wrong or misleading things participants can see
 

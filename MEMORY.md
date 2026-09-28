@@ -466,3 +466,11 @@ The addressable sections of the app — superseded by the updated Component Map 
 **What was decided:** At Ross's request, the prompts folder is `PHASE PROMPTS/`. Each phase is one file (`PHASE-NN-name.md`) split into numbered STEPS. Ross runs one step per fresh Claude Code conversation: `Read "PHASE PROMPTS/PHASE-NN-name.md" and execute STEP N only.` The earlier separate files (00/01/02) were merged into `PHASE-01-stabilize.md` before any were run, so nothing duplicates.
 **Why:** One document per batch of action items is easier for Ross to follow. Keeping one step per conversation preserves the "one focused task per Claude Code conversation" rule.
 **What was rejected:** Keeping both a `prompts/` folder and a `PHASE PROMPTS/` folder (two places = drift); letting Claude Code run a whole phase in one conversation (token overload, harder to verify each step).
+
+---
+
+## September 28, 2026 — Keep-Alive Fixed; Tool Identity Settled
+**What was done:** Phase 01 Step 2a shipped via Claude Code in ask-permission mode (auto mode was down): `8d53a79` changes the keep-alive query to `plan_id` and logs failures. Vercel Ready; Ross ran the cron manually and it returned 200.
+**Tool identity:** the commit's co-author trailer shows Claude Code wrote it. Combined with the June 11 trailer, the "non-Claude-Code agent" theory from June 11 is retired. OPEN-ITEMS #3 closed.
+**Still to verify:** Supabase stays ACTIVE_HEALTHY a week later (around Oct 5).
+

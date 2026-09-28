@@ -296,3 +296,11 @@ One new entry: the keep-alive that was supposed to stop Supabase pausing never w
 - "Done" for a cron or background job = one real run observed returning success, not a Ready deploy. Add that to the job's prompt file.
 - Any query naming a column gets checked against `supabase/schema.sql` (or the live table).
 - Background jobs log their failures (`console.error`) so they show up in Vercel logs.
+
+---
+
+## Claude Code Auto Mode Outage + Accidental Commit — Sept 28, 2026
+**What didn't work:** Claude Code (VS Code) could not run any Bash command: "Auto mode is unavailable: the server returned no safety verdict." Retrying didn't help. Committing by hand in VS Code Source Control, a second commit swept in the unstaged `.claude/401k_Plansparency.code-workspace` (VS Code can auto-stage everything when committing).
+**What worked:** Doing the docs-only Step 1 by hand in Source Control and pushing; Cowork verified the result with git + Vercel. Workspace file is harmless (8 lines, no secrets) and gets untracked in Phase 01 Step 2b, no history rewrite.
+**Note for next time:** If auto mode is down, switch Claude Code to the ask-permission mode instead of retrying. When committing by hand, check the staged list right before clicking Commit.
+

@@ -22,7 +22,7 @@ Full rules live in CLAUDE.md. Key rules for every session:
 - **Branch `dashboard-redesign`** (local + remote) is fully merged into `main`. Stale; safe to delete.
 - **Doc drift found and corrected today:** May 24 code-review Findings #1 (partially), #3 and #5 were fixed in commit `273ef03` (May 26, 2026) but docs still listed them open. Finding #4 is still open. See ERRORS.md.
 - **New issues found in code today:** IRS limits hardcoded to 2025 values (calculator is out of date for 2026); upload drop zone text says "4.5 MB max per doc" while the code allows 25 MB. See OPEN-ITEMS.md.
-- **Supabase (Sept 28):** found PAUSED; keep-alive had been failing daily (queries nonexistent `plans.id`). Restored by Cowork, now healthy. Fix pending in `PHASE PROMPTS/PHASE-01-stabilize.md` Step 2.
+- **Supabase (Sept 28):** found PAUSED; keep-alive had been failing daily (queried nonexistent `plans.id`). Restored by Cowork. Fixed in `8d53a79` (cron verified 200). Originally planned in `PHASE PROMPTS/PHASE-01-stabilize.md` Step 2.
 - **Tool-identity evidence:** production commit `71f9357` carries the trailer `Co-Authored-By: Claude Sonnet 4.6`. That trailer is what Claude Code writes, which points toward the June 11 agent being Claude Code after all (not proof; Ross to confirm in VS Code).
 
 ---

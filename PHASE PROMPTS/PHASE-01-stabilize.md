@@ -1,7 +1,7 @@
 # PHASE 01 — Stabilize: save the docs, fix the keep-alive, lock the site
 **Created:** Sept 28, 2026 in Cowork
 **Open items covered:** OPEN-ITEMS.md #2, #5, #1
-**Status:** Step 1 Ready · Step 2 Ready · Step 3 Ready
+**Status:** Step 1 DONE (Ross, by hand in VS Code Source Control: `6fc4269` + `0fe1d44`, Vercel Ready Sept 28) · Step 2a DONE (`8d53a79`, Vercel Ready, cron run returned 200 on Sept 28) · Step 2b Ready · Step 3 Ready
 
 ---
 
@@ -59,7 +59,7 @@ If anything in a step looks wrong, stop and bring it back to Cowork. Don't ask C
 **Runtime:** Node.js (unchanged)
 
 **Check the ground**
-- Run `git status` and `git log --oneline -3`. Expected: Step 1's docs commit is the latest, tree clean except the untracked `.claude/...code-workspace`.
+- Run `git status` and `git log --oneline -3`. Expected: latest commit `0fe1d44` ("docs: add PHASE PROMPTS README and step template"). The only changes allowed are Cowork's doc edits: `ERRORS.md`, `OPEN-ITEMS.md`, `PHASE PROMPTS/PHASE-01-stabilize.md`. Leave those alone during 2a; they get committed in 2b. Anything else changed = STOP and report.
 - Run `ls app/api/ lib/`.
 - Open `app/api/keepalive/route.ts` and confirm it contains `.select('id', { count: 'exact', head: true })`. If not, STOP and report what you see.
 
@@ -73,8 +73,18 @@ If anything in a step looks wrong, stop and bring it back to Cowork. Don't ask C
 3. Update the header comment: the query must use a column that really exists (`plan_id`); a failing query is why the project paused in Sept 2026.
 4. Type check: `npx tsc --noEmit` (if it fails on Node version, use `export PATH="/usr/local/opt/node@25/bin:$PATH"` first). Must pass.
 5. Confirm `grep -rn "select('id'" app lib` returns nothing.
-6. Commit: `fix: keepalive queried nonexistent plans.id column, Supabase paused`
+6. Stage ONLY this file: `git add app/api/keepalive/route.ts` (never `git add -A` or `git add .`). Commit: `fix: keepalive queried nonexistent plans.id column, Supabase paused`
 7. Push to `main`. Report the full new contents of `app/api/keepalive/route.ts`.
+
+**Step 2b — housekeeping, separate commit (run as its own conversation: "execute STEP 2b only")**
+Check the ground: `git status` and `git log --oneline -3`. Expected: latest commit `8d53a79` (the keep-alive fix). Only allowed changes: `ERRORS.md`, `OPEN-ITEMS.md`, `PHASE PROMPTS/PHASE-01-stabilize.md`, and possibly `CONTEXT.md`, `MEMORY.md` (Cowork doc edits). Anything else = STOP and report.
+`.claude/401k_Plansparency.code-workspace` was committed by accident in `0fe1d44` (a local VS Code file, no secrets). Remove it from git WITHOUT deleting it from disk:
+1. `git rm --cached ".claude/401k_Plansparency.code-workspace"`
+2. Add the line `*.code-workspace` to `.gitignore` (append at the end, do not reorder anything else).
+3. Confirm the file still exists on disk (`ls .claude/`).
+4. Also stage Cowork's doc edits: `git add` whichever of `ERRORS.md OPEN-ITEMS.md CONTEXT.md MEMORY.md "PHASE PROMPTS/PHASE-01-stabilize.md"` show as modified. `git status` should show only: `.gitignore` modified, the workspace file removed from the index, and those three docs.
+5. Commit: `chore: stop tracking local VS Code workspace file; docs: Step 1 done`
+6. Push to `main`. Do NOT rewrite history (no amend, no rebase, no force-push).
 
 **Ross checks**
 - Vercel deployment Ready with that commit message.
@@ -88,7 +98,7 @@ If anything in a step looks wrong, stop and bring it back to Cowork. Don't ask C
 **Runtime:** middleware (unchanged)
 
 **Check the ground**
-- Run `git status` and `git log --oneline -3`. Expected: Step 2's commit is the latest, tree clean except the untracked `.claude/...code-workspace`.
+- Run `git status` and `git log --oneline -3`. Expected: Step 2b's commit ("chore: stop tracking local VS Code workspace file; docs: Step 1 done") is the latest, working tree clean.
 - Run `ls app/ app/api/`.
 - Open `middleware.ts` (repo root). Confirm it is the Basic Auth gate with `matcher: ['/advisor/:path*', '/api/save-plan']`. If different, STOP and report.
 - Note: Next.js 16 prefers the name `proxy.ts`, but `middleware.ts` is live and verified working. Do NOT rename it.
