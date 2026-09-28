@@ -1919,9 +1919,10 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setUploadDocIndex(0); setUploadDocCount(files.length);
     setStage(STAGE.UPLOADING);
     if (abortRef.current) abortRef.current.abort();
-    abortRef.current = new AbortController();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
-      const uploadSignal = abortRef.current.signal;
+      const uploadSignal = ctrl.signal;
 
       // ── Upload all files sequentially → collect fileIds ──────────────────
       const collectedIds: string[] = [];
@@ -1933,8 +1934,9 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         collectedIds.push(fid);
       }
 
-      // Capture signal before next await
-      const analyzeSignal = abortRef.current.signal;
+      // Captured from the local `ctrl`, not re-read from abortRef.current — a second
+      // upload starting mid-analysis can no longer swap out this signal (Finding #4).
+      const analyzeSignal = ctrl.signal;
       fileIdsRef.current = collectedIds;
       setUploadPhase('analyzing');
       setStagedFiles([]);
@@ -1969,10 +1971,11 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
       let userMsg: string = t.errorRead;
       const status = (e as any).status;
-      if (status === 429) userMsg = "Too many requests — please wait a minute and try again.";
-      else if (status === 504) userMsg = "The AI took too long. Try a shorter document or simpler question.";
-      else if (status === 413) userMsg = "Upload failed — the file may be too large for the current upload path. Please try again or contact support.";
-      else if ((e as any).message) userMsg = (e as any).message;
+      const msg = (e as any).message;
+      if (status === 429) userMsg = t.errRateLimit;
+      else if (status === 504) userMsg = t.errTimeout;
+      else if (status === 413) userMsg = t.errUploadTooLarge;
+      else if (!status && (e instanceof TypeError || /Failed to fetch|Load failed|NetworkError/i.test(msg || ""))) userMsg = t.errUploadNetwork;
 
       setUploadError(userMsg);
       setStage(resetState ? (docType === "statement" ? STAGE.STMT_DASHBOARD : STAGE.APP) : STAGE.LANDING);
@@ -2002,14 +2005,16 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setUploadDocCount(1);
     setStage(STAGE.UPLOADING);
     if (abortRef.current) abortRef.current.abort();
-    abortRef.current = new AbortController();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     try {
-      const uploadSignal = abortRef.current.signal;
+      const uploadSignal = ctrl.signal;
       const fid = await uploadFile(file, (pct) => setUploadProgress(pct), uploadSignal);
       const updatedIds = [...fileIdsRef.current, fid];
       fileIdsRef.current = updatedIds;
       setUploadPhase('analyzing');
-      const analyzeSignal = abortRef.current.signal;
+      // Captured from the local `ctrl`, not re-read from abortRef.current (Finding #4).
+      const analyzeSignal = ctrl.signal;
       const es = lang === "es";
       const followUp = { role: "user" as const, content: es
         ? `He añadido otro documento (${file.name}). Por favor revísalo y dime si contiene información adicional sobre el plan, especialmente opciones de inversión, comisiones u otras disposiciones no cubiertas en el documento anterior.`
@@ -2033,7 +2038,13 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     } catch (e: any) {
       if (e.name === "AbortError") { setLoading(false); return; }
       console.error('[supplementalUpload] failed:', e);
-      setUploadError(e.message || t.errorRead);
+      let supUserMsg: string = t.errorRead;
+      const supStatus = e.status;
+      if (supStatus === 429) supUserMsg = t.errRateLimit;
+      else if (supStatus === 504) supUserMsg = t.errTimeout;
+      else if (supStatus === 413) supUserMsg = t.errUploadTooLarge;
+      else if (!supStatus && (e instanceof TypeError || /Failed to fetch|Load failed|NetworkError/i.test(e.message || ""))) supUserMsg = t.errUploadNetwork;
+      setUploadError(supUserMsg);
       setStage(STAGE.APP);
       setLoading(false);
       abortRef.current = null;
