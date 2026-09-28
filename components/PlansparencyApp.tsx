@@ -13,7 +13,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { parsePlanData, stripPlanData, normalizePlanData } from '@/lib/plan/plandata';
 import { parseStmtData, stripStmtData } from '@/lib/plan/stmtdata';
 import { getIRSLimits, getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
-import { safeHarborAmount, contributionSummary } from '@/lib/plan/calc';
+import { safeHarborAmount, contributionSummary, rothCatchUpStatus } from '@/lib/plan/calc';
 import { i18n } from '@/lib/i18n';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
@@ -1244,6 +1244,7 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
   const [pct, setPct] = useState(6);
   const [dob, setDob] = useState("");
   const [pp, setPp] = useState(26);
+  const [rothAnswer, setRothAnswer] = useState(null); // 'yes' | 'no' | 'notsure' | null
 
   const tiers = planData?.matchTiers || [];
   const noMatch = planData?.noMatch || tiers.length === 0;
@@ -1260,7 +1261,32 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
   // Safe Harbor calculation
   const sh = planData?.safeHarbor;
   const hasSH = sh && sh.type !== "none";
-  const catchUpActive = limits.catchUpEligible && planAllowsCatchUp;
+
+  // Roth catch-up rule (2026+): high earners' catch-up money must go in as Roth
+  const rothThresholdApplies = limits.rothCatchUpWageThreshold !== null;
+  const showRothCard = limits.catchUpEligible && planAllowsCatchUp && rothThresholdApplies;
+  const rothEarnedOverThreshold = rothAnswer === "yes" ? true : rothAnswer === "no" ? false : null;
+  const rothStatus = rothCatchUpStatus({
+    catchUpEligible: limits.catchUpEligible,
+    planAllowsCatchUp,
+    planHasRoth: hasRoth,
+    earnedOverThreshold: rothEarnedOverThreshold,
+    thresholdApplies: rothThresholdApplies,
+  });
+  const rothMessageTemplate = {
+    unknown: t.calcRothUnknown,
+    not_affected: t.calcRothNotAffected,
+    roth_required: t.calcRothRequired,
+    blocked_no_roth: t.calcRothBlocked,
+  }[rothStatus] || "";
+  const rothMessage = tpl(rothMessageTemplate, {
+    threshold: fmtRounded(limits.rothCatchUpWageThreshold || 0),
+    catchUp: fmtRounded(limits.catchUp),
+    base: fmtRounded(limits.base),
+    year: limitYear.year,
+  });
+
+  const catchUpActive = limits.catchUpEligible && planAllowsCatchUp && rothStatus !== "blocked_no_roth";
   const summary = contributionSummary({
     salary,
     pct,
@@ -1376,6 +1402,29 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.calcMuted, marginTop: 3 }}><span>0%</span><span>30%</span></div>
             </div>
 
+            {/* === LIMIT TRACKER === */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: C.calcMuted, marginBottom: 4, flexWrap: "wrap" }}>
+                {tpl(t.calcTrackerLabel, { annualContribution: fmtRounded(summary.annualContribution), annualLimit: fmtRounded(summary.annualLimit) })}
+              </div>
+              <div style={{ height: 10, background: C.surfaceAlt, borderRadius: 6, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${summary.annualLimit > 0 ? Math.min((summary.annualContribution / summary.annualLimit) * 100, 100) : 0}%`, background: C.accent, borderRadius: 6, transition: "width .3s ease" }} />
+              </div>
+              <div style={{ fontSize: 11, color: C.calcMuted, marginTop: 6, lineHeight: 1.5 }}>
+                <p style={{ margin: "0 0 2px" }}>
+                  {summary.hitsLimit
+                    ? tpl(t.calcTrackerHitting, { pct, year: limitYear.year, n: summary.limitReachedAtPaycheck, payPeriods: pp })
+                    : tpl(t.calcTrackerNotHitting, { pct, annualContribution: fmtRounded(summary.annualContribution), year: limitYear.year, annualLimit: fmtRounded(summary.annualLimit) })}
+                </p>
+                {salary > 0 && summary.pctToReachLimit !== null && (
+                  <p style={{ margin: "0 0 2px" }}>{tpl(t.calcTrackerPctOfPay, { pctToReachLimit: summary.pctToReachLimit })}</p>
+                )}
+                {summary.hitsLimit && hasSH && ["basic_match", "enhanced_match", "qaca"].includes(sh?.type) && (
+                  <p style={{ margin: 0 }}>{t.calcTrackerTrueUp}</p>
+                )}
+              </div>
+            </div>
+
             {/* === SAFE HARBOR — calculated, always first === */}
             {hasSH && (
               <div style={{ marginBottom: 12, padding: "14px 16px", borderRadius: 12, background: "#E8F8EF", border: `2px solid #5CB88A`, position: "relative" }}>
@@ -1400,6 +1449,13 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
                     <div style={{ fontSize: 10, color: "#5D9A73" }}>/yr</div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* === PAY LIMIT NOTE === */}
+            {summary.payCapped && (
+              <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: "#FFFBF2", border: `1px dashed ${C.calcBorder}`, fontSize: 11, color: C.calcMuted, lineHeight: 1.5 }}>
+                {tpl(t.calcPayLimitNote, { compLimit: fmtRounded(limits.compLimit), year: limitYear.year })}
               </div>
             )}
 
@@ -1456,6 +1512,27 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#2E7D52" }}>{t.calcYes}</div>
               </div>
             </div>
+
+            {/* === ROTH CATCH-UP RULE (2026+) === */}
+            {showRothCard && (
+              <div style={{ marginBottom: 12, padding: "14px 16px", borderRadius: 12, background: "#FFF4E0", border: `2px solid ${C.accent}`, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#8B6914", marginBottom: 6 }}>
+                  {tpl(t.calcRothCardTitle, { year: limitYear.year })}
+                </div>
+                <div style={{ fontSize: 12, color: C.calcText, marginBottom: 10, lineHeight: 1.4 }}>
+                  {tpl(t.calcRothCardQuestion, { threshold: fmtRounded(limits.rothCatchUpWageThreshold || 0) })}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                  <button onClick={() => setRothAnswer("yes")} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.accent}`, background: rothAnswer === "yes" ? C.accent : "transparent", color: rothAnswer === "yes" ? "#fff" : C.calcText, fontFamily: F.body, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t.calcRothBtnYes}</button>
+                  <button onClick={() => setRothAnswer("no")} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.accent}`, background: rothAnswer === "no" ? C.accent : "transparent", color: rothAnswer === "no" ? "#fff" : C.calcText, fontFamily: F.body, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t.calcRothBtnNo}</button>
+                  <button onClick={() => setRothAnswer("notsure")} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.accent}`, background: rothAnswer === "notsure" ? C.accent : "transparent", color: rothAnswer === "notsure" ? "#fff" : C.calcText, fontFamily: F.body, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t.calcRothBtnNotSure}</button>
+                </div>
+                <div style={{ fontSize: 12, color: C.calcText, lineHeight: 1.5, marginBottom: 8 }}>
+                  {rothMessage}
+                </div>
+                <div style={{ fontSize: 10, color: C.calcMuted }}>{t.calcRothFooter}</div>
+              </div>
+            )}
 
             {/* Summary totals — only your contribution + safe harbor */}
             <div style={{ display: "grid", gridTemplateColumns: hasSH ? "1fr 1fr 1.3fr 1fr" : "1fr 1.3fr 1fr", gap: 8, marginBottom: 10 }}>

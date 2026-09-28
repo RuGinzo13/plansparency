@@ -1,7 +1,7 @@
 # PHASE 02 — Calculator: year-based IRS limits, Roth catch-up rule, limit tracker
 **Created:** Sept 28, 2026 in Cowork
 **Open items covered:** OPEN-ITEMS.md #6 (IRS limits stale). Also cleans dead FR/IT code inside the calculator.
-**Status:** Step 1 DONE (`3697a23`) · Step 2 Ready (updated Sept 28 after Step 1 review) · Step 3 Ready
+**Status:** Step 1 DONE (`3697a23`) · Step 2 DONE (`6378a3f`, Ross checks passed) · Step 3 Ready
 
 ---
 
@@ -144,7 +144,7 @@ Rules:
 **Why:** Two things people actually get confused about: "when do I hit the max?" and the new 2026 rule that forces some catch-up money into Roth.
 
 **Check the ground**
-- `git status` clean; latest commit is Step 2's. Find `function CalcPanel` by name.
+- `git status`: latest commit is `6378a3f` (Step 2). Only allowed uncommitted change: this file (Cowork's status update). Anything else = STOP. Find `function CalcPanel` by name. Note: Step 2 added a `tpl()` placeholder helper and imports `getLimitYear`; reuse them, don't duplicate.
 
 **Files you may change:** `components/PlansparencyApp.tsx` (ONLY inside `function CalcPanel`), `lib/i18n/index.ts` (new keys only).
 
@@ -174,7 +174,7 @@ Rules:
 4. All new strings go in `lib/i18n/index.ts` under both `en` and `es` with clear `calc…` key names. Placeholders are replaced in the component. Dollar amounts use `fmtRounded`.
 5. Mobile: everything must wrap on a 375px-wide screen (use `flexWrap: "wrap"` like the existing cards). No horizontal scrolling.
 6. `npx tsc --noEmit` and `npm run build` must pass.
-7. Stage ONLY `components/PlansparencyApp.tsx lib/i18n/index.ts`. Commit: `feat(calc): limit tracker + 2026 Roth catch-up rule card (EN/ES)`. Push.
+7. Stage ONLY `components/PlansparencyApp.tsx lib/i18n/index.ts "PHASE PROMPTS/PHASE-02-calculator-2026.md"`. Commit: `feat(calc): limit tracker + 2026 Roth catch-up rule card (EN/ES)`. Push.
 
 **Ross checks (Calculator tab, test SPD loaded)**
 - Salary $100,000, 10%, biweekly, no DOB: bar shows $10,000 of $24,500; line says limit is about 24.5% of pay.
