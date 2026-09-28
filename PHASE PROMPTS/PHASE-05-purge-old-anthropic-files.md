@@ -2,7 +2,7 @@
 **Created:** Sept 28, 2026 in Cowork
 **Run:** after PHASE-04. `Read "PHASE PROMPTS/PHASE-05-purge-old-anthropic-files.md" and execute all steps in order.`
 **⚠️ Irreversible:** this deletes files. Cowork announced this in chat before writing it.
-**Status:** Ready (needs Ross's 2-minute setup below first)
+**Status:** Done 2026-09-28: deleted 16 files
 
 ## Why
 Before PHASE-04, every uploaded PDF (test docs and the two firm plans removed from Supabase on Sept 28) stayed in Anthropic's Files API with no expiry. This deletes them. Only files this app created are touched: the app always uploads with the filename `upload.pdf`.
