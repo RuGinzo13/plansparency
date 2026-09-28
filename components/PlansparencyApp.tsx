@@ -19,132 +19,10 @@ import { i18n } from '@/lib/i18n';
 import { fmtRounded, fmtDollars, fmtShortAmt, fmtPctVal } from '@/lib/format';
 import { uploadFile, callClaude } from '@/lib/client/api';
 import { C, F, STAGE, btnBase } from '@/components/plansparency/theme';
+import { Md, Modal, LangToggle, Logo, Shield, StatChip, DonutChart } from '@/components/plansparency/ui';
+import { TabBar, PlanGuideTabBar, AppHeader } from '@/components/plansparency/nav';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
-
-// ── Markdown ──
-function Md({ text }) {
-  const lines = text.split("\n"), els = []; let li = [];
-  const flush = () => { if (li.length) { els.push(<ul key={`u${els.length}`} style={{ margin: "8px 0", paddingLeft: 20 }}>{li.map((x, i) => <li key={i} style={{ marginBottom: 4, color: C.text }}><Fm t={x} /></li>)}</ul>); li = []; } };
-  lines.forEach((l, i) => { const b = l.match(/^[\-\*•]\s+(.*)/), n = l.match(/^\d+[\.\)]\s+(.*)/); if (b) { li.push(b[1]); return; } if (n) { li.push(n[1]); return; } flush(); if (!l.trim()) els.push(<div key={i} style={{ height: 8 }} />); else els.push(<p key={i} style={{ margin: "4px 0", lineHeight: 1.6, color: C.text }}><Fm t={l} /></p>); }); flush(); return <>{els}</>;
-}
-function Fm({ t }) { const p = t.split(/(\*\*.*?\*\*)/g); return <>{p.map((s, i) => s.startsWith("**") && s.endsWith("**") ? <strong key={i} style={{ color: C.accent }}>{s.slice(2, -2)}</strong> : <span key={i}>{s}</span>)}</>; }
-
-// ── Shared UI ──
-function LangToggle({ lang, setLang, disabled }) {
-  const labels = { en: "EN", es: "ES" };
-  return (
-    <div style={{ display: "inline-flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.surface, opacity: disabled ? .5 : 1, pointerEvents: disabled ? "none" : "auto" }}>
-      {["en", "es"].map(l => (
-        <button key={l} onClick={() => setLang(l)} style={{ padding: "7px 11px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 11, fontWeight: 600, background: lang === l ? C.accentDim : "transparent", color: lang === l ? C.accent : C.textMuted, transition: "all .15s" }}>{labels[l]}</button>
-      ))}
-    </div>
-  );
-}
-function Logo({ small }) {
-  return <div style={{ display: "inline-flex", alignItems: "center", gap: small ? 8 : 10, padding: small ? 0 : "8px 16px", borderRadius: small ? 0 : 100, border: small ? "none" : `1px solid ${C.border}`, background: small ? "transparent" : C.surface }}>
-    <div style={{ width: small ? 28 : 30, height: small ? 28 : 30, borderRadius: 8, background: `linear-gradient(135deg,${C.accent},#B8863A)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: small ? 13 : 14, fontWeight: 700, color: "#0F1621" }}>P</div>
-    <span style={{ fontFamily: F.display, fontSize: small ? 17 : 22, fontWeight: 600, letterSpacing: "-.01em", color: C.text }}>Plan<span style={{ color: C.accent }}>sparency</span></span>
-  </div>;
-}
-function Shield({ color, sz = 18 }) { return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>; }
-function Modal({ children }) { return <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(0,0,0,.75)", backdropFilter: "blur(8px)" }}><div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, maxWidth: 520, width: "100%", maxHeight: "85vh", overflowY: "auto", padding: "32px 28px", boxShadow: "0 24px 80px rgba(0,0,0,.6)" }}>{children}</div></div>; }
-
-function TabBar({ activeTab, setActiveTab, t }) {
-  const tabs = [
-    {
-      id: "dashboard",
-      label: t.navYourPlan,
-      icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-      ),
-    },
-    {
-      id: "calculator",
-      label: t.navCalculator,
-      icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="4" y="2" width="16" height="20" rx="2"/>
-          <line x1="8" y1="6" x2="16" y2="6"/>
-          <line x1="8" y1="10" x2="16" y2="10"/>
-          <line x1="8" y1="14" x2="11" y2="14"/>
-          <line x1="13" y1="14" x2="16" y2="14"/>
-          <line x1="8" y1="18" x2="11" y2="18"/>
-          <line x1="13" y1="18" x2="16" y2="18"/>
-        </svg>
-      ),
-    },
-    {
-      id: "keyterms",
-      label: t.navKeyTerms,
-      icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-          <line x1="9" y1="7" x2="15" y2="7"/>
-          <line x1="9" y1="11" x2="15" y2="11"/>
-          <line x1="9" y1="15" x2="12" y2="15"/>
-        </svg>
-      ),
-    },
-    {
-      id: "chat",
-      label: t.navAsk,
-      icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-      ),
-    },
-  ];
-
-  return (
-    <div style={{
-      display: "flex",
-      borderBottom: `1px solid ${C.border}`,
-      background: C.surface,
-      flexShrink: 0,
-    }}>
-      {tabs.map(tab => {
-        const active = activeTab === tab.id;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              flex: 1,
-              padding: "10px 4px 8px",
-              background: "none",
-              border: "none",
-              borderBottom: `2px solid ${active ? C.accent : "transparent"}`,
-              cursor: "pointer",
-              fontFamily: F.body,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 4,
-              transition: "all .15s",
-              color: active ? C.accent : C.textMuted,
-            }}
-            onMouseEnter={e => { if (!active) e.currentTarget.style.color = C.text; }}
-            onMouseLeave={e => { if (!active) e.currentTarget.style.color = C.textMuted; }}
-          >
-            {tab.icon(active)}
-            <span style={{
-              fontSize: 10,
-              fontWeight: active ? 700 : 500,
-              letterSpacing: ".03em",
-              textTransform: "uppercase",
-            }}>{tab.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 // ── Key Terms Panel ──
 function KeyTermsPanel({ t }) {
@@ -192,52 +70,6 @@ function KeyTermsPanel({ t }) {
   );
 }
 
-// ── Plan Guide / Investments 2-Tab Bar ──
-function PlanGuideTabBar({ activeTab, setActiveTab, hasFunds }) {
-  const tabs = [
-    { id: "guide", label: "Plan Guide" },
-    { id: "investments", label: "Investments" },
-  ];
-  return (
-    <div style={{ display: "flex", background: C.surface, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-      {tabs.map(tab => {
-        const active = activeTab === tab.id;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              flex: 1, padding: "11px 8px 9px",
-              background: active ? C.accentDim : "transparent",
-              border: "none",
-              borderBottom: `2px solid ${active ? C.accent : "transparent"}`,
-              cursor: "pointer", fontFamily: F.body,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              transition: "all .15s",
-              color: active ? C.accent : C.textMuted,
-            }}
-            onMouseEnter={e => { if (!active) e.currentTarget.style.color = C.text; }}
-            onMouseLeave={e => { if (!active) e.currentTarget.style.color = C.textMuted; }}
-          >
-            <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, letterSpacing: ".03em", textTransform: "uppercase" }}>
-              {tab.label}
-            </span>
-            {tab.id === "investments" && !hasFunds && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, background: C.accentDim, color: C.accent,
-                border: `1px solid ${C.accent}44`, borderRadius: 100, padding: "1px 6px",
-                textTransform: "uppercase", letterSpacing: ".04em",
-              }}>
-                UPLOAD DOC
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 // ── Fund Row ──
 function FundRow({ fund, showCategory, riskMap, lang }) {
   const es = lang === "es";
@@ -278,20 +110,6 @@ function FundRow({ fund, showCategory, riskMap, lang }) {
           </a>
         )}
       </div>
-    </div>
-  );
-}
-
-// ── Summary stat chip (Investments) ──
-function StatChip({ value, label }) {
-  return (
-    <div style={{
-      flex: 1, minWidth: 0, padding: "8px 10px",
-      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
-      display: "flex", flexDirection: "column", gap: 1,
-    }}>
-      <span style={{ fontSize: 16, fontWeight: 700, color: C.text, fontFamily: F.display, lineHeight: 1.1 }}>{value}</span>
-      <span style={{ fontSize: 9, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: ".05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
     </div>
   );
 }
@@ -528,51 +346,6 @@ class ErrorBoundary extends React.Component {
     );
     return this.props.children;
   }
-}
-
-// ── App Header (shared across dashboard / statement / chat stages) ──
-function AppHeader({ accentColor, title, onBack, backLabel, lang, setLang, loading, t, advisorLogo, advisorFirmName }) {
-  return (
-    <div style={{ padding: "10px 16px", borderBottom: `2px solid ${accentColor}`, background: C.surface, flexShrink: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-        {onBack && (
-          <button onClick={onBack} style={{
-            padding: "7px 14px", borderRadius: 10, border: `1px solid ${accentColor}`,
-            background: `${accentColor}22`, color: accentColor, fontSize: 12, fontFamily: F.body,
-            fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-            transition: "all .15s", flexShrink: 0,
-          }}
-            onMouseEnter={e => e.currentTarget.style.background = `${accentColor}44`}
-            onMouseLeave={e => e.currentTarget.style.background = `${accentColor}22`}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            {backLabel}
-          </button>
-        )}
-        {advisorLogo || advisorFirmName ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {advisorLogo && <img src={advisorLogo} alt={advisorFirmName || 'Advisor'} style={{ height: 28, borderRadius: 6, objectFit: 'contain' }} />}
-            {advisorFirmName && <span style={{ fontFamily: F.display, fontSize: 17, fontWeight: 600, color: C.text }}>{advisorFirmName}</span>}
-          </div>
-        ) : (
-          <Logo small />
-        )}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: C.green, background: C.greenDim, padding: "3px 8px", borderRadius: 100, border: "1px solid rgba(92,184,138,.15)" }}>
-            <Shield color={C.green} sz={10} />{t.securityBadge}
-          </div>
-          <LangToggle lang={lang} setLang={setLang} disabled={loading} />
-          <div style={{ fontSize: 10, color: C.warning, background: "rgba(212,168,67,.08)", padding: "3px 8px", borderRadius: 100, border: "1px solid rgba(212,168,67,.18)", whiteSpace: "nowrap" }}>
-            {t.disclaimer}
-          </div>
-        </div>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: accentColor, flexShrink: 0 }} />
-        <div style={{ fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: ".01em" }}>{title}</div>
-      </div>
-    </div>
-  );
 }
 
 // ── Suggestion Box ──
@@ -1368,28 +1141,6 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
       )}
     </div>
   );
-}
-
-// ── Donut Chart ──
-function DonutChart({ segments, size = 140 }) {
-  const total = segments.reduce((s, seg) => s + seg.value, 0);
-  if (total === 0) return null;
-  const r = size / 2 - 12, cx = size / 2, cy = size / 2;
-  let cumAngle = -90;
-  const paths = segments.filter(s => s.value > 0).map((seg, i) => {
-    const angle = (seg.value / total) * 360;
-    const startAngle = cumAngle * Math.PI / 180;
-    const endAngle = (cumAngle + angle) * Math.PI / 180;
-    cumAngle += angle;
-    const largeArc = angle > 180 ? 1 : 0;
-    const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle);
-    const x2 = cx + r * Math.cos(endAngle), y2 = cy + r * Math.sin(endAngle);
-    const ir = r * 0.55;
-    const x3 = cx + ir * Math.cos(endAngle), y3 = cy + ir * Math.sin(endAngle);
-    const x4 = cx + ir * Math.cos(startAngle), y4 = cy + ir * Math.sin(startAngle);
-    return <path key={i} d={`M${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} L${x3},${y3} A${ir},${ir} 0 ${largeArc},0 ${x4},${y4} Z`} fill={seg.color} />;
-  });
-  return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>{paths}</svg>;
 }
 
 // ── Statement Dashboard ──
