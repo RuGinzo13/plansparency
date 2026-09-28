@@ -16,35 +16,9 @@ import { getIRSLimits, getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
 import { safeHarborAmount, contributionSummary, rothCatchUpStatus } from '@/lib/plan/calc';
 import { endSessionFiles, INACTIVITY_LIMIT_MS } from '@/lib/client/session';
 import { i18n } from '@/lib/i18n';
+import { fmtRounded, fmtDollars, fmtShortAmt, fmtPctVal } from '@/lib/format';
+import { C, F, STAGE, btnBase } from '@/components/plansparency/theme';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
-
-
-// ── Colors ──
-const C = {
-  bg: "#F4EFE6", surface: "#FDFAF6", surfaceAlt: "#EDE8DE",
-  border: "#D5C9B8", borderLight: "#E5DDD0",
-  accent: "#B8860B", accentDim: "rgba(184,134,11,.13)", accentGlow: "rgba(184,134,11,.24)",
-  green: "#2E7D52", greenDim: "rgba(46,125,82,.11)", greenGlow: "rgba(46,125,82,.2)",
-  text: "#1E1408", textMuted: "#5E4E3A", textDim: "#9A8878",
-  userBubble: "#E6DCCC", aiBubble: "#FFFFFF",
-  warning: "#B8860B", danger: "#B83232", dangerDim: "rgba(184,50,50,.1)",
-  calcBg: "#FDFAF6", calcBorder: "#B8860B", calcText: "#1E1408",
-  calcMuted: "#7A6B5D", calcCard: "#EDE8DE", calcCardBorder: "#D5C9B8",
-  calcInput: "#FFFFFF", calcInputBorder: "#C8BFAE",
-};
-const F = { display: "'Cormorant Garamond','Georgia',serif", body: "'DM Sans','Segoe UI',sans-serif" };
-
-// ── Stage constants ──
-const STAGE = Object.freeze({ CHOOSER:"chooser", LANDING:"landing", PRIVACY:"privacy", UPLOADING:"uploading", APP:"app", DASHBOARD:"dashboard", STMT_DASHBOARD:"stmtDashboard", CHAT:"chat", CLEARED:"cleared" });
-
-// ── Module-level formatters ──
-const fmtRounded = (n: number) => "$" + Math.round(n || 0).toLocaleString();
-const fmtDollars = (n: number) => "$" + Math.abs(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtShortAmt = (n: number) => { const a = Math.abs(n || 0); if (a >= 1000000) return "$" + (a/1000000).toFixed(1) + "M"; if (a >= 1000) return "$" + (a/1000).toFixed(1) + "K"; return "$" + a.toFixed(0); };
-const fmtPctVal = (n: number) => (n || 0).toFixed(2) + "%";
-
-// ── Module-level shared styles ──
-const btnBase = { border: "none", cursor: "pointer", fontFamily: F.body, fontWeight: 600, borderRadius: 12, transition: "all .15s" };
 
 
 // ── Upload helper ──
@@ -672,27 +646,6 @@ function InvestmentsPanel({ fundsData, lang }) {
   );
 }
 
-// ── TOC Section Icons ──
-function SectionIcon({ type, sz = 20 }) {
-  const s = { width: sz, height: sz, viewBox: "0 0 24 24", fill: "none", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" };
-  const icons = {
-    eligContrib: <svg {...s} stroke="#D4A853"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><path d="M16 11l2 2 4-4"/></svg>,
-    eligMatch: <svg {...s} stroke="#5CB88A"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>,
-    match: <svg {...s} stroke="#5CB88A"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg>,
-    vesting: <svg {...s} stroke="#D4A853"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-    loans: <svg {...s} stroke="#94A0B2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>,
-    roth: <svg {...s} stroke="#D4A853"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>,
-    investments: <svg {...s} stroke="#5CB88A"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-    hardship: <svg {...s} stroke="#D46A5A"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-    enroll: <svg {...s} stroke="#D4A853"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
-    distributions: <svg {...s} stroke="#94A0B2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-    safeHarbor: <svg {...s} stroke="#5CB88A"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>,
-    profitSharing: <svg {...s} stroke="#D4A853"><circle cx="12" cy="12" r="10"/><path d="M16 8l-4 4-4-4"/><path d="M16 16l-4-4-4 4"/></svg>,
-    keyTerms: <svg {...s} stroke="#D4A853"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
-  };
-  return icons[type] || null;
-}
-
 // ── Error Boundary ──
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { error: null }; }
@@ -753,24 +706,6 @@ function AppHeader({ accentColor, title, onBack, backLabel, lang, setLang, loadi
         <div style={{ width: 8, height: 8, borderRadius: "50%", background: accentColor, flexShrink: 0 }} />
         <div style={{ fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: ".01em" }}>{title}</div>
       </div>
-    </div>
-  );
-}
-
-// ── Page Background (shared across landing / chooser) ──
-function PageBackground() {
-  return <>
-    <div style={{ position: "absolute", inset: 0, opacity: .02, backgroundImage: `linear-gradient(${C.accent} 1px,transparent 1px),linear-gradient(90deg,${C.accent} 1px,transparent 1px)`, backgroundSize: "80px 80px" }} />
-    <div style={{ position: "absolute", top: -200, left: "25%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,rgba(212,168,83,.12) 0%,transparent 70%)", filter: "blur(100px)", pointerEvents: "none" }} />
-  </>;
-}
-
-// ── Trust Row (shared across landing / chooser) ──
-function TrustRow({ t }) {
-  return (
-    <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
-      {[[<Shield key="s" color={C.accent} sz={14} />, t.trustPrivate], ["🔒", t.trustEncrypted], ["📚", t.trustEducation], ["💬", t.trustPlain]]
-        .map(([ic, lb], i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: C.textMuted }}>{ic}<span>{lb}</span></div>)}
     </div>
   );
 }
@@ -1568,24 +1503,6 @@ function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) 
       )}
     </div>
   );
-}
-
-// ── Statement Data Parser ──
-
-// ── Mini Bar Chart ──
-function MiniBar({ items, maxVal, colorFn }) {
-  const mv = maxVal || Math.max(...items.map(i => Math.abs(i.value)), 1);
-  return <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>{items.filter(i => i.value !== 0).map((item, idx) => (
-    <div key={idx}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 3 }}>
-        <span style={{ color: C.text }}>{item.label}</span>
-        <span style={{ fontWeight: 700, color: colorFn ? colorFn(item.value) : C.text }}>${Math.abs(item.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-      </div>
-      <div style={{ height: 8, background: C.surfaceAlt, borderRadius: 4, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${Math.min(Math.abs(item.value) / mv * 100, 100)}%`, background: colorFn ? colorFn(item.value) : C.accent, borderRadius: 4, transition: "width .5s ease" }} />
-      </div>
-    </div>
-  ))}</div>;
 }
 
 // ── Donut Chart ──
