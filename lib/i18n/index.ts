@@ -68,6 +68,8 @@ Fill in based on the actual plan document:
     clearedTitle: "Session cleared",
     clearedBody: "Your document and conversation have been erased. No data was saved.",
     clearedButton: "Start over",
+    calcSessionEndedIdle: "For your privacy, your session ended after 30 minutes without activity and your document was deleted. Upload it again to keep going.",
+    errSessionExpired: "Your session has ended and your document was deleted for your privacy. Please upload it again.",
     privacyTitle: "How we handle your document",
     privacyIntro: "Before you upload, here's what happens:",
     privacyPoints: [
@@ -232,6 +234,8 @@ Llena según el plan real. matchTiers = solo match DISCRECIONAL. safeHarbor y pr
     clearConfirmTitle: "¿Terminar?", clearConfirmBody: "Se borrará todo permanentemente.",
     clearConfirmYes: "Sí, borrar", clearConfirmNo: "No, mantener",
     clearedTitle: "Sesión terminada", clearedBody: "Todo borrado.", clearedButton: "Empezar de nuevo",
+    calcSessionEndedIdle: "Por tu privacidad, tu sesión terminó después de 30 minutos sin actividad y tu documento fue eliminado. Súbelo de nuevo para continuar.",
+    errSessionExpired: "Tu sesión terminó y tu documento fue eliminado por tu privacidad. Súbelo de nuevo, por favor.",
     privacyTitle: "Cómo manejamos tu documento", privacyIntro: "Antes de subir:",
     privacyPoints: [
       ["Nunca se almacena.", "Solo en memoria temporal del navegador."],

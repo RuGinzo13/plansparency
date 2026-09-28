@@ -14,6 +14,7 @@ import { parsePlanData, stripPlanData, normalizePlanData } from '@/lib/plan/plan
 import { parseStmtData, stripStmtData } from '@/lib/plan/stmtdata';
 import { getIRSLimits, getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
 import { safeHarborAmount, contributionSummary, rothCatchUpStatus } from '@/lib/plan/calc';
+import { endSessionFiles, INACTIVITY_LIMIT_MS } from '@/lib/client/session';
 import { i18n } from '@/lib/i18n';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
@@ -1836,6 +1837,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [uploadDocCount, setUploadDocCount] = useState(1);   // total files being uploaded
   const [stagedFiles, setStagedFiles] = useState<File[]>([]); // files queued on landing before privacy
   const [streamingText, setStreamingText] = useState('');
+  const [sessionEndReason, setSessionEndReason] = useState<'idle' | 'expired' | null>(null);
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -1843,11 +1845,42 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const addDocRef = useRef(null);
   const abortRef = useRef(null);
   const fileIdsRef = useRef<string[]>([]);  // replaces fileIdRef; array of all uploaded file IDs
+  const lastActivityRef = useRef(Date.now());
 
   const t = i18n[lang];
 
+  const bumpActivity = () => { lastActivityRef.current = Date.now(); };
+
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
   useEffect(() => { if (stage === "chat" && !loading) inputRef.current?.focus(); }, [stage, loading]);
+
+  // Best-effort file cleanup on tab/browser close — sendBeacon works during unload.
+  useEffect(() => {
+    const handlePageHide = () => { endSessionFiles(fileIdsRef.current, { beacon: true }); };
+    window.addEventListener('pagehide', handlePageHide);
+    return () => window.removeEventListener('pagehide', handlePageHide);
+  }, []);
+
+  // 30-minute inactivity: track activity, end the session if it goes quiet.
+  useEffect(() => {
+    window.addEventListener('click', bumpActivity);
+    window.addEventListener('keydown', bumpActivity);
+    return () => {
+      window.removeEventListener('click', bumpActivity);
+      window.removeEventListener('keydown', bumpActivity);
+    };
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (fileIdsRef.current.length > 0 && Date.now() - lastActivityRef.current > INACTIVITY_LIMIT_MS) {
+        clearSession();
+        setSessionEndReason('idle');
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Version-B: process preloaded plan text (skips upload) ──
   const processVersionB = useCallback(async (planText: string) => {
@@ -1876,6 +1909,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   }, []);
 
   const clearSession = () => {
+    endSessionFiles(fileIdsRef.current);
+    setSessionEndReason(null);
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
     setCalcExpanded(false); setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText(''); setUploadError("");
@@ -1909,6 +1944,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // Shared upload processor — accepts an array of files
   const processUpload = useCallback(async (files: File[], resetState = false) => {
     if (!files?.length) return;
+    bumpActivity();
     if (resetState) {
       setMessages([]); setPlanData(null); setStmtData(null);
       setCalcExpanded(false);
@@ -1937,6 +1973,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       // Captured from the local `ctrl`, not re-read from abortRef.current — a second
       // upload starting mid-analysis can no longer swap out this signal (Finding #4).
       const analyzeSignal = ctrl.signal;
+      const oldIds = fileIdsRef.current.filter(id => !collectedIds.includes(id));
+      if (oldIds.length) endSessionFiles(oldIds);
       fileIdsRef.current = collectedIds;
       setUploadPhase('analyzing');
       setStagedFiles([]);
@@ -1988,6 +2026,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // Complete fresh-start re-upload: wipe all state then open file picker.
   // addDocRef is used for in-session supplemental uploads (APP/stmtDashboard stages) — bypasses privacy screen.
   const startFreshUpload = () => {
+    endSessionFiles(fileIdsRef.current);
     setMessages([]); setPlanData(null); setStmtData(null);
     setFileName(""); setInput(""); setLoading(false); setCalcExpanded(false);
     setStreamingText(''); setStagedFiles([]); pendingFilesRef.current = []; fileIdsRef.current = [];
@@ -1997,6 +2036,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // Supplemental upload: user already in APP/stmtDashboard — skip privacy, append fileId, ask Claude to review new doc
   const supplementalUpload = useCallback(async (file: File) => {
     if (!file) return;
+    bumpActivity();
     setUploadError("");
     setFileName(file.name);
     setUploadProgress(0);
@@ -2054,6 +2094,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   const sendMessage = async text => {
     if (!text.trim() || loading) return;
+    bumpActivity();
     const um = { role: "user", content: text.trim() }; const nm = [...messages, um]; setMessages(nm); setInput(""); setLoading(true); setStreamingText('');
     if (stage === STAGE.APP) setActiveTab("chat");
     else if (stage === STAGE.STMT_DASHBOARD) setStage(STAGE.CHAT);
@@ -2069,6 +2110,12 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       setStreamingText('');
       if (e.name === "AbortError") { abortRef.current = null; setLoading(false); return; }
       console.error('[sendMessage] Failed — status:', (e as any).status, 'message:', e.message, e);
+      if ((e as any).status === 410 || e.message === 'session_expired') {
+        abortRef.current = null;
+        clearSession();
+        setSessionEndReason('expired');
+        return;
+      }
       let replyMsg = t.errorReply;
       if ((e as any).status === 429) {
         replyMsg = "Too many requests — please wait a minute and try again.";
@@ -2174,8 +2221,10 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   if (stage === "cleared") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
     <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}><Shield color={C.accent} sz={24} /></div>
     <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.clearedTitle}</h2>
-    <p style={{ color: C.textMuted, fontSize: 14, margin: "0 0 28px", textAlign: "center" }}>{t.clearedBody}</p>
-    <button onClick={() => setStage("chooser")} style={{ ...btnBase, padding: "12px 28px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},#B8863A)`, color: "#0F1621" }}>{t.clearedButton}</button></div>;
+    <p style={{ color: C.textMuted, fontSize: 14, margin: "0 0 28px", textAlign: "center" }}>
+      {sessionEndReason === "idle" ? t.calcSessionEndedIdle : sessionEndReason === "expired" ? t.errSessionExpired : t.clearedBody}
+    </p>
+    <button onClick={() => { setSessionEndReason(null); setStage("chooser"); }} style={{ ...btnBase, padding: "12px 28px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},#B8863A)`, color: "#0F1621" }}>{t.clearedButton}</button></div>;
 
   // ── Landing ──
   if (stage === "landing") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", position: "relative", overflow: "hidden" }}>

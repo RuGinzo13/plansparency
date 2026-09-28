@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { parsePlanData, stripPlanData } from '@/lib/plan/plandata';
+import { endSessionFiles } from '@/lib/client/session';
 
 const C = { bg: '#0F1621', surface: '#1A2333', border: '#2A3A50', accent: '#B8860B', accentDim: 'rgba(184,134,11,.15)', text: '#F4EFE6', muted: '#8A9BB0', danger: '#B83232' };
 const F = "'DM Sans','Segoe UI',sans-serif";
@@ -68,23 +69,29 @@ export default function AdvisorPage() {
       // Step 3 — convert to base64 for Supabase storage, then save plan
       setStatus('Saving plan…');
       const pdfBase64 = await fileToBase64(file);
-      const saveRes = await fetch('/api/save-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdfBase64, planData, initialSummary }),
-      });
-      if (!saveRes.ok) { const d = await saveRes.json().catch(() => ({})); throw new Error(d.detail || d.error || `Save error ${saveRes.status}`); }
-      const { plan_id, advisor_token, share_url } = await saveRes.json();
+      try {
+        const saveRes = await fetch('/api/save-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pdfBase64, planData, initialSummary }),
+        });
+        if (!saveRes.ok) { const d = await saveRes.json().catch(() => ({})); throw new Error(d.detail || d.error || `Save error ${saveRes.status}`); }
+        const { plan_id, advisor_token, share_url } = await saveRes.json();
 
-      // Step 3 — persist locally
-      localStorage.setItem('plansparency_advisor_token', advisor_token);
-      const newPlan: StoredPlan = { plan_id, share_url, employer_name: employerName || planData.planName || planData.employerName || 'Unnamed Plan', uploaded_at: new Date().toISOString() };
-      const updated = [...plans, newPlan];
-      localStorage.setItem('plansparency_plans', JSON.stringify(updated));
-      setPlans(updated);
-      setHasToken(true);
-      setStatus('');
-      setEmployerName('');
+        // Step 3 — persist locally
+        localStorage.setItem('plansparency_advisor_token', advisor_token);
+        const newPlan: StoredPlan = { plan_id, share_url, employer_name: employerName || planData.planName || planData.employerName || 'Unnamed Plan', uploaded_at: new Date().toISOString() };
+        const updated = [...plans, newPlan];
+        localStorage.setItem('plansparency_plans', JSON.stringify(updated));
+        setPlans(updated);
+        setHasToken(true);
+        setStatus('');
+        setEmployerName('');
+      } finally {
+        // The file is only needed to build the plan summary — delete it now
+        // whether the save succeeded or failed.
+        endSessionFiles([fileId]);
+      }
     } catch (e: any) {
       setError(e.message || 'Something went wrong. Please try again.');
       setStatus('');
