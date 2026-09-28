@@ -15,14 +15,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // ── 1. Parse + validate body ───────────────────────────────────────────────
-    let body: { pdfBase64?: string; planData?: object; initialSummary?: string };
+    let body: { pdfBase64?: string; planData?: object; initialSummary?: string; employerName?: string };
     try {
       body = await req.json();
     } catch {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
-    const { pdfBase64, planData, initialSummary } = body;
+    const { pdfBase64, planData, initialSummary, employerName } = body;
+    const typedName = typeof employerName === 'string' ? employerName.trim().slice(0, 120) : '';
 
     if (!pdfBase64 || !planData || !initialSummary) {
       return NextResponse.json(
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { error: dbError } = await getSupabaseAdmin().from('plans').insert({
       plan_id,
       advisor_token,
-      employer_name: pd.employerName ?? null,
+      employer_name: typedName || pd.employerName || null,
       plan_name: pd.planName ?? pd.employerName ?? null,
       ein: pd.ein ?? null,
       plan_number: pd.planNumber ?? null,

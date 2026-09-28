@@ -1,5 +1,5 @@
 # Plansparency — OPEN-ITEMS.md
-*The only to-do list. Ranked. Last updated: September 28, 2026 (verified against repo `71f9357` + Vercel production).*
+*The only to-do list. Ranked. Last updated: September 28, 2026, evening (verified against repo `ba25e82` + Supabase).*
 *Owner key: **Ross** = decision or dashboard task. **CC** = Claude Code prompt file needed. Nothing marked CC gets a prompt file until it has been talked through in Cowork.*
 
 ---
@@ -18,20 +18,24 @@
 
 | # | Item | Owner | Notes |
 |---|------|-------|-------|
-| 6 | **IRS limits are 2025 values** → calculator upgrade | CC | **Sept 28:** Ross chose Option B + feature build. Ready: `PHASE PROMPTS/PHASE-02-calculator-2026.md` (3 steps: typed math + year table; wire UI + 2026 label + dead FR/IT removal; limit tracker + Roth catch-up card). 2026 figures verified from IRS/Notice 2025-67. |
-| 7 | **Upload limit: copy says 4.5 MB, code allows 25 MB** | Ross → CC | **Sept 28 finding:** Vercel's own docs (updated Aug 2026) say function request bodies max out at **4.5 MB** (error 413). That means the 4.5 MB copy may be the honest one and the 25 MB client check the wrong one. But the 5.9 MB Equitable booklet reportedly worked June 11, which contradicts the docs. Decide by test (#12) before changing anything. If >4.5 MB fails, the real fix is architectural (browser uploads straight to storage, server forwards to Anthropic), which touches the "no storage" privacy promise. Talk through first. Also conflicts with CLAUDE.md rule "25MB client-side, do not lower". |
-| 8 | Stale comment in `app/advisor/layout.tsx` says the advisor area is "OPEN" | CC | Middleware has gated it since June 11. Comment-only fix; fold into another prompt. → Phase 03 ready. |
+| 6 | ~~IRS limits / calculator upgrade~~ | ✅ | Phase 02 done: `3697a23`, `6378a3f`, `b735d77`. |
+| 7 | **PARKED (Ross, Sept 28): upload limit 4.5 MB vs 25 MB** | Ross → CC | Vercel docs say function request bodies max out at 4.5 MB; June's 5.9 MB success contradicts that. Decide by test #12 when Ross is ready. If >4.5 MB fails, the fix is architectural and touches the "no storage" promise. Conflicts with CLAUDE.md "25MB, do not lower" rule. |
+| 8 | ~~Stale advisor layout comment~~ | ✅ | Phase 03 `ba25e82`. |
 
 ## P2 — Reliability and testing
 
 | # | Item | Owner | Notes |
 |---|------|-------|-------|
-| 9 | Finding #1 (partial): no friendly message when the upload connection drops | CC | `maxDuration` is already 120. Missing: map `TypeError: Failed to fetch` / `Load failed` to a plain-language timeout message. → Phase 03 ready. |
-| 10 | Finding #4: `analyzeSignal` read after the upload `await` | CC | Capture the controller once at the start of the upload handler(s). Low severity. → Phase 03 ready. |
+| 9 | ~~Friendly upload errors~~ | ✅ | Phase 03 `71115a5` (EN/ES, no raw "Failed to fetch"). |
+| 10 | ~~Finding #4 cancel signal~~ | ✅ | Phase 03 `71115a5`. |
 | 11 | Test Investments tab with the Equitable enrollment booklet (~30 funds, pp. 13–14) | Ross | |
-| 12 | **Upload the 12 MB test file** (`Info Source Documents/Upload Size Tests/TEST-12MB-Equitable-x2.pdf`, 88 pages, made by Cowork) on /try and note exactly what happens | Ross | Result decides #7. Also re-upload the 5.9 MB Equitable booklet to confirm June's result still holds. |
-| 13 | EIN + Plan Number: advisor flow extracts and saves them; `/api/chat` system prompt does not mention them | CC | Verify whether the participant flow needs them before building anything. |
-| 14 | Delete merged `dashboard-redesign` branch (local + GitHub) | CC | Housekeeping. → Phase 03 ready. |
+| 12 | **PARKED:** upload the 12 MB test file (`Info Source Documents/Upload Size Tests/TEST-12MB-Equitable-x2.pdf`) and re-upload the 5.9 MB booklet | Ross | Decides #7. |
+| 13 | ~~EIN + Plan Number~~ | ✅ (checked) | Sept 28 DB check: advisor flow saves EIN + plan number (3 of 5 rows have both). Participant /try flow is sessionless and doesn't need them. No build needed. |
+| 14 | ~~Delete merged branch~~ | ✅ | Phase 03: only `main` remains locally and on GitHub. |
+| 15 | **Advisor's typed plan name is never saved** | CC | Sept 28 DB check: `employer_name` is empty on all 5 rows. `/advisor` keeps the typed name only in the browser; `/api/save-plan` reads `pd.employerName`, which PLANDATA never has. Result: share pages title as "Your 401(k) Plan". Small fix. → `PHASE-04` Step 3. |
+| 16 | ~~Two firm plans in the database~~ | ✅ | Sept 28: rows deleted (Cowork), stored PDFs deleted (Ross, dashboard). Verified: storage now holds exactly 3 PDFs matching the 3 remaining test plans. Anthropic copies removed by `PHASE-05`. |
+| 17 | **Documents must be deleted from Anthropic when the session ends** | CC | Ross, Sept 28: Anthropic may hold a document only during the active session. `PHASE-04` (rewritten): delete route + deletes on End Session / new upload / tab close / 30-min idle, 2-hour expiry backstop, advisor file deleted after save. Then `PHASE-05` deletes everything already stored. |
+| 18 | ~~Delete 2 stored PDFs in Supabase~~ | ✅ | Ross, Sept 28; verified by Cowork. |
 
 ## P3 — Pre-launch gate (nothing here goes public until done)
 
@@ -39,6 +43,9 @@
 - [ ] Compliance OBA written approval ← **GATE** (see #1)
 - [ ] ERISA attorney review, including Investments tab and disclaimers ($500–$800, estimate)
 - [ ] Privacy policy (Termly.io), name Anthropic as processor
+- [ ] **PRE-PILOT PRIVACY / CONFIDENTIALITY / SECURITY WORKSTREAM (Ross, Sept 28: "a huge consideration before the pilot").** Must be designed and built before any pilot advisor gets access. Includes the items below plus: **share links (`/p/...`) — TABLED Sept 28** (today anyone with the link receives the full PDF in their browser; options: short-lived links, participant verification, server-side answering so the PDF never leaves the server); statements vs. plan documents sensitivity tiers; Zero Data Retention decision (ZDR does not cover the Files API); Supabase retention/deletion schedule; logging review (no document text in logs).
+- [ ] **Document privacy at launch (Ross, Sept 28):** an uploaded document must be accessible ONLY to the person who uploaded it. Covers: real user accounts (Clerk), per-user access checks on every document read, private storage with short-lived signed links (no public URLs), encryption at rest, automatic deletion schedule, no document ever in Anthropic file storage, audit of who accessed what. Also decide whether advisor-shared plans (`/p/` links) count as "the advisor's document" and how participants are verified.
+- [ ] Ask Anthropic sales about Zero Data Retention (ZDR) for the Messages API (default: inputs deleted within 30 days).
 - [ ] Security bundle (parked June 11): Clerk login, security headers, prompt-injection testing, PDF magic-byte check, Supabase RLS review, `/api/save-plan` rate limit, server-side `advisor_token` validation
 - [ ] Point `plansparency.com` at Vercel (currently GoDaddy builder)
 - [ ] 404(a)(5) fee disclosure test docs (unlocks expense-ratio sort)
@@ -61,8 +68,8 @@
 - [ ] Calculator does not compute non-safe-harbor match formulas (all treated as "discretionary, not calculated" per earlier decision). Many plans have a fixed formula. Revisit only as a deliberate decision (needs PLANDATA to tell fixed vs discretionary, and ERISA-wording care).
 - [x] ~~Remaining FR/IT dead branches~~: none left (checked Sept 28; all were in CalcPanel, removed in Phase 02).
 
-- [ ] Decompose `components/PlansparencyApp.tsx` (2,430 lines, `@ts-nocheck`, ~193 deferred type errors). Multi-prompt project; plan it in Cowork first.
-- [ ] Retired prototype `plansparency-mvp.jsx` in repo root → deleted in Phase 03 Step 2.
+- [ ] Decompose `components/PlansparencyApp.tsx` (~2,500 lines). **Part 1 ready: `PHASE-06-split-app-file.md`** (pure moves, 5 commits; also deletes 4 unused components). Part 2 later: add types file by file and remove `@ts-nocheck` per file.
+- [x] ~~Retired prototype in repo root~~: deleted in Phase 03 (`ba25e82`).
 - [ ] `Project-Execution-Plan.md` is stale (May 28) and tells Ross to run terminal commands. Retire or rewrite.
 
 ## claude.ai project housekeeping (Ross)
@@ -72,6 +79,8 @@
 ---
 
 ## Done (recent)
+- ✅ Sept 28, 2026 — Phases 01–03: Supabase restored + keep-alive fixed; site locked until OBA; calculator 2026 upgrade; EN/ES upload errors; housekeeping
+- ✅ Sept 28 — `claude-sonnet-4-6` checked: active, retirement not before Feb 17, 2027 (Anthropic deprecations page)
 - ✅ Sept 27, 2026 — Docs re-verified against code; drift corrected; workflow reset (see MEMORY.md)
 - ✅ May 26, 2026 (found Sept 27) — Finding #3 AbortSignal fallback, Finding #5 error string, Finding #1 maxDuration → 120 (commit `273ef03`)
 - ✅ June 11, 2026 — API key rotated; Basic Auth gate; rate-limit env vars confirmed; Blob token removed

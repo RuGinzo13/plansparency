@@ -73,7 +73,7 @@ export default function AdvisorPage() {
         const saveRes = await fetch('/api/save-plan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pdfBase64, planData, initialSummary }),
+          body: JSON.stringify({ pdfBase64, planData, initialSummary, employerName: employerName.trim() }),
         });
         if (!saveRes.ok) { const d = await saveRes.json().catch(() => ({})); throw new Error(d.detail || d.error || `Save error ${saveRes.status}`); }
         const { plan_id, advisor_token, share_url } = await saveRes.json();

@@ -304,3 +304,10 @@ One new entry: the keep-alive that was supposed to stop Supabase pausing never w
 **What worked:** Doing the docs-only Step 1 by hand in Source Control and pushing; Cowork verified the result with git + Vercel. Workspace file is harmless (8 lines, no secrets) and gets untracked in Phase 01 Step 2b, no history rewrite.
 **Note for next time:** If auto mode is down, switch Claude Code to the ask-permission mode instead of retrying. When committing by hand, check the staged list right before clicking Commit.
 
+---
+
+## Firm Plans Uploaded to the Demo + Uploads Never Deleted — June 11 → Sept 28, 2026
+**What didn't work:** Two of Ross's firm client plans (Kenover Marketing Corp., Lockport Express Medical Group) were uploaded through `/advisor` on June 11 and stored in Supabase (row + PDF) and in Anthropic's Files API, despite the standing rule that the 45 firm plans are off-limits. Separately, the "sessionless / no storage" description was never true for the Files API: nothing set an expiry or deleted uploads.
+**What worked:** A plain database read (`select plan_name from plans`) surfaced both. Rows deleted Sept 28 with Ross's confirmation; PDF cleanup + Files API expiry/cleanup in PHASE-04/05.
+**Note for next time:** Every session that touches storage should list what's stored and check it against the test-document list. A privacy claim ("we don't store anything") must be checked against every service the file passes through, not just our own database.
+

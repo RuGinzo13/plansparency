@@ -7,12 +7,12 @@ export async function generateMetadata({ params }: { params: Promise<{ plan_id: 
   const { plan_id } = await params;
   const { data: plan } = await getSupabaseAdmin()
     .from('plans')
-    .select('employer_name')
+    .select('employer_name, plan_name')
     .eq('plan_id', plan_id)
     .single();
 
   return {
-    title: `${plan?.employer_name ?? 'Your'} 401(k) Plan — Plansparency`,
+    title: `${plan?.employer_name ?? plan?.plan_name ?? 'Your'} 401(k) Plan — Plansparency`,
   };
 }
 

@@ -89,6 +89,8 @@ When writing prompts for Claude Code:
 
 These were learned through failures. Do not revisit or suggest exceptions.
 
+**Anthropic may hold an uploaded document ONLY while that user's session is active. (Ross, Sept 28, 2026)** Every Files API upload must: carry a short `expires_in_seconds` backstop (2 hours), and be deleted when the session ends (End Session button, new document, tab close, 30-min inactivity). Advisor uploads are deleted right after the plan is saved. Never add a Files API upload without all of these. Facts behind this (Anthropic docs, Sept 2026): Files API files persist until deleted and are NOT eligible for zero data retention; Messages API inputs are auto-deleted within 30 days by default, or not stored at all under a ZDR agreement (except content flagged by trust & safety, up to 2 years, or legal holds).
+
 **No Vercel Blob. Ever.** Caused silent infinite hang. Permanent architectural decision. Use Supabase Storage for file storage.
 
 **SSE streaming is mandatory on /api/chat.** Edge Runtime + stream: true. Without streaming, Vercel's 25s timeout kills the request before Anthropic finishes. Never suggest switching to a non-streaming approach.

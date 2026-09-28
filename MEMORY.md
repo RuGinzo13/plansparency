@@ -500,3 +500,19 @@ The addressable sections of the app — superseded by the updated Component Map 
 
 **Refined same day (Ross):** no babysitting. Every phase runs unattended start to finish; the STEP BY STEP mode is dropped. Per-step commits + pushes are written into each step. Only exception: a 🛑 CHECKPOINT before an irreversible action (prod data delete, schema change, live secret rotation), announced in chat first, with automated checks preferred over human pauses.
 
+---
+
+## September 28, 2026 — Firm Plans Deleted; Upload Privacy Fixes; App Split Plan
+**What was decided / done:** (1) Ross confirmed two saved plans (Kenover Marketing Corp., Lockport Express Medical Group) are firm clients; Cowork deleted both `plans` rows. Stored PDFs: Ross deletes in the Supabase dashboard (SQL can't delete storage files). (2) Uploads to Anthropic's Files API now get a 6-hour expiry (PHASE-04), and a one-time cleanup deletes old `upload.pdf` files (PHASE-05, temporary key kept out of chat). (3) Advisor's typed plan name gets saved (PHASE-04). (4) App split (PHASE-06): pure moves into ~10 files; a missing-name tsc check after each step, since `@ts-nocheck` files would otherwise hide missing imports until runtime.
+**Why:** Compliance (firm plans off-limits) and the privacy promise outrank refactoring; both fixes are small. Ross asked for the split next; it's queued right after.
+**What was rejected:** Deleting every Files API file (could hit another project's files; filter on `upload.pdf`); typing the component during the split (mixes two risky changes); a password-protected purge endpoint in production (a destructive route living in prod).
+**Expiry choice:** 6 hours. Uncertain whether a participant session ever needs longer; revisit if people report "document no longer available" in long sessions.
+
+---
+
+## September 28, 2026 — Hard Rule: Anthropic Never Holds Uploaded Documents
+**What was decided (Ross):** No uploaded document may ever be held or stored by Anthropic. The Files API is banned (CLAUDE.md hard rule). **Revised same day by Ross:** Anthropic may hold a document only while the user's browser session is active; it must be deleted when the session ends (see PHASE-04: button, new upload, tab close, 30-min idle, 2-hour expiry backstop; advisor files deleted right after save). The Files API stays, under those rules. At launch, uploaded documents must be accessible only to the person who uploaded them.
+**Facts (Anthropic docs, checked Sept 28):** Files API files persist until deleted or expired and are not ZDR-eligible. Messages API inputs/outputs are deleted within 30 days by default; with a Zero Data Retention agreement (via Anthropic sales, per organization) they are not stored after the response, except content flagged by trust & safety (up to 2 years) or legal holds. Prompt caching is ZDR-compatible (in-memory only for the cache lifetime).
+**What this means honestly:** the strongest achievable promise is "never stored as a file; processed per request; deleted within 30 days (or not stored at all with ZDR)." Literal zero also requires ZDR.
+**Superseded:** original PHASE-04 (6-hour expiry). PHASE-04 rewritten around session-scoped deletion. Broader security and confidentiality options for uploaded documents: to be discussed (Ross, Sept 28).
+
