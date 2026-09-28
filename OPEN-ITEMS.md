@@ -8,17 +8,17 @@
 
 | # | Item | Owner | Notes |
 |---|------|-------|-------|
-| 1 | **OBA vs. public demo.** `plansparency.vercel.app` is public, and `/try` lets anyone upload and spend API credit. CLAUDE.md says nothing public-facing before written OBA approval. | Ross + CC | **Sept 28:** Ross has not spoken to compliance yet; building continues meanwhile. Recommended fix is ready: `PHASE PROMPTS/PHASE-01-stabilize.md` Step 3 (whole site behind the existing password, one env var to reopen later). Still open: (a) run Phase 01 Step 3, (b) schedule the compliance conversation. |
+| 1 | **OBA: talk to compliance** | Ross | **Sept 28:** site now locked behind the advisor password (`f412806`, verified), so the public exposure is closed. Still open: the compliance conversation itself. When approved: add `SITE_PUBLIC` = `true` in Vercel env vars and redeploy. |
 | 2 | ~~Commit the doc changes~~ | ✅ | Done Sept 28 by hand in VS Code (`6fc4269`, `0fe1d44`), Vercel Ready. Claude Code auto mode was down. A local workspace file got committed by accident; removal is Phase 01 Step 2b. |
 | 3 | ~~Confirm which VS Code panel runs prompts~~ | ✅ | Settled Sept 28: `8d53a79` was written by Claude Code (co-author trailer "Claude Sonnet 5"). The June 11 "wrong tool" theory is retired. |
-| 4 | **Confirm check #5:** incognito → advisor password → upload → share link opens | Ross | Could not have worked since Supabase paused. Do this right after prompts 01 and 02 ship. |
+| 4 | ~~Confirm check #5~~ | ✅ | Sept 28: advisor upload → share link → participant view loaded and answered a question, behind the new site lock. |
 | 5 | ~~Supabase keep-alive is broken~~ | ✅ (verify Oct 5) | Fixed Sept 28: `8d53a79` (queries `plan_id`, logs failures), Vercel Ready, manual cron run returned 200. Cowork re-checks around Oct 5 that the project is still ACTIVE_HEALTHY. |
 
 ## P1 — Wrong or misleading things participants can see
 
 | # | Item | Owner | Notes |
 |---|------|-------|-------|
-| 6 | **IRS limits are 2025 values** in `lib/plan/irs.ts` ($23,500 / $7,500 / $11,250) | CC | IRS confirms the 2026 deferral limit is **$24,500**. 2026 catch-up is reported as **$8,000** (age 50+) and **$11,250** (ages 60–63): confirm on irs.gov before the prompt is written. Talk through: year-keyed table so 2027 is a one-line add; show "limits for 2026" in the calculator; whether to mention the 2026 Roth-only catch-up rule for higher earners (needs fact-check + education-only wording). |
+| 6 | **IRS limits are 2025 values** → calculator upgrade | CC | **Sept 28:** Ross chose Option B + feature build. Ready: `PHASE PROMPTS/PHASE-02-calculator-2026.md` (3 steps: typed math + year table; wire UI + 2026 label + dead FR/IT removal; limit tracker + Roth catch-up card). 2026 figures verified from IRS/Notice 2025-67. |
 | 7 | **Upload copy contradicts code:** drop zone says "4.5 MB max per doc" (EN + ES, `lib/i18n/index.ts` `dropSub`); code allows 25 MB | CC | Decide the honest number first. Only 5.9 MB is proven in production. |
 | 8 | Stale comment in `app/advisor/layout.tsx` says the advisor area is "OPEN" | CC | Middleware has gated it since June 11. Comment-only fix; fold into another prompt. |
 
@@ -57,6 +57,9 @@
 - [ ] LinkedIn automation
 
 ## Tech debt (schedule deliberately, not opportunistically)
+
+- [ ] Calculator does not compute non-safe-harbor match formulas (all treated as "discretionary, not calculated" per earlier decision). Many plans have a fixed formula. Revisit only as a deliberate decision (needs PLANDATA to tell fixed vs discretionary, and ERISA-wording care).
+- [ ] Remaining FR/IT dead branches outside CalcPanel in `PlansparencyApp.tsx` (Phase 02 only cleans the calculator).
 
 - [ ] Decompose `components/PlansparencyApp.tsx` (2,430 lines, `@ts-nocheck`, ~193 deferred type errors). Multi-prompt project; plan it in Cowork first.
 - [ ] Retired prototype `plansparency-mvp.jsx` (110 KB, May 23) is still tracked in the repo root. Nothing should import it; confirm and delete in a future phase step.

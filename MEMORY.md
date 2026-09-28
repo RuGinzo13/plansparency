@@ -474,3 +474,19 @@ The addressable sections of the app — superseded by the updated Component Map 
 **Tool identity:** the commit's co-author trailer shows Claude Code wrote it. Combined with the June 11 trailer, the "non-Claude-Code agent" theory from June 11 is retired. OPEN-ITEMS #3 closed.
 **Still to verify:** Supabase stays ACTIVE_HEALTHY a week later (around Oct 5).
 
+---
+
+## September 28, 2026 — Phase 01 Complete: Site Locked Until OBA
+**What was done:** `f412806` puts every page behind the advisor Basic Auth password. `/advisor` and `/api/save-plan` are always private; everything else opens only when `SITE_PUBLIC=true` (fail-closed). `/api/keepalive` is exempt for the cron. Ross verified in incognito: password prompt, landing, /try upload + full answer, existing /p/ link, and a fresh advisor upload → share link → participant question. This also closed the June 11 "check #5".
+**Why:** Closes the gap with the April 30 compliance-first decision without slowing the build. The Sept 28 "open flag" on public exposure is resolved; the OBA conversation itself is still pending.
+**Known behavior:** while locked, participants opening a /p/ link must enter the password too. Fine pre-approval; goes away with `SITE_PUBLIC=true`.
+**Next:** Phase 02 candidates: 2026 IRS limits in the calculator (OPEN-ITEMS #6) and the "4.5 MB" upload copy (#7). Talk through before writing prompts.
+
+---
+
+## September 28, 2026 — Calculator Upgrade Design (Phase 02)
+**What was decided:** Option B. IRS limits move to a year-keyed table in `lib/plan/irs.ts` (2025 + 2026; add a row each November). All calculator math moves to typed `lib/plan/calc.ts`. Visible changes: "Using 2026 IRS limits" label (with fallback warning if the year isn't loaded), catch-up age measured by Dec 31 (IRS rule; the old code used age today), per-paycheck shows the real deduction, limit tracker ("you'd reach the limit after paycheck N"), employer contributions figured on pay capped at the 401(a)(17) limit, and a Roth catch-up card for 2026's rule (prior-year Social Security wages > $150,000 from this employer → catch-up must be Roth; no Roth in plan → no catch-up). The card asks the user (Yes/No/Not sure) rather than guessing from current salary, because the rule uses LAST year's wages.
+**Why:** Stale numbers are the most visible error a participant can see, and the 2026 Roth rule is the biggest catch-up change in years.
+**What was rejected:** Hardcoding 2026 numbers only (repeats every January); inferring the Roth rule from current salary (wrong wage year); calculating non-safe-harbor match formulas (contradicts the existing "discretionary, not calculated" decision; parked in OPEN-ITEMS tech debt); a pre-tax vs Roth tax comparison (needs tax assumptions, drifts toward advice).
+**Uncertainty flagged:** 2026 numbers come from the IRS newsroom (deferral, catch-ups) and a practitioner summary of Notice 2025-67 (comp limit $360,000; Roth threshold $150,000), not read directly from the Notice PDF.
+
