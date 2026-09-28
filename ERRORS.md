@@ -48,7 +48,7 @@
 ---
 
 ## Wrong File Targeted for Claude Code Prompts — May 20, 2026
-**What didn't work:** Writing Claude Code prompts targeting `plansparency-mvp__1_.jsx` — that file is the old artifact prototype, retired after Next.js migration in May 2026. Running prompts against it would have no effect on the live app.
+**What didn't work:** Writing Claude Code prompts targeting `plansparency-mvp__1_.jsx` — that file is the old artifact prototype, retired after Next.js migration in May 2026.
 **What worked:** Checking `recent_chats` to discover the Next.js migration had already happened. Confirmed correct file: `components/PlansparencyApp.tsx`. All prompts corrected before any code was run.
 **Note for next time:** Always confirm the actual file structure with Claude Code (`ls app/ components/`) before writing any prompts. The Claude.ai project files may be stale. The GitHub repo is the source of truth.
 
@@ -57,54 +57,48 @@
 ## Code Review Findings — Direct Upload Architecture — May 24, 2026
 *Found via /code-review after deploying the FormData direct-upload fix. 5 findings, ranked by severity.*
 
-### Finding 1 (High — CONFIRMED): maxDuration=60s produces "Failed to fetch", not a clean timeout message
+### Finding 1 (High — CONFIRMED → PARTIAL, Sept 27 2026: maxDuration now 120; error mapping still missing): maxDuration=60s produces "Failed to fetch", not a clean timeout message
 **File:** `app/api/ingest/route.ts` line 4 (`export const maxDuration = 60`)
-**What happens:** When a large PDF takes >60s to forward to Anthropic, Vercel kills the TCP connection. The browser `fetch` throws a `TypeError: Failed to fetch` (not an `AbortError`, not an HTTP response). `uploadFile`'s catch checks `e.name === 'AbortError'` (false), re-throws bare with no `.status`. `processUpload`'s catch reads `e.status` → `undefined`, skips the 504 branch, hits `else if (e.message)`, and shows the raw browser string `"Failed to fetch"` to the user. The 180s client timer keeps ticking 2 more minutes before expiring harmlessly.
+**What happens:** When a large PDF takes >60s to forward to Anthropic, Vercel kills the TCP connection. The browser `fetch` throws a `TypeError: Failed to fetch` (not an `AbortError`, not an HTTP response). `uploadFile`'s catch checks `e.name === 'AbortError'` (false), re-throws bare with no `.status`. `processUpload`'s catch reads `e.status` → `undefined`, skips the 504 branch, hits `else if (e.message)`, and shows the raw browser string `"Failed to fetch"` to the user.
 **Fix:** Raise `maxDuration` to 120 (Vercel Pro supports up to 300s), OR in `uploadFile` catch also detect `TypeError` with a message matching `"Failed to fetch"` / `"Load failed"` and re-throw with `.status = 504`.
 
-### Finding 2 (High — PLAUSIBLE): Vercel platform payload cap (~4.5 MB) still blocks large PDFs
+### Finding 2 (High — PLAUSIBLE → PARTIALLY CLOSED June 11, 2026): Vercel platform payload cap (~4.5 MB)
 **File:** `app/api/ingest/route.ts` (entire route)
-**What happens:** Next.js App Router route handlers have no framework-imposed body size limit. However, Vercel's platform enforces its own payload ceiling on Node.js serverless functions — approximately 4.5 MB. A large enrollment booklet (10-20 MB) gets rejected by Vercel's load balancer before `route.ts` ever runs, returning a raw HTML error page. `res.json()` in `uploadFile` silently fails, the client sees `HTTP 413`, shows the file-too-large message. Files between ~4.5 MB and the client-side 25 MB limit all fail this way.
-**Note:** The old Vercel Blob flow bypassed this because file bytes never went through the serverless function. This is the core architectural trade-off of the direct-upload approach.
-**Fix:** Confirm actual Vercel plan limit. For files above the limit, consider chunked upload, presigned URL approach, or routing large files back through Vercel Blob (with proper retry control).
+**Original concern:** Vercel's platform enforces a payload ceiling (~4.5 MB) on Node.js serverless functions — large PDFs would be rejected before the route runs.
+**June 11, 2026 update:** A 5.9 MB document uploaded successfully in production through the single `/api/ingest` path (post-Blob-removal). The ~4.5 MB cap did not bite at that size. Sizes above 5.9 MB remain untested; client-side limit is 25 MB. Test a 15–20 MB scanned booklet when one is available. Note: deleting the Blob token did NOT cause this to work — nothing referenced it; the path already worked and had simply never been tested at that size.
 
-### Finding 3 (Medium — CONFIRMED): AbortSignal.any fallback silently drops caller's abort signal
+### Finding 3 (Medium — CONFIRMED → FIXED in `273ef03`, May 26 2026): AbortSignal.any fallback silently drops caller's abort signal
 **File:** `components/PlansparencyApp.tsx` lines 366-370
-**What happens:** `AbortSignal.any` is unavailable on Safari <17.4, Chrome <116, Firefox <124. When `abortSignal` is provided but `AbortSignal.any` doesn't exist, the fallback uses only `localCtrl.signal`, silently discarding the caller's signal. `abortRef.current.abort()` fires (Cancel / End Session), the UI resets, but `fetch('/api/ingest')` is never cancelled. Upload continues server-side for up to 3 minutes, consuming Anthropic API quota.
-**Fix:** Replace `AbortSignal.any` conditional with two independent `abort` event listeners — one on each signal — both aborting a shared controller. No browser compatibility issues.
+**What happens:** `AbortSignal.any` is unavailable on Safari <17.4, Chrome <116, Firefox <124. When `abortSignal` is provided but `AbortSignal.any` doesn't exist, the fallback uses only `localCtrl.signal`, silently discarding the caller's signal. Cancel fires, the UI resets, but the upload continues server-side, consuming Anthropic API quota.
+**Fix:** Replace `AbortSignal.any` conditional with two independent `abort` event listeners — one on each signal — both aborting a shared controller.
 
-### Finding 4 (Low — PLAUSIBLE): abortRef.current replaced between uploadFile resolve and callClaude execution
+### Finding 4 (Low — PLAUSIBLE, STILL OPEN Sept 27 2026): abortRef.current replaced between uploadFile resolve and callClaude execution
 **File:** `components/PlansparencyApp.tsx` lines 2087, 2094
-**What happens:** `uploadFile` resolves. Before the async continuation executes, user drops a second file. `processUpload` fires: aborts old controller, creates new one. When upload #1's continuation resumes at line 2087, `abortRef.current.signal` is now upload #2's signal. Cancelling upload #2 also aborts upload #1's `callClaude`.
+**What happens:** `uploadFile` resolves. Before the async continuation executes, user drops a second file. `processUpload` fires: aborts old controller, creates new one. When upload #1's continuation resumes, `abortRef.current.signal` is now upload #2's signal. Cancelling upload #2 also aborts upload #1's `callClaude`.
 **Fix:** Capture `const signal = abortRef.current?.signal` immediately after `uploadFile` resolves, before any further `await`, and use that local const for `callClaude`.
 
-### Finding 5 (Low — PLAUSIBLE): parsed?.error object → "[object Object]" error message
+### Finding 5 (Low — PLAUSIBLE → FIXED in `273ef03`, May 26 2026): parsed?.error object → "[object Object]" error message
 **File:** `app/api/ingest/route.ts` line 96
-**What happens:** If Anthropic returns `{ error: { type: "...", message: "" } }` with an empty `message`, `parsed?.error?.message` is falsy, the expression falls to `parsed?.error` (the raw object), and `String(errMsg)` at line 98 serializes it as `"[object Object]"`.
+**What happens:** If Anthropic returns `{ error: { type: "...", message: "" } }` with an empty `message`, `parsed?.error?.message` is falsy, the expression falls to `parsed?.error` (the raw object), and `String(errMsg)` serializes it as `"[object Object]"`.
 **Fix:** `typeof parsed?.error === 'string' ? parsed.error : (parsed?.error?.message || errMsg)`
 
 ---
 
 ## Upload Failure Above 5.9MB — Lambda Payload Cap — May 24, 2026
-**Root cause:** `/api/upload/route.ts` was a Node.js serverless function (no `export const runtime = 'edge'`). Vercel serverless functions run on AWS Lambda, which has a hard 6MB synchronous invocation payload limit. A multipart/form-data request for a ~5.9MB PDF exceeded this limit with boundary overhead. The Lambda rejected it at the infrastructure level before the route handler ran.
+**Root cause:** `/api/upload/route.ts` was a Node.js serverless function. Vercel serverless functions run on AWS Lambda, which has a hard 6MB synchronous invocation payload limit. A multipart/form-data request for a ~5.9MB PDF exceeded this limit with boundary overhead.
 
 **What made it hard to spot:**
-- `next.config.mjs` had `serverActions.bodySizeLimit: '50mb'` — this only applies to Server Actions, NOT Route Handlers. It was a no-op for `/api/upload`.
+- `next.config.mjs` had `serverActions.bodySizeLimit: '50mb'` — this only applies to Server Actions, NOT Route Handlers. It was a no-op.
 - Files under ~5.9MB worked fine, creating a confusing partial failure.
 - The base64 fallback only activated for files ≤5MB, leaving a 5–6MB gap with no fallback path.
-- No explicit body size config existed on the route itself.
 
-**What worked:**
-- Replaced Lambda-proxied upload with Vercel Blob client-side direct upload (`@vercel/blob/client`).
-- New flow: client → Vercel Blob (direct, bypasses Lambda entirely) → `/api/ingest` fetches from blob URL server-to-server → Anthropic Files API → blob deleted → `fileId` returned.
-- The Lambda body-size cap is completely irrelevant when the file never passes through Lambda.
-
-**Files changed:** `app/api/upload/route.ts` (rewritten as token generator), `app/api/ingest/route.ts` (new), `components/PlansparencyApp.tsx` (`uploadFile()` rewritten, `fileToBase64` and base64 fallback removed), `package.json` (`@vercel/blob` added).
+**What worked (at the time):**
+- Replaced Lambda-proxied upload with Vercel Blob client-side direct upload.
+**Historical note (June 11, 2026):** the Blob approach was itself removed in the June 4 Phase 4 cleanup; the single `/api/ingest` path has since been confirmed working at 5.9 MB in production. See Finding 2 above.
 
 **Note for next time:**
 - `serverActions.bodySizeLimit` in `next.config.mjs` does NOT apply to Route Handlers — only Server Actions.
-- AWS Lambda 6MB hard cap = Vercel serverless function 6MB hard cap. Files proxied through a serverless route hit this wall.
-- `BLOB_READ_WRITE_TOKEN` must be set in Vercel project env vars AND pulled to `.env.local` for local dev. It is NOT auto-created; you must connect the Blob store in the Vercel dashboard first.
+- AWS Lambda 6MB hard cap = Vercel serverless function 6MB hard cap.
 - User does not have `.env.local` values set for local dev — app runs deployed on Vercel only.
 
 ---
@@ -118,30 +112,30 @@ Both corrected before any code was run.
 ---
 
 ## Vercel Build Failures — 7 Consecutive — May 28, 2026
-**What failed:** Every deployment from commit `51298b1` onward failed in 19–36 seconds (build phase, not runtime). Root causes were not immediately visible because local Node.js is too old to run `tsc --noEmit` and the Vercel CLI auth token had expired.
+**What failed:** Every deployment from commit `51298b1` onward failed in 19–36 seconds (build phase, not runtime).
 
 **Root causes identified and fixed:**
 
 ### 1. Supabase client initialized at module load time
-`lib/supabase-server.ts` originally exported `const supabaseAdmin = createClient(url!, key!)`. At Next.js build time, env vars aren't present, so `createClient` threw `"supabaseUrl is required"` and the build failed.
+`lib/supabase-server.ts` originally exported `const supabaseAdmin = createClient(url!, key!)`. At Next.js build time, env vars aren't present, so `createClient` threw and the build failed.
 **Fix:** Replace with lazy getter `getSupabaseAdmin()` that initializes on first call at request time. Commit `23c25d6`.
 
 ### 2. Next.js 15+ dynamic route params breaking change
-`params` in page components changed from `{ plan_id: string }` to `Promise<{ plan_id: string }>` in Next.js 15+. Passing a Promise directly to `.eq()` caused type errors at build.
+`params` in page components changed from `{ plan_id: string }` to `Promise<{ plan_id: string }>` in Next.js 15+.
 **Fix:** Type params as `Promise<{...}>` and `await params` at the top of the function. Commit `9be78af`.
 
 ### 3. `@types/react ^18` vs React `^19.2.5` type mismatch
-The type definitions were a major version behind the runtime. In React 19, JSX transform and component prop types changed. The mismatch caused TypeScript errors in new server component files that didn't have `@ts-nocheck`.
-**Fix:** Bumped `@types/react` and `@types/react-dom` to `^19` in `package.json`. Also added `typescript.ignoreBuildErrors: true` and `eslint.ignoreDuringBuilds: true` to `next.config.mjs` as a safety net (PlansparencyApp.tsx uses `@ts-nocheck` intentionally). Commit `09ac12f`.
+**Fix:** Bumped `@types/react` and `@types/react-dom` to `^19`. Also added `typescript.ignoreBuildErrors: true` and `eslint.ignoreDuringBuilds: true` as a safety net. Commit `09ac12f`.
 
 ### 4. middleware.ts blocked all /advisor routes (404)
 The old middleware returned 404 for every `/advisor` request, which also interfered with the build analyzer.
 **Fix:** Removed the 404 gate. Auth is handled by `app/advisor/layout.tsx`. Commit `09ac12f`.
+**June 11, 2026 addendum — mystery solved:** this fix neutered `middleware.ts` into a passthrough stub (`NextResponse.next()` unconditionally) rather than deleting the file. That stub sat committed in the repo for two weeks and is what the June 11 Basic Auth gate replaced. Not wrong-window debris, as initially suspected.
 
 **What made it hard to diagnose:**
-- Local Node.js (v12.3.1) is too old to run `tsc --noEmit` or `npm run build` — errors show as `Unexpected token ?` not actual TypeScript errors.
-- Vercel CLI auth token was expired — couldn't pull build logs programmatically.
-- All three root causes were compounding each other.
+- Local Node.js (v12.3.1) is too old to run `tsc --noEmit` — errors show as `Unexpected token ?` not actual TypeScript errors.
+- Vercel CLI auth token was expired.
+- All root causes were compounding each other.
 
 **Note for next time:**
 - When builds fail in <40 seconds, it's always the TypeScript/ESLint check phase — not webpack, not runtime.
@@ -154,71 +148,151 @@ The old middleware returned 404 for every `/advisor` request, which also interfe
 *Found via `/code-review` run on commits `51298b1` through `23c25d6`. 6 findings, all resolved same session.*
 
 ### Finding 1 (High — CONFIRMED, FIXED): No auth on /api/save-plan
-**What happened:** The route had zero auth checks. Any anonymous HTTP client could POST `{pdfBase64, planData, initialSummary}` and create Supabase rows + storage blobs.
-**Fix:** Added Clerk `auth()` check at the top of the route, conditional on `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`. Mirrors the layout pattern. Commit `f233608`.
+**What happened:** The route had zero auth checks. Any anonymous HTTP client could POST and create Supabase rows + storage blobs.
+**Fix:** Added Clerk `auth()` check at the top of the route, conditional on `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`. Commit `f233608`.
+**June 11, 2026 addendum:** because no Clerk key was ever configured, this conditional check protected NOTHING in production. The route was effectively unauthenticated from May 28 until the June 11 Basic Auth middleware covered it. Lesson below ("conditional security").
 
 ### Finding 2 (High — CONFIRMED, FIXED): Advisor layout silently bypassed auth when Clerk key absent
 **What happened:** `if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) return <>{children}</>` — any production deploy without the Clerk key served the advisor page publicly.
-**Fix:** Three-case logic: key present → enforce auth; key absent + production → redirect to `/`; key absent + development → allow through. Commit `14b4f5e`.
+**Fix:** Three-case logic. Commit `14b4f5e`. (Later superseded June 4, then June 11 — see MEMORY.md.)
 
 ### Finding 3 (High — CONFIRMED, FIXED): Advisor PDF sent as base64 to edge function; Vercel edge cap ~4MB
-**What happened:** Advisor page sent `pdf: pdfBase64` (up to ~33MB) in JSON body to `/api/chat` (edge runtime). Vercel Edge Functions cap request bodies at ~4MB — any real plan document was rejected at the infrastructure layer before the app's own 30MB guard fired.
-**Fix:** Advisor page now POSTs file as FormData to `/api/ingest` (Node.js) first → gets `fileId` → sends `fileIds: [fileId]` to `/api/chat` (tiny JSON). The `/api/ingest` route pre-existed and already handled this exact pattern. Commit `e5871c6`.
+**Fix:** Advisor page now POSTs file as FormData to `/api/ingest` (Node.js) first → gets `fileId` → sends `fileIds: [fileId]` to `/api/chat`. Commit `e5871c6`.
 
 ### Finding 4 (Medium — CONFIRMED, FIXED): Orphaned PDF in storage when DB insert failed
-**What happened:** If storage upload succeeded but `plans` table insert failed, the PDF blob at `plan-documents/{plan_id}/plan.pdf` was permanently orphaned with no DB row pointing to it. No cleanup path existed.
-**Fix:** Added `storage.remove([storagePath]).catch(() => {})` inside the `if (dbError)` block before the 500 return. Best-effort so a failing delete never masks the original DB error. Commit `1ea9bab`.
+**Fix:** Added `storage.remove([storagePath]).catch(() => {})` inside the `if (dbError)` block. Commit `1ea9bab`.
 
 ### Finding 5 (Medium — CONFIRMED, FIXED): plan.initial_summary null passed as message content
-**What happened:** `initial_summary TEXT` column had no NOT NULL constraint. If null, `[{ role: 'assistant', content: null }]` reached PlansparencyApp, crashing the render or sending a malformed message to Anthropic.
-**Fix:** `?? ''` null guard in `app/p/[plan_id]/page.tsx` line 71. Also applied `NOT NULL DEFAULT ''` to `initial_summary` and `NOT NULL` to `pdf_storage_path` via `ALTER TABLE` on the live DB (confirmed). Commit `725e784`.
+**Fix:** `?? ''` null guard + `NOT NULL DEFAULT ''` constraint applied live. Commit `725e784`.
 
 ### Finding 6 (Low — CONFIRMED, FIXED): `body!.getReader()` non-null assertion in 3 locations
-**What happened:** `response.body!.getReader()` in PlansparencyApp.tsx and `anthropicRes.body!.getReader()` in chat/route.ts — TypeScript silenced, but at runtime a null body throws `TypeError: Cannot read properties of null`. The advisor page fix was done in commit `e5871c6`; two remaining instances fixed here.
-**Fix:** `body?.getReader()` with explicit null check and descriptive thrown error (PlansparencyApp.tsx) or `controller.close()` (chat/route.ts). Commit `e65cb7a`.
+**Fix:** `body?.getReader()` with explicit null check. Commit `e65cb7a`.
 
 ---
 
 ## Local Typecheck Environment — Stale node_modules + Phantom Type Dirs — June 4, 2026 (multi-attempt)
-*Hit while doing Phase 6 (restore TypeScript type safety) of the 6-phase code-quality cleanup. Goal was to flip `next.config.mjs` `typescript.ignoreBuildErrors` back to `false` and prove `tsc --noEmit` passes for everything except the one intentionally `@ts-nocheck`'d file.*
-
 **What didn't work:**
-- Running `tsc`/`npm run build` against the local `node_modules`: it had been installed under the ancient system Node (v12.3.1), so modern deps (`@upstash/redis`, `@supabase/supabase-js`) reported module-not-found, and dotAll regexes threw `TS1501` (regex `/s` flag needs an ES2018+ target).
-- Leaving `tsconfig.json` `target: "ES2017"`: the PLANDATA/STMTDATA dotAll extraction regexes wouldn't typecheck.
-- Trusting the local `node_modules` tree as-is: a stray duplicate directory `node_modules/@types/prop-types 2` (note the literal " 2" suffix, a Finder/copy artifact) produced a phantom `TS2688` "Cannot find type definition file for 'prop-types 2'". Local-only — never in the repo or on Vercel.
-- Letting `npm install` rewrite `package-lock.json`: a fresh install churned the lockfile (v1→v3 format, 773+/199− lines). A diff script showed it was almost entirely format migration, not verifiable dependency version bumps — so committing it would have muddied an otherwise behavior-neutral cleanup.
-- Trusting stale `.next/types`: the cached route validator still referenced deleted routes (`app/api/upload`, `app/p/[slug]/[planId]`) and reported errors for files that no longer exist.
+- Running `tsc`/`npm run build` against local `node_modules` installed under system Node v12.3.1 — module-not-found errors, `TS1501` dotAll regex errors.
+- Leaving `tsconfig.json` `target: "ES2017"`.
+- A stray duplicate directory `node_modules/@types/prop-types 2` produced a phantom `TS2688`.
+- Letting `npm install` rewrite `package-lock.json` (v1→v3 format churn).
+- Trusting stale `.next/types` (referenced deleted routes).
 
 **What worked:**
-- **node@25 is installed at `/usr/local/opt/node@25/bin/`.** Prefixing it onto PATH for the command makes local typechecking work: `export PATH="/usr/local/opt/node@25/bin:$PATH" && npx tsc --noEmit`. The system Node 12 stays the default; this only overrides it for the one command.
-- Fresh `npm install` under node@25 resolved the module-not-found errors.
-- Bumping `tsconfig.json` `target` `ES2017` → `ES2018` let the dotAll regexes typecheck. Behavior-neutral: Next builds via SWC, not tsc, so the target bump changes nothing at runtime.
-- `rm -rf "node_modules/@types/prop-types 2"` killed the phantom TS2688.
-- `rm -rf .next` cleared the stale route validator cache; it regenerated clean on the next Vercel build. After all of the above, `tsc --noEmit` → exit 0 (save for the deliberately-deferred `@ts-nocheck` monolith).
-- **Reverted the lockfile churn** with `git checkout package-lock.json` per the "don't commit unverifiable changes" rule. Only the `tsconfig.json` target bump was kept from the environment work.
+- node@25 at `/usr/local/opt/node@25/bin/`: `export PATH="/usr/local/opt/node@25/bin:$PATH" && npx tsc --noEmit`
+- Fresh `npm install` under node@25; `target` ES2017 → ES2018; `rm -rf "node_modules/@types/prop-types 2"`; `rm -rf .next`; reverted lockfile churn with `git checkout package-lock.json`.
 
 **Note for next time:**
-- To typecheck locally, ALWAYS use node@25: `export PATH="/usr/local/opt/node@25/bin:$PATH" && npx tsc --noEmit`. Plain `tsc` under system Node 12 emits `Unexpected token ?` and is useless.
-- A directory like `name 2` inside `node_modules/@types/` is a copy artifact — delete it; it is not a real package.
-- `npm install` churning `package-lock.json` v1→v3 is mostly format migration. Do NOT commit it inside a behavior-neutral cleanup — revert with `git checkout package-lock.json`.
+- To typecheck locally, ALWAYS use node@25. Plain `tsc` under system Node 12 is useless.
+- A directory like `name 2` inside `node_modules/@types/` is a copy artifact — delete it.
+- Do NOT commit `npm install` lockfile churn inside a behavior-neutral cleanup.
 - After deleting routes, clear `.next` before trusting a local typecheck.
 
 ---
 
 ## "For Advisors" Button Dead-End — Production Auth Redirect — June 4, 2026
-**Root cause:** `app/advisor/layout.tsx` carried a three-case auth gate from the May 28 Security Hardening pass. The third case — Clerk key absent AND `NODE_ENV === 'production'` — did `redirect('/')`. No Clerk key is configured in Vercel, so in production every `/advisor` visit silently bounced back to the homepage. Clicking "For Advisors" on the homepage appeared to do nothing (navigate to `/advisor` → immediate redirect to `/`).
+**Root cause:** `app/advisor/layout.tsx` carried a three-case auth gate from the May 28 Security Hardening pass. The third case — Clerk key absent AND `NODE_ENV === 'production'` — did `redirect('/')`. No Clerk key in Vercel → every `/advisor` visit silently bounced home.
 
 **What made it hard to spot:**
-- The button itself (`<a href="/advisor">For Advisors</a>` in `app/page.tsx`) was correct — the dead-end lived one layer down in the layout.
-- It only manifested in production; local dev (the third case's `development` branch) would have let it through.
-- The redirect was a deliberate, logged May 28 decision ("never serve the advisor page publicly without auth"), so it looked intentional.
+- The button itself was correct — the dead-end lived one layer down in the layout.
+- It only manifested in production.
+- The redirect was a deliberate, logged May 28 decision, so it looked intentional.
 
 **What worked:**
-- Confirmed via Vercel env inspection (`/v10/projects/{id}/env`) that no `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` exists in any environment.
-- Per the user's explicit choice ("Open it now, no login"), removed the production `redirect('/')` branch. New logic: Clerk key present → enforce session; key absent → advisor area is OPEN (pilot mode), reachable by URL.
-- **This SUPERSEDES the May 28 decision** (flagged in MEMORY.md per CLAUDE.md Rule 7). Re-securing `/advisor` before public launch is tracked as a TO-DO (advisor login).
+- Confirmed via Vercel env inspection that no Clerk key exists. Removed the production redirect per user's choice ("Open it now, no login"). Superseded May 28 decision, flagged in MEMORY.md.
 
 **Note for next time:**
 - A "button does nothing" on a route that has a layout = check the layout's auth/redirect logic first, not the button.
-- Auth gates conditioned on `NODE_ENV` behave differently in prod vs. local — a redirect that never fires locally can silently break production.
-- The advisor area is currently publicly reachable by URL. Do not treat `/advisor` as private until the advisor login TO-DO is built.
+- Auth gates conditioned on `NODE_ENV` behave differently in prod vs. local.
+- (June 11 update: `/advisor` is now gated by Basic Auth middleware — no longer publicly open.)
+
+---
+
+## Session Summary, June 11, 2026
+**Three new entries this session:** the wrong-chat-window incident (multi-attempt middleware deployment), the fabricated-credential incident, and the conditional-security lesson. One old mystery closed (middleware stub origin — see May 28 build-failure entry, addendum to root cause #4).
+
+---
+
+## Wrong Chat Window — All Session Prompts Went to a Non-Claude-Code Agent — June 11, 2026 (2 attempts to deploy middleware)
+**What didn't work:**
+- Every "Claude Code prompt" this session was pasted into a different chat window in VS Code (identity still unknown — likely GitHub Copilot in agent mode), not the Claude Code window. Nobody noticed for most of the session because the agent executes terminal commands and file edits competently and reports success convincingly.
+- First middleware attempt: the live site showed no password prompt. The Basic Auth code had not actually shipped — the repo's `middleware.ts` was still the May 28 passthrough stub. The agent's earlier "done"-style output was not proof of anything.
+- Trusting agent completion reports as evidence of deployment.
+
+**What worked:**
+- A self-diagnosing follow-up prompt: run `git status` / `git log origin/main..HEAD` first, classify the actual state (committed-unpushed / uncommitted / missing), fix only what's found, push (never force), then **verify from outside** with curl against the production URL (`/` expect 200, `/advisor` expect 401 + `WWW-Authenticate`). This worked regardless of which agent ran it because it discovers state rather than assuming it.
+- The agent's report surfaced the truth: `middleware.ts` existed as a committed passthrough stub (May 28 leftover); it was replaced with the real gate, committed (`71f9357`), pushed, and live-verified.
+
+**Note for next time:**
+- **Proof = Ready deployment in Vercel (project `plansparency`) with the expected commit message + live behavior change. Never an agent's "done."**
+- Write fix prompts that diagnose actual state first (git status, file contents) and branch on what they find — they self-correct for tool mix-ups, unpushed commits, and stale assumptions.
+- Open item: identify the VS Code agent and either switch to real Claude Code or log a deliberate tool change in MEMORY.md.
+
+---
+
+## Fabricated Credential — Agent Invented "pilot2024" and Presented a Meaningless Test as Evidence — June 11, 2026
+**What didn't work:**
+- The VS Code agent tested the live gate with `-u "user:pilot2024"` — a password it invented (Ross confirmed it was not his) — got the 401 that ANY wrong password would produce, and confidently concluded "the env var is not set in Vercel." The test was incapable of distinguishing "env var missing" from "env var set, password wrong." Plausible-looking specifics + confident framing ≠ evidence.
+
+**What worked:**
+- Treating the claim as unverified and routing the real test to the only party who knows the password: Ross, in an incognito browser. He reset the password to a fresh value (never typed into any chat) and verified the gate end-to-end himself.
+
+**Note for next time:**
+- Agents fabricate specific-looking values (passwords, filenames, IDs) and build "tests" on them. Any agent claim that depends on a secret it shouldn't know is automatically suspect.
+- NEVER give any chat agent a real password or API key — wrong-password rejection can be tested without the real one; correct-password admission can only ever be tested by the human.
+- A 401 on a guessed password proves the gate rejects wrong passwords — nothing more.
+
+---
+
+## Conditional Security That Silently Protected Nothing — May 28 → June 11, 2026
+**What didn't work:**
+- The May 28 "security hardening" made both the `/api/save-plan` auth check and the advisor layout gate conditional on `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` being present. The key was never configured. Result: both protections were dead code in production for two weeks while the records said "fixed." The June 4 pilot decision then opened the layout entirely, but save-plan's phantom protection persisted unnoticed until the June 11 audit.
+
+**What worked:**
+- The June 11 Basic Auth middleware is **fail-closed**: a missing `ADVISOR_ACCESS_PASSWORD` returns 401 rather than falling through to open. Misconfiguration now produces a visible locked door, not an invisible open one. (Operational consequence accepted: set the env var BEFORE deploying the gate.)
+
+**Note for next time:**
+- A security control conditional on configuration that doesn't exist is not a security control. When logging a security fix as "done," verify the activating condition is true in production.
+- Prefer fail-closed for anything guarding money, data writes, or private surfaces. Fail-open is acceptable only where availability outranks protection (e.g., the rate limiter, by explicit choice).
+
+---
+
+## Session Summary, September 27, 2026
+One new entry: the docs said bugs were open that had been fixed four months earlier. No new code failures (no code ran).
+
+---
+
+## Doc Drift — "Open" Bugs That Were Already Fixed — May 26 → Sept 27, 2026
+**What didn't work:**
+- Commit `273ef03` (May 26, "Dashboard redesign") quietly fixed code-review Findings #3 and #5 and half of #1 inside a large UI change. The commit message didn't mention them, /close didn't catch them, and three later sessions (May 28, June 4, June 11) carried them forward as open. The June 11 CONTEXT.md still said `maxDuration=60`.
+- Status was being copied forward from the previous doc instead of re-checked against code.
+- Bundling bug fixes into a feature commit hid them.
+
+**What worked:**
+- Reading the actual files and running `git log -S "<snippet>"` to find exactly which commit changed a line.
+
+**Note for next time:**
+- Every status claim gets checked against the repo before it is written down (now a CLAUDE.md rule).
+- One concern per prompt, one concern per commit. Fixes go in their own commit with a message that names the finding.
+- Line numbers in docs rot fast. Refer to components by name.
+
+---
+
+## Session Summary, September 28, 2026
+One new entry: the keep-alive that was supposed to stop Supabase pausing never worked.
+
+---
+
+## Supabase Keep-Alive Queried a Column That Doesn't Exist — June 4 → Sept 28, 2026
+**What didn't work:**
+- `app/api/keepalive/route.ts` (commit `1804166`) runs `.from('plans').select('id', ...)`. The `plans` table has no `id` column; its key is `plan_id` (see `supabase/schema.sql`). Every daily cron call returned 500. Supabase paused the project for inactivity. Found Sept 28 with status `INACTIVE`, which silently broke `/api/save-plan` and every `/p/` share link.
+- Nobody checked the cron's first real run. The commit shipped, the deploy was Ready, and that was taken as proof. Ready only proves it built.
+- The route swallowed the error into a 500 with no `console.error`, and Vercel Hobby log retention is short, so the failure left almost no trace.
+
+**What worked:**
+- Supabase MCP `get_project` showed `INACTIVE`; Vercel runtime logs showed `/api/keepalive 500`; comparing the query to the live table columns found the cause in minutes. Restored via Supabase MCP `restore_project`.
+
+**Note for next time:**
+- "Done" for a cron or background job = one real run observed returning success, not a Ready deploy. Add that to the job's prompt file.
+- Any query naming a column gets checked against `supabase/schema.sql` (or the live table).
+- Background jobs log their failures (`console.error`) so they show up in Vercel logs.

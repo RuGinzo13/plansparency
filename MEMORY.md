@@ -162,13 +162,13 @@
 
 ## May 20, 2026 — Source of Truth: GitHub, Not Artifact
 **What was decided:** `plansparency-mvp__1_.jsx` is retired. The live code is `components/PlansparencyApp.tsx` in GitHub repo `RuGinzo13/plansparency`. All Claude Code prompts target this file.
-**Why:** Next.js migration completed May 3–5. Two Vercel projects exist: `Plansparency` (old artifact, retired) and `Plansparency-nextjs` (live). The JSX file in the Claude.ai project is a relic.
+**Why:** Next.js migration completed May 3–5. The JSX file in the Claude.ai project is a relic.
 **What was rejected:** Continuing to write prompts targeting the old JSX artifact; treating the Claude.ai project file as the source of truth.
 
 ---
 
 ## May 20, 2026 — Version Drift Prevention
-**What was decided:** GitHub is source of truth for code. Claude.ai project is source of truth for context. After every Claude Code session: run `/close`, re-upload the 5 context files (MEMORY.md, ERRORS.md, AddlCONTEXT.md, Session-Log, GIT-COMMIT.md). No other sync required.
+**What was decided:** GitHub is source of truth for code. Claude.ai project is source of truth for context. After every Claude Code session: run `/close`, re-upload the context files. No other sync required.
 **Why:** Claude Code edits GitHub directly — no drift possible at the code level. Drift only happens in context files when sessions aren't closed properly.
 **What was rejected:** Keeping the JSX file in the project in sync — impossible; using the artifact environment for further development — retired.
 
@@ -179,52 +179,44 @@
 
 | # | Severity | File | Issue | Status |
 |---|----------|------|-------|--------|
-| 1 | High | `ingest/route.ts:4` | `maxDuration=60` — server kills TCP at 60s; browser sees "Failed to fetch" not a 504; user gets raw browser error string | ⚠️ Open |
-| 2 | High | `ingest/route.ts` | Vercel platform ~4.5 MB payload cap still rejects large PDFs before route runs (direct upload path inherits this constraint) | ⚠️ Open |
-| 3 | Medium | `PlansparencyApp.tsx:367` | `AbortSignal.any` fallback silently drops caller's abort on Safari <17.4 / Chrome <116 / Firefox <124 — cancel doesn't stop upload | ⚠️ Open |
-| 4 | Low | `PlansparencyApp.tsx:2087` | `abortRef.current` can be replaced between uploadFile resolve and callClaude — second upload's signal bleeds into first | ⚠️ Open |
-| 5 | Low | `ingest/route.ts:96` | `parsed?.error` fallback can be an object → `String()` → `"[object Object]"` error message | ⚠️ Open |
+| 1 | High | `ingest/route.ts:4` | `maxDuration=60` — server kills TCP at 60s; browser sees "Failed to fetch" not a 504; user gets raw browser error string | 🟡 Partial — raised to 120s in `273ef03` (May 26); friendly error mapping still missing (verified Sept 27) |
+| 2 | High | `ingest/route.ts` | Vercel platform ~4.5 MB payload cap still rejects large PDFs before route runs | ✅ Partially closed June 11, 2026 — 5.9 MB confirmed working in production post-Blob-removal; >5.9 MB untested |
+| 3 | Medium | `PlansparencyApp.tsx:367` | `AbortSignal.any` fallback silently drops caller's abort on Safari <17.4 / Chrome <116 / Firefox <124 — cancel doesn't stop upload | ✅ Fixed in `273ef03` (May 26; verified Sept 27) |
+| 4 | Low | `PlansparencyApp.tsx:2087` | `abortRef.current` can be replaced between uploadFile resolve and callClaude — second upload's signal bleeds into first | ⚠️ Still open (Sept 27): `analyzeSignal` is read from `abortRef.current` after the upload `await`, comment says "capture" but it is too late |
+| 5 | Low | `ingest/route.ts:96` | `parsed?.error` fallback can be an object → `String()` → `"[object Object]"` error message | ✅ Fixed in `273ef03` (verified Sept 27) |
 
 See ERRORS.md for full diagnosis and suggested fixes for each.
 
 ---
 
 ## May 24, 2026 — Upload Flow: Vercel Blob Client-Side Upload
-**What was decided:** Replace Lambda-proxied PDF upload with Vercel Blob client-side direct upload. `/api/upload` is now a token generator only. New `/api/ingest` route handles blob URL → Anthropic Files API. Base64 fallback removed.
-**Why:** AWS Lambda 6MB payload cap was blocking uploads above ~5.9MB. `serverActions.bodySizeLimit: '50mb'` in `next.config.mjs` does not apply to Route Handlers — it was a no-op. Client-side Vercel Blob upload bypasses Lambda entirely.
-**What was rejected:** Keeping the Lambda-proxied route with a higher limit — no clean way to raise AWS Lambda's hard cap for serverless functions.
+**What was decided:** Replace Lambda-proxied PDF upload with Vercel Blob client-side direct upload.
+**Why:** AWS Lambda 6MB payload cap was blocking uploads above ~5.9MB.
+**What was rejected:** Keeping the Lambda-proxied route with a higher limit.
+**⚠️ SUPERSEDED June 4, 2026 (Phase 4):** all upload paths collapsed into `/api/ingest`; Vercel Blob fully removed from code (confirmed by repo search June 11, 2026; dead `BLOB_READ_WRITE_TOKEN` deleted from Vercel June 11). Note for the record: this May 24 decision contradicted CLAUDE.md's "No Vercel Blob. Ever." hard rule and was not flagged at the time — a process miss identified June 11.
 
 ---
 
 ## May 24, 2026 — No Local Dev Environment
-**What was decided:** Ross does not run the app locally. All development ships directly to Vercel via GitHub push. `.env.local` exists but all values are blank except `NEXT_PUBLIC_POSTHOG_HOST` and `BLOB_READ_WRITE_TOKEN` (added May 24).
-**Why:** No terminal knowledge; no local Node version configured for this project (system Node is v12.3.1, too old; Node@25 is installed at `/usr/local/opt/node@25/bin/` but not on PATH by default).
+**What was decided:** Ross does not run the app locally. All development ships directly to Vercel via GitHub push.
+**Why:** No terminal knowledge; no local Node version configured for this project (system Node is v12.3.1; Node@25 at `/usr/local/opt/node@25/bin/`).
 **What was rejected:** Local dev server testing — not feasible given setup.
 **Note:** When npm is needed, use `PATH="/usr/local/opt/node@25/bin:$PATH" npm ...`
+**⚠️ Record correction June 11, 2026:** the May 24 claim that `.env.local` values were all blank except PostHog/Blob was WRONG — an Anthropic API key was found in `.env.local` on June 11 and blanked. The exposure was on disk, not just in chat history.
 
 ---
 
 ## May 24, 2026 — Component Map (Reference for All Future Sessions)
-The 10 addressable sections of the app:
-1. **Upload Flow** — `app/api/upload/route.ts`, `app/api/ingest/route.ts`, `uploadFile()` in PlansparencyApp.tsx
-2. **AI / Chat Engine** — `app/api/chat/route.ts` (Anthropic call, streaming, system prompt)
-3. **Plan Dashboard** — `PlanDashboard` component, PlansparencyApp.tsx ~line 1047 (tile cards after SPD upload)
-4. **Contribution Calculator** — `CalcPanel` component, PlansparencyApp.tsx ~line 1323
-5. **Statement Dashboard** — `StatementDashboard` component, PlansparencyApp.tsx ~line 1629
-6. **Chat Interface** — `Plansparency` main function, PlansparencyApp.tsx ~line 1828 (CHAT/UPLOADING stages)
-7. **Privacy & Consent Screen** — `STAGE.PRIVACY` logic, PlansparencyApp.tsx ~line 1976
-8. **Investments Panel** — `InvestmentsPanel` + `FundRow`, PlansparencyApp.tsx ~line 738
-9. **Key Terms** — `KeyTermsPanel` + `i18n.en.keyTerms`, PlansparencyApp.tsx ~line 557 / line 154
-10. **Advisor & Participant Pages** — `app/advisor/`, `app/p/[slug]/[planId]/page.tsx`, `lib/supabase.ts`
+The addressable sections of the app — superseded by the updated Component Map in CONTEXT.md (June 11, 2026), which adds the Access Gate (middleware.ts), removes the deleted `app/api/upload` route, and removes the nonexistent `lib/supabase.ts`.
 
 ---
 
 ## Session Summary, May 20, 2026
 **Worked on:** Investments tab architecture — fund extraction, sortable lineup, TabBar design; file size fix; version drift diagnosis.
 **Completed:** All architecture decisions finalized; 3 Claude Code prompts written and corrected to target PlansparencyApp.tsx; TO-DO list established; version drift problem diagnosed and resolved conceptually.
-**In progress:** Claude Code prompts not yet run — Step 1 (fundsData), Step 2 (TabBar + InvestmentsPanel), file size fix.
+**In progress:** Claude Code prompts not yet run.
 **Decisions made:** Fund company fact sheets only; no performance data; medium depth; expense ratio sort conditional; Version A advisor fallback; ERISA attorney required before public launch; GitHub is source of truth; JSX file retired.
-**Next session:** Run the 3 Claude Code prompts in order (file size fix → Step 1 → Step 2). Test with Equitable enrollment booklet. If 404(a)(5) docs are available, upload them and check expense ratio extraction.
+**Next session:** Run the 3 Claude Code prompts in order. Test with Equitable enrollment booklet.
 
 ---
 
@@ -238,23 +230,24 @@ The 10 addressable sections of the app:
 - `app/advisor/page.tsx` — client component; full upload flow → /api/ingest → /api/chat → /api/save-plan → localStorage; shows plan list with copy/preview
 **Supabase project:** `iqloseaxxpgdpffpsizo.supabase.co`
 **Storage bucket:** `plan-documents` (private, service-role only)
-**Why:** Enables the core advisor→participant product loop: advisor uploads → shareable `/p/{plan_id}` URL → participant loads pre-analyzed plan without re-uploading.
-**What was rejected:** File-based storage; Vercel KV (not suited for binary blobs); keeping participant upload as the only entry point.
+**Why:** Enables the core advisor→participant product loop.
+**What was rejected:** File-based storage; Vercel KV; keeping participant upload as the only entry point.
 
 ---
 
 ## May 28, 2026 — Advisor Upload Flow: /api/ingest → fileId → /api/chat
 **What was decided:** Advisor upload page uses `/api/ingest` (Node.js) to get an Anthropic `fileId` first, then passes `fileIds: [fileId]` to `/api/chat` (edge). Raw base64 is never sent to the edge function.
-**Why:** Vercel Edge Functions have a ~4MB request body cap. A 3MB PDF base64-encodes to ~4MB. Any real-world plan document would hit the cap before the app's own 30MB guard fires. The `/api/ingest` Node.js route (pre-existing) handles large bodies correctly. The `/api/chat` edge route already had a `fileIds` code path — it just wasn't wired up from the advisor page.
-**What was rejected:** Sending raw base64 to the edge function (broken for real documents); creating a new upload route (unnecessary — `/api/ingest` already exists).
+**Why:** Vercel Edge Functions have a ~4MB request body cap. The `/api/ingest` Node.js route handles large bodies correctly.
+**What was rejected:** Sending raw base64 to the edge function; creating a new upload route.
 
 ---
 
 ## May 28, 2026 — Security Hardening: Auth on Save-Plan + Advisor Layout
 **What was decided:** `/api/save-plan` checks Clerk session when `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is present. `app/advisor/layout.tsx` blocks `/advisor` in production when Clerk key is absent (redirects to `/`).
-**Why:** The save-plan route had zero auth — any anonymous client could create Supabase rows. The layout had a bypass that silently served the page publicly when Clerk wasn't configured.
-**Pattern (both files):** Conditional on `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — enforces auth when Clerk is configured, allows dev access when key is absent. Layout adds a third case: production without key → redirect `/`.
-**What was rejected:** Unconditional Clerk auth (breaks dev without keys); leaving the bypass as-is (public advisor page in any misconfigured deploy).
+**Why:** The save-plan route had zero auth; the layout had a bypass.
+**Pattern (both files):** Conditional on `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`.
+**What was rejected:** Unconditional Clerk auth; leaving the bypass as-is.
+**⚠️ Layout half SUPERSEDED June 4, 2026 (advisor area opened for pilot). Both halves effectively superseded June 11, 2026 — the Basic Auth middleware now provides real, unconditional protection on `/advisor` + `/api/save-plan`. Key lesson logged June 11: these "fixes" were conditional on a key that was never configured, so they protected nothing in production for two weeks.**
 
 ---
 
@@ -277,21 +270,21 @@ The 10 addressable sections of the app:
 ## Session Summary, May 28, 2026
 **Worked on:** Supabase backend build and integration; Vercel build failure debugging; advisor→participant flow; security hardening; code review and fix of all 6 findings.
 **Completed:**
-- Full Supabase setup (tables, bucket, env vars) done via Management API — no manual SQL/dashboard steps required
+- Full Supabase setup (tables, bucket, env vars) done via Management API
 - Advisor upload page live and functional
 - Participant plan page (`/p/[plan_id]`) live
 - 7 consecutive Vercel build failures resolved (3 root causes: lazy Supabase init, params Promise fix, @types/react mismatch)
 - 6 code-review findings resolved across 6 commits
 **In progress:** Nothing blocking.
 **Decisions made:** See May 28 entries above.
-**Next session:** Read MEMORY.md first. Investments tab build (prompts were written May 20 — still pending). Test advisor upload end-to-end with a real plan document.
+**Next session:** Read MEMORY.md first. Investments tab build. Test advisor upload end-to-end with a real plan document.
 
 ---
 
 ## June 4, 2026 — Architecture Cleanup: 6-Phase Behavior-Neutral Refactor
 **What was decided:** Run a 6-phase code-quality cleanup of `plansparency-nextjs` under the hard constraint *"do not change functionality — only improve code quality, scalability, maintainability."* Each phase committed separately and verified live on Vercel (deployment READY) before the next.
 **Phases:** (1) delete dead code; (2) add Upstash rate limiting (fails open); (3) prune unused dependencies; (4) collapse three upload paths into one (`/api/ingest` multipart → Anthropic Files API → fileId); (5) extract pure modules out of the `PlansparencyApp.tsx` monolith into typed `lib/` files; (6) restore type safety.
-**Why:** The monolith carried `@ts-nocheck` + `next.config` `ignoreBuildErrors`/`ignoreDuringBuilds`, masking all type/lint errors. Cleanup reduces regression risk and prepares the file for decomposition.
+**Why:** The monolith carried `@ts-nocheck` + `next.config` `ignoreBuildErrors`/`ignoreDuringBuilds`, masking all type/lint errors.
 **What was rejected:** Big-bang rewrite; changing any user-facing behavior.
 
 ---
@@ -304,51 +297,172 @@ The 10 addressable sections of the app:
 - `lib/i18n/index.ts` — the full EN/ES `i18n` object (~300 lines of pure data)
 - `lib/anthropic/client.ts` — shared Anthropic constants (version, model `claude-sonnet-4-6`, beta headers, URLs)
 - `lib/ratelimit.ts` — lazy Upstash limiters (chat 20/min, ingest 10/min), `checkRateLimit()` fails open
-**Why:** These were duplicated/inlined in the 2,800-line component and in `app/advisor/page.tsx`. Extraction de-duplicates and makes them independently typecheckable.
+**Why:** These were duplicated/inlined in the 2,800-line component and in `app/advisor/page.tsx`.
 **What was rejected:** Leaving logic inline; duplicating parse logic between the component and the advisor page.
 
 ---
 
 ## June 4, 2026 — Phase 6: Type Safety Gated at Build; Component @ts-nocheck Deferred
-**What was decided:** Flipped `typescript.ignoreBuildErrors` to **false** — every API route, `lib/` module, and utility is now type-checked on each Vercel build and errors BLOCK the build. Bumped tsc `target` to ES2018 (behavior-neutral; Next transpiles via SWC) so the PLANDATA/STMTDATA dotAll regexes type-check. The single remaining `@ts-nocheck` is `components/PlansparencyApp.tsx`, now carrying a documented rationale.
-**Why removing the component's @ts-nocheck was DEFERRED:** Removing it surfaces ~193 type errors on the 2,400-line file. It is pure presentational UI (lowest-risk code) and is slated for decomposition (Phase 5 already pulled its logic into typed `lib/`). Typing 2,400 lines now, only to split the file apart later, is throwaway work and risks behavior changes — violating the "don't change functionality" constraint. All behavior-critical code is already gated. Ross (no coding background) delegated the call: "provide a clean MVP that operates as intended."
-**What was rejected:** Full component typing pass now; leaving `ignoreBuildErrors: true` (kept masking real errors). ESLint sub-commit skipped — no ESLint config exists, so `ignoreDuringBuilds` is a harmless no-op.
+**What was decided:** Flipped `typescript.ignoreBuildErrors` to **false** — every API route, `lib/` module, and utility is now type-checked on each Vercel build and errors BLOCK the build. Bumped tsc `target` to ES2018. The single remaining `@ts-nocheck` is `components/PlansparencyApp.tsx`, now carrying a documented rationale.
+**Why removing the component's @ts-nocheck was DEFERRED:** Removing it surfaces ~193 type errors on the 2,400-line file. It is pure presentational UI slated for decomposition. Typing 2,400 lines now, only to split the file apart later, is throwaway work.
+**What was rejected:** Full component typing pass now; leaving `ignoreBuildErrors: true`.
 **Commits:** 6a `c8e93f8`, 6b `c17ddb1`.
 
 ---
 
 ## June 4, 2026 — Investments Tab Was Already Built; Shipped Visual/UX Polish
-**What was decided:** Confirmed the Investments tab is complete end-to-end (extraction prompt → `normalizePlanData` → `InvestmentsPanel`/`FundRow`). Rather than rebuild, shipped a presentation-only polish pass: a summary stats strip (fund count · # categories · avg expense ratio), a labeled per-fund expense ratio ("Exp"/"Costo"), graceful flex-wrap on narrow phones, and Spanish localization of the fact-sheet link / expense label / sort controls. Also fixed a bilingual bug where the populated fund view rendered `DisclosureCallout` without `lang` (Spanish users saw English).
-**Why:** Ross reported the tab as the next item; investigation showed it was built, so the actionable gap was polish (his selection) + the disclosure-language bug.
-**What was rejected:** Re-implementing the tab; adding new features (performance data) — ERISA exposure + out of scope. Note the app uses inline styles only (no media queries), so responsiveness must use flex-wrap.
+**What was decided:** Confirmed the Investments tab is complete end-to-end. Shipped a presentation-only polish pass: summary stats strip, labeled per-fund expense ratio, flex-wrap on narrow phones, Spanish localization of fact-sheet link / expense label / sort controls. Fixed a bilingual bug where the populated fund view rendered `DisclosureCallout` without `lang`.
+**Why:** Investigation showed the tab was built; the actionable gap was polish + the disclosure-language bug.
+**What was rejected:** Re-implementing the tab; adding performance data — ERISA exposure + out of scope.
 **Commits:** disclosure fix `97b1c1c`, polish `8b1241a`.
 
 ---
 
 ## June 4, 2026 — Advisor Area Opened for Pilot (SUPERSEDES May 28 "redirect to / in prod")
-**What was decided:** `app/advisor/layout.tsx` no longer redirects `/advisor` → `/` when no Clerk key is configured in production. When no Clerk key is present the advisor area is now OPEN (reachable by URL). The Clerk-enforcement branch is intact and re-activates automatically once Clerk keys are added.
-**⚠️ This SUPERSEDES the May 28, 2026 decision** ("Security Hardening: production without Clerk key → redirect('/')"). That redirect was the root cause of the homepage **"For Advisors" button doing nothing** — it bounced straight back to the homepage because no Clerk keys are in Vercel.
-**Why:** Ross chose "Open it now, no login" for the pilot (presented with: open / shared-password / full Clerk login). He has no Clerk keys configured and wanted the button to work now.
-**Trade-off / follow-up:** The advisor upload tool is now publicly reachable by anyone with the URL. Tracked TO-DO: re-secure before public launch (Clerk login or shared-password gate). Advisor login is explicitly on the to-do list "for later."
+**What was decided:** `app/advisor/layout.tsx` no longer redirects `/advisor` → `/` when no Clerk key is configured in production.
+**⚠️ This SUPERSEDED the May 28, 2026 decision.** That redirect was the root cause of the homepage **"For Advisors" button doing nothing**.
+**Why:** Ross chose "Open it now, no login" for the pilot.
+**Trade-off / follow-up:** The advisor upload tool became publicly reachable by anyone with the URL.
+**⚠️ SUPERSEDED in turn June 11, 2026:** the Basic Auth middleware gate now protects `/advisor` (and `/api/save-plan`) unconditionally. The "open" period ran June 4–11.
 **Commit:** `bd522e6`.
 
 ---
 
 ## June 4, 2026 — Local Typechecking Now Possible via node@25
-**What was decided:** Local `tsc --noEmit` works by prepending node@25 to PATH: `export PATH="/usr/local/opt/node@25/bin:$PATH" && npx tsc --noEmit`. System Node (v12.3.1) is too old and only produces `Unexpected token ?`. This unblocked the Phase 6 baseline. `npm install` under node@25 rewrites the (stale) lockfile and modernizes `node_modules` — that lockfile churn was reverted to keep commits behavior-neutral; only intentional changes were committed.
-**Why:** Enables real type-error baselines locally instead of relying solely on Vercel build feedback.
-**What was rejected:** Committing the regenerated lockfile (unvalidated version drift inside a code-quality phase).
+**What was decided:** Local `tsc --noEmit` works by prepending node@25 to PATH: `export PATH="/usr/local/opt/node@25/bin:$PATH" && npx tsc --noEmit`. `npm install` under node@25 rewrites the lockfile — that churn was reverted to keep commits behavior-neutral.
+**Why:** Enables real type-error baselines locally.
+**What was rejected:** Committing the regenerated lockfile.
 
 ---
 
 ## Session Summary, June 4, 2026
-**Worked on:** 6-phase architecture cleanup (Phase 6 finished this session); Investments tab review + polish; "For Advisors" dead-end fix.
-**Completed:**
-- Phase 6 type-safety gate live (`ignoreBuildErrors: false`); single documented `@ts-nocheck` exception on the component
-- `prop-types 2` phantom type-lib error resolved (stray local `node_modules/@types/prop-types 2` dir removed)
-- Investments tab bilingual disclosure bug fixed + visual/UX polish shipped
-- "For Advisors" button fixed (advisor layout opened for pilot)
-- All changes deployed to Vercel and verified READY
+**Worked on:** 6-phase architecture cleanup (Phase 6 finished); Investments tab review + polish; "For Advisors" dead-end fix.
+**Completed:** Phase 6 type-safety gate live; phantom type-lib error resolved; Investments tab bilingual fix + polish; "For Advisors" button fixed; all changes deployed and verified READY.
 **In progress:** Nothing blocking.
 **Open TO-DOs (tracked):** (1) Rotate the exposed Anthropic API key; (2) Build advisor login / re-secure `/advisor` before public launch.
-**Next session:** Read MEMORY.md first. Consider advisor login (Clerk keys → Vercel + `/sign-in` page, or shared-password gate). Rotate Anthropic key. When ready, decompose `PlansparencyApp.tsx` and type it incrementally (removes the last `@ts-nocheck`).
+**Next session:** Read MEMORY.md first. Consider advisor login. Rotate Anthropic key.
+
+---
+
+## June 11, 2026 — Demo-Scope Security Boundary
+**What was decided:** The current build is a demo for advisors pre-subscription. Demo-phase security scope = exactly three things: (1) rate limiting verified on the expensive routes, (2) a password gate on the advisor surface, (3) unguessable plan IDs — plus closing the exposed-key TO-DO. Everything else (full Clerk login, security headers, prompt-injection testing, server-side PDF byte validation, RLS review, save-plan rate limiting, advisor_token validation) is parked at the pre-public-launch gate.
+**Why:** Demo-phase risks are Ross's money (API abuse), data integrity (junk rows ruining demos), and credibility with a compliance-sensitive advisor audience (real EINs in test docs behind guessable URLs). Those three items close all of that. Full hardening before launch anyway.
+**What was rejected:** Full product-grade hardening now (over-engineering for a demo); doing nothing because "it's just a demo" (bots don't check whether a site is a demo; the test SPDs contain real EINs; CLAUDE.md's public-facing/OBA gate still applies).
+**Open flag:** the demo IS publicly reachable at plansparency.vercel.app, which touches the "nothing public until written OBA approval" rule. Raised in-session; status unresolved. Must be addressed explicitly.
+
+---
+
+## June 11, 2026 — Anthropic API Key Rotation COMPLETED (closes June 4 TO-DO #1)
+**What was decided / done:** New key created in Anthropic console → swapped into Vercel `ANTHROPIC_API_KEY` → redeployed → live app verified → old key revoked. Usage history showed NO unexpected activity from the exposure window. All temporary copies of the new key destroyed. `.env.local` checked: an Anthropic key WAS present (contradicting the May 24 record) and was blanked; `.env.local` confirmed gitignored.
+**Why:** A key shared in prior chat context had never been rotated — the only open item where damage could already be accruing.
+**What was rejected:** Continuing to defer; revoking before swapping (would have broken the live app).
+**Standing rule established:** API keys and passwords are NEVER typed into any chat window. Secrets live only in the issuing console + Vercel env vars.
+
+---
+
+## June 11, 2026 — Security Diagnostic Findings (read-only audit)
+**What was found (verified against deployed code):**
+- `plan_id` = `crypto.randomUUID()` — UUIDv4, unguessable. `/p/` links safe to share. Enumeration concern CLOSED.
+- `advisor_token` = generated and stored in localStorage but **validated by no server code anywhere** — it is decorative, not auth. Must gain server-side validation before any plan edit/delete features exist.
+- Rate limiting: `checkRateLimit()` confirmed called in `/api/chat` and `/api/ingest`; keyed by `x-forwarded-for` (Vercel-set). `/api/save-plan` is NOT rate limited (acceptable behind the password gate).
+- Vercel Blob: zero references in code. `BLOB_READ_WRITE_TOKEN` was a dead credential → deleted from Vercel same day. Upload tested clean at 5.9 MB in production (>5.9 MB untested).
+- Supabase: service-role client is server-only; no browser-side Supabase client exists. `lib/supabase.ts` does NOT exist — prior docs were wrong.
+**Why logged:** these findings close or downgrade several standing worries and correct three stale doc claims.
+
+---
+
+## June 11, 2026 — Advisor Gate: Basic Auth Middleware, Fail-Closed (Option A)
+**What was decided:** Demo-phase gate = HTTP Basic Auth in `middleware.ts` (repo root) on `/advisor/:path*` and `/api/save-plan`. Env var `ADVISOR_ACCESS_PASSWORD`; any username; **fail-closed** — missing env var returns 401, never falls through to open. Browser-native login popup; sharing access = telling a pilot advisor the password. Commit `71f9357`. Verified live: `/` = 200; `/advisor` no-creds = 401 + `WWW-Authenticate: Basic realm="Plansparency Advisor"`; wrong password rejected; correct password admits. Password set fresh June 11 (never typed into any chat).
+**Why:** Closes the open `/advisor` + unauthenticated `/api/save-plan` hole without contradicting the June 4 "no Clerk login for pilot" choice. Fail-closed is the explicit inversion of the May 28 Clerk pattern, whose fail-open condition silently disabled it.
+**What was rejected:** Option B custom branded password page (more files, throwaway work once Clerk arrives); fail-open behavior when the env var is missing (the exact pattern that left the app unprotected for two weeks).
+**This SUPERSEDES in practice:** the June 4 "advisor area OPEN" state and the May 28 conditional-Clerk protection. Full Clerk login remains the pre-public-launch plan.
+
+---
+
+## June 11, 2026 — Record Correction: Vercel Project Name + Domain
+**What was decided / corrected:** The live Vercel project is named **`plansparency`**, serving `plansparency.vercel.app` — verified two independent ways (env-var dashboard header; agent's live curl checks; key rotation on that project took effect on the live app). Docs saying "Plansparency-nextjs" were stale. Also new: `plansparency.com` currently points to a GoDaddy website builder, not Vercel — domain cutover is a launch-prep item.
+**Why:** Every dashboard instruction depends on naming the right project.
+**What was rejected:** Leaving the discrepancy unexplained.
+
+---
+
+## June 11, 2026 — Verification Rule (process, permanent)
+**What was decided:** Proof that a code change shipped = a **Ready deployment in Vercel with the expected commit message + observable live behavior change**. An agent's "done" message is never proof. After every code session, check the Deployments tab.
+**Why:** This session's prompts had all gone to a non-Claude-Code VS Code chat agent without anyone noticing; the middleware gate initially didn't deploy; and the agent later fabricated a test credential ("pilot2024") and presented a meaningless test as evidence. The Vercel-plus-live-behavior check catches wrong tools, unpushed commits, and broken deploys all at once.
+**What was rejected:** Trusting agent completion reports; treating tool identity as unimportant.
+**Open item:** identify which VS Code agent it actually is (likely Copilot agent mode), then either switch to real Claude Code per CLAUDE.md or log a deliberate tool change.
+
+---
+
+## Session Summary, June 11, 2026
+**Worked on:** Front-end/back-end security review and demo-scope hardening — the full Tier 1 list.
+**Completed:**
+- Anthropic API key rotated end-to-end (no abnormal usage; all copies destroyed; `.env.local` blanked)
+- Upstash rate-limit env vars confirmed in Vercel; limiter call sites verified in code
+- Read-only security diagnostic: plan_id unguessable; advisor_token decorative; save-plan unprotected (then fixed); Blob fully removed; Supabase server-only
+- Dead `BLOB_READ_WRITE_TOKEN` deleted from Vercel; Blob store removed
+- 5.9 MB production upload confirmed working (partially closes May 24 Finding #2)
+- Basic Auth gate live on `/advisor` + `/api/save-plan` (fail-closed, commit `71f9357`), fresh password set, live-verified via curl + browser
+- Record corrections: Vercel project name (`plansparency`), `.env.local` key presence, phantom `lib/supabase.ts`, stale Blob upload description
+- Mystery solved at close: the passthrough middleware stub came from the May 28 build-failure fix (old 404-blocking middleware was neutered, not deleted) — not wrong-window debris
+**In progress:** Check #5 (end-to-end upload through the password gate to a share link) reported working but not explicitly re-confirmed.
+**Decisions made:** Demo-scope security boundary; Basic Auth Option A fail-closed; verification rule (Vercel Ready + live behavior = only proof); secrets-never-in-chat rule.
+**Next session:** Read MEMORY.md first. (1) Confirm check #5 — one test upload through the gate. (2) Resolve the tool-identity question: which VS Code agent has been executing prompts, and switch to Claude Code or log the change. (3) Address the OBA/public-demo flag — the demo is publicly reachable and the compliance gate status is unresolved. Then back to product work: Investments tab testing with the Equitable booklet.
+
+---
+
+## September 27, 2026 — Workflow: Cowork Plans, Claude Code Builds From Prompt Files
+**What was decided:** Split the work into two seats. Cowork (connected to the repo folder) is where problems get talked through, decisions get logged, the .md files get maintained, and phase prompt files get written to `PHASE PROMPTS/PHASE-NN-name.md`. Claude Code in VS Code only executes one prompt file per fresh conversation (`Read "PHASE PROMPTS/PHASE-NN-name.md" and execute STEP N only.`). No hand-pasted code.
+**Why:** Ross had been typing instructions straight into Claude Code without thinking them through first. That skipped the stress-test step, produced prompts nobody could audit later, and let the docs drift from the code. Prompt files are reviewable before they run and leave a record after.
+**What was rejected:** (1) Cowork handing Ross raw code to paste: error-prone in a 2,400-line file and it loses Claude Code's ability to read surrounding code and commit. (2) Keeping prompts only in chat: no history, easy to paste into the wrong window (see June 11 error). (3) Cowork editing application code directly: breaks the "one builder" rule and bypasses git history.
+
+---
+
+## September 27, 2026 — The Repo Is the Only Real Copy of the .md Files
+**What was decided:** The five context files live in the repo root and are edited there directly by Cowork. The claude.ai project copies are mirrors, refreshed at /close. The download/re-upload ritual from the old /close protocol is retired.
+**Why:** Two editable copies is how drift starts. Cowork can now read and write the repo folder, so there is no reason to move files by hand.
+**What was rejected:** Treating the claude.ai project as the source of truth for context (it was, before Sept 27); keeping both as equals.
+
+---
+
+## September 27, 2026 — OPEN-ITEMS.md Added (Replaces the TO-DO Sections in CONTEXT.md)
+**What was decided:** A fifth context file, OPEN-ITEMS.md, holds the only to-do list, ranked. CONTEXT.md keeps facts only. This passes CLAUDE.md's "replace, not additive" test because it replaces the TO-DO sections rather than duplicating them. The project instructions call it "OPEN ITEMS.md"; the file is named `OPEN-ITEMS.md` because spaces in file names cause quoting mistakes in prompts and shell commands.
+**Why:** Project instructions require it, and to-dos buried inside a 430-line context file were being missed and going stale.
+**What was rejected:** Keeping to-dos in CONTEXT.md; a literal file name with a space.
+**⚠️ Flag:** this revises the old CLAUDE.md "Exactly 4 project files" rule. CLAUDE.md has been updated to 5 files + `PHASE PROMPTS/`.
+
+---
+
+## Session Summary, September 27, 2026
+**Worked on:** Catch-up after a ~3.5 month gap; workflow reset (Cowork for thinking, VS Code for building); full audit of the .md files against the real repo and Vercel.
+**Completed:**
+- Verified: `main` = `origin/main` = Vercel production (`71f9357`, READY). No code changes since June 11.
+- Found doc drift: Findings #1 (partial), #3, #5 were fixed May 26 in `273ef03`; docs said open. Corrected.
+- Found in code: IRS limits still 2025; "4.5 MB max" upload copy contradicts 25 MB code limit; advisor layout comment says the area is "OPEN" (stale since the June 11 middleware gate); `dashboard-redesign` branch merged and stale.
+- Found evidence on the June 11 tool question: `71f9357` carries a Claude Code co-author trailer.
+- Updated CLAUDE.md, CONTEXT.md, MEMORY.md, ERRORS.md. Created OPEN-ITEMS.md and a prompts folder (renamed `PHASE PROMPTS/` on Sept 28).
+**In progress:** Nothing in code.
+**Decisions made:** Two-seat workflow; repo is the only real copy of the .md files; OPEN-ITEMS.md added.
+**Next session:** (1) Run `PHASE PROMPTS/PHASE-01-stabilize.md` Step 1 in Claude Code. (2) Decide the OBA / public demo question (still the top gate). (3) Talk through the 2026 IRS limits fix before any prompt is written for it.
+
+---
+
+## September 28, 2026 — OBA: Not Yet Requested; Keep Building Meanwhile
+**What was decided:** Ross has not spoken to compliance yet. Building continues in the meantime. Cowork's recommendation, written as `PHASE PROMPTS/PHASE-01-stabilize.md` Step 3: put the whole site behind the existing advisor password until written approval, with a `SITE_PUBLIC=true` env var to reopen later without a code change. Ross decides when to run it.
+**Why:** Building and being public are separate things. Locking the site costs nothing in build speed and closes the gap between the CLAUDE.md compliance rule and reality (site public since May).
+**What was rejected (so far):** Locking `/try` only (leaves a public branded page); leaving it public without logging the risk.
+**⚠️ Open flag:** until prompt 02 runs, the site remains public without OBA approval. This contradicts the April 30 "Compliance as Absolute #1 Priority" decision. Flagged, not resolved.
+
+---
+
+## September 28, 2026 — Supabase Restored From Cowork
+**What was decided / done:** With Ross's OK, Cowork restored the paused Supabase project via the Supabase connection. Status `ACTIVE_HEALTHY`; `plans` table intact (4 rows). Root cause and fix: see ERRORS.md and `PHASE PROMPTS/PHASE-01-stabilize.md` Step 2.
+**Why:** Shared `/p/` links and advisor saves were broken while paused.
+**What was rejected:** Waiting until the keep-alive fix shipped (links broken in the meantime).
+
+---
+
+## September 28, 2026 — Prompt Folder Renamed to PHASE PROMPTS, One File Per Phase
+**What was decided:** At Ross's request, the prompts folder is `PHASE PROMPTS/`. Each phase is one file (`PHASE-NN-name.md`) split into numbered STEPS. Ross runs one step per fresh Claude Code conversation: `Read "PHASE PROMPTS/PHASE-NN-name.md" and execute STEP N only.` The earlier separate files (00/01/02) were merged into `PHASE-01-stabilize.md` before any were run, so nothing duplicates.
+**Why:** One document per batch of action items is easier for Ross to follow. Keeping one step per conversation preserves the "one focused task per Claude Code conversation" rule.
+**What was rejected:** Keeping both a `prompts/` folder and a `PHASE PROMPTS/` folder (two places = drift); letting Claude Code run a whole phase in one conversation (token overload, harder to verify each step).
