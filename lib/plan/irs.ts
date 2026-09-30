@@ -75,23 +75,3 @@ export function getIRSLimitsForAge(
     ageAtYearEnd,
   };
 }
-
-// Thin wrapper kept for the current CalcPanel caller. Turns a birth date into
-// an age and calls getIRSLimitsForAge. Delete once nothing calls it (STEP 6).
-export function getIRSLimits(
-  dob: string | null | undefined,
-  year: number = getLimitYear().year
-): IRSLimits {
-  if (!dob) return getIRSLimitsForAge(null, year);
-
-  // Read the birth year straight from the string — do not use `new Date(dob)`,
-  // it shifts dates by timezone.
-  const match = /^(\d{4})-\d{2}-\d{2}$/.exec(dob);
-  if (!match) return getIRSLimitsForAge(null, year);
-
-  const resolvedYear = IRS_LIMITS[year] ? year : latestTableYear();
-  const birthYear = Number(match[1]);
-  const ageAtYearEnd = resolvedYear - birthYear;
-
-  return getIRSLimitsForAge(ageAtYearEnd, year);
-}

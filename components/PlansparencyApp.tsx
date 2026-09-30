@@ -81,7 +81,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [calcExpanded, setCalcExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [planData, setPlanData] = useState(initialPlanData);
   const [planGuideTab, setPlanGuideTab] = useState<"guide" | "investments">("guide");
@@ -174,7 +173,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setSessionEndReason(null);
     setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
-    setCalcExpanded(false); setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText(''); setUploadError("");
+    setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText(''); setUploadError("");
     pendingFilesRef.current = [];
     fileIdsRef.current = [];
     setStagedFiles([]);
@@ -208,7 +207,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     bumpActivity();
     if (resetState) {
       setMessages([]); setPlanData(null); setStmtData(null);
-      setCalcExpanded(false);
     }
     const primaryFile = files[0];
     setUploadError(""); setFileName(primaryFile.name);
@@ -289,7 +287,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const startFreshUpload = () => {
     endSessionFiles(fileIdsRef.current);
     setMessages([]); setPlanData(null); setStmtData(null);
-    setFileName(""); setInput(""); setLoading(false); setCalcExpanded(false);
+    setFileName(""); setInput(""); setLoading(false);
     setStreamingText(''); setStagedFiles([]); pendingFilesRef.current = []; fileIdsRef.current = [];
     setDocType(null); setStage(STAGE.CHOOSER);
   };
@@ -705,7 +703,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
             )}
           </>
         )}
-        {activeTab === "calculator" && <CalcPanel t={t} planData={planData} expanded={true} setExpanded={() => {}} lang={lang} asTab={true} onOpenEligibility={openEligibility} />}
+        {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} />}
         {activeTab === "chat" && chatPanel}
 

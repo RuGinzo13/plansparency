@@ -1,86 +1,21 @@
 // @ts-nocheck
 'use client';
 
-import { useState } from 'react';
-import { getIRSLimits, getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
-import { safeHarborAmount, contributionSummary, rothCatchUpStatus } from '@/lib/plan/calc';
-import { fmtRounded, fmtDollars } from '@/lib/format';
+import React, { useState, useRef, useEffect } from 'react';
 import { C, F } from './theme';
+import { calculatorResult } from '@/lib/plan/calc';
+import { getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
+import { fmtRounded, fmtDollars } from '@/lib/format';
+import { getTerm } from '@/lib/glossary';
 
-export function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = false }) {
-  const [salary, setSalary] = useState(50000);
-  const [pct, setPct] = useState(6);
-  const [dob, setDob] = useState("");
-  const [pp, setPp] = useState(26);
-  const [rothAnswer, setRothAnswer] = useState(null); // 'yes' | 'no' | 'notsure' | null
+const tpl = (s, vars) => Object.keys(vars).reduce((acc, k) => acc.split(`{${k}}`).join(String(vars[k])), s);
 
-  const tiers = planData?.matchTiers || [];
-  const noMatch = planData?.noMatch || tiers.length === 0;
-  const hasRoth = planData?.hasRoth ?? planData?.rothAvailable ?? false;
-  const planAllowsCatchUp = planData?.planAllowsCatchUp ?? true;
-  const lastDayProvision = planData?.lastDayProvision ?? null;
-  const limitYear = getLimitYear();
-  const limits = getIRSLimits(dob || null, limitYear.year);
-  const yearLimits = IRS_LIMITS[limitYear.year];
-  const currentYear = new Date().getFullYear();
+// Where each safe harbor MATCH type's guaranteed money stops growing.
+// Nonelective doesn't depend on your rate, so it has no "tops out" point.
+const TOP_OUT_PCT = { basic_match: 5, qaca: 6, enhanced_match: 4 };
 
-  const tpl = (s, vars) => Object.keys(vars).reduce((acc, k) => acc.split(`{${k}}`).join(String(vars[k])), s);
-
-  // Safe Harbor calculation
-  const sh = planData?.safeHarbor;
-  const hasSH = sh && sh.type !== "none";
-
-  // Roth catch-up rule (2026+): high earners' catch-up money must go in as Roth
-  const rothThresholdApplies = limits.rothCatchUpWageThreshold !== null;
-  const showRothCard = limits.catchUpEligible && planAllowsCatchUp && rothThresholdApplies;
-  const rothEarnedOverThreshold = rothAnswer === "yes" ? true : rothAnswer === "no" ? false : null;
-  const rothStatus = rothCatchUpStatus({
-    catchUpEligible: limits.catchUpEligible,
-    planAllowsCatchUp,
-    planHasRoth: hasRoth,
-    earnedOverThreshold: rothEarnedOverThreshold,
-    thresholdApplies: rothThresholdApplies,
-  });
-  const rothMessageTemplate = {
-    unknown: t.calcRothUnknown,
-    not_affected: t.calcRothNotAffected,
-    roth_required: t.calcRothRequired,
-    blocked_no_roth: t.calcRothBlocked,
-  }[rothStatus] || "";
-  const rothMessage = tpl(rothMessageTemplate, {
-    threshold: fmtRounded(limits.rothCatchUpWageThreshold || 0),
-    catchUp: fmtRounded(limits.catchUp),
-    base: fmtRounded(limits.base),
-    year: limitYear.year,
-  });
-
-  const catchUpActive = limits.catchUpEligible && planAllowsCatchUp && rothStatus !== "blocked_no_roth";
-  const summary = contributionSummary({
-    salary,
-    pct,
-    payPeriods: pp,
-    limits,
-    catchUpAllowed: catchUpActive,
-  });
-  const shAmt = hasSH ? safeHarborAmount(sh.type, summary.payForEmployer, pct) : 0;
-  const empContrib = summary.annualContribution;
-  const total = empContrib + shAmt;
-  const perPaycheck = summary.perPaycheck;
-
-  const secureNote = tpl(t.calcSecureNote, {
-    year: limitYear.year,
-    catchUp50: fmtRounded(yearLimits.catchUp50),
-    catchUp6063: fmtRounded(yearLimits.catchUp6063),
-  });
-
-  const iS = {
-    backgroundColor: C.calcInput, border: `1px solid ${C.calcInputBorder}`, borderRadius: 8,
-    color: C.calcText, fontFamily: F.body, fontSize: 13, padding: "8px 11px", width: "100%",
-    outline: "none", boxSizing: "border-box",
-  };
-  const lS = { fontSize: 11, color: C.calcMuted, fontWeight: 600, display: "block", marginBottom: 5, textTransform: "uppercase", letterSpacing: ".04em" };
-
-  const shLabels = {
+function shLabel(sh, lang) {
+  const labels = {
     nonelective: {
       en: "3% of pay — regardless of your contributions",
       es: "3% del salario — sin importar tus contribuciones",
@@ -98,241 +33,624 @@ export function CalcPanel({ t, planData, expanded, setExpanded, lang, asTab = fa
       es: "QACA: 100% del primer 1% + 50% del siguiente 5%",
     },
   };
+  return labels[sh?.type]?.[lang] || sh?.formula || "";
+}
 
-  let catchUpDisplay, catchUpColor;
-  if (!dob) { catchUpDisplay = t.calcEnterDob; catchUpColor = C.calcMuted; }
-  else if (!planAllowsCatchUp) { catchUpDisplay = t.calcCatchUpNotAllowed; catchUpColor = "#B84A3A"; }
-  else if (catchUpActive) { catchUpDisplay = t.calcYes + (limits.enhanced ? " (60-63)" : " (50+)"); catchUpColor = "#2E7D52"; }
-  else { catchUpDisplay = t.calcNo; catchUpColor = "#B84A3A"; }
+const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20 };
+const heading = { fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.text, margin: "0 0 16px" };
+const inputBase = {
+  background: "#FFFFFF", border: `1px solid ${C.inputBorder}`, borderRadius: 8,
+  height: 48, fontSize: 16, padding: "0 12px", width: "100%", boxSizing: "border-box",
+  color: C.text, fontFamily: F.body, outline: "none", fontVariantNumeric: "tabular-nums",
+};
+const label11 = { fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".04em", display: "block", marginBottom: 6 };
 
-  const showExpanded = asTab ? true : expanded;
+export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
+  const rootRef = useRef(null);
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) setWide(entry.contentRect.width >= 880);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-  return (
-    <div style={asTab
-      ? { flex: 1, overflowY: "auto", background: C.calcBg }
-      : { flexShrink: 0, borderBottom: `2px solid ${C.calcBorder}`, background: C.calcBg, boxShadow: "0 4px 20px rgba(0,0,0,.15)" }
-    }>
-      {!asTab && (
-        <button onClick={() => setExpanded(!expanded)} style={{
-          width: "100%", padding: "12px 16px", background: "none", border: "none", cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: F.body,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: `linear-gradient(135deg,${C.accent},#B8863A)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F1621" strokeWidth="2.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
-            </div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: C.calcText, fontFamily: F.display, letterSpacing: ".01em" }}>{t.calcTitle}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {!expanded && planData && <div style={{ display: "flex", gap: 16, fontSize: 13, flexWrap: "wrap" }}>
-              <span style={{ color: C.calcMuted }}>{t.calcYourContrib}: <strong style={{ color: C.calcText }}>{fmtRounded(empContrib)}</strong></span>
-              {hasSH && <span style={{ color: C.calcMuted }}>Safe Harbor: <strong style={{ color: "#2E7D52" }}>{fmtRounded(shAmt)}</strong></span>}
-              <span style={{ color: "#8B6914", fontWeight: 700 }}>{fmtRounded(total)}/yr</span>
-            </div>}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.calcMuted} strokeWidth="2" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9" /></svg>
-          </div>
-        </button>
+  const [age, setAge] = useState("");
+  const [salary, setSalary] = useState(50000);
+  const [pp, setPp] = useState(26);
+  const [pct, setPct] = useState(6);
+  const [priorChecked, setPriorChecked] = useState(false);
+  const [priorAmount, setPriorAmount] = useState(0);
+  const [openBubble, setOpenBubble] = useState(null); // 'traditional' | 'roth' | null
+  const [openInfoRow, setOpenInfoRow] = useState(null);
+
+  if (!planData) {
+    return (
+      <div style={{ flex: 1, overflowY: "auto", background: C.bg, padding: "20px 16px 40px" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto", padding: 24, textAlign: "center", color: C.textMuted, fontSize: 13, background: C.surface, borderRadius: 14, border: `1px dashed ${C.border}` }}>
+          {t.calcWaiting}
+        </div>
+      </div>
+    );
+  }
+
+  const es = lang === "es";
+  const limitYear = getLimitYear();
+  const currentYear = new Date().getFullYear();
+
+  const sh = planData?.safeHarbor;
+  const hasSH = sh && sh.type !== "none";
+  const hasDiscretionaryMatch = !(planData?.noMatch ?? true);
+  const hasRoth = planData?.hasRoth ?? planData?.rothAvailable ?? false;
+  const hasPreTax = planData?.hasPreTax ?? null;
+  const planAllowsCatchUp = planData?.planAllowsCatchUp ?? true;
+  const lastDayProvision = planData?.lastDayProvision ?? null;
+  const me = planData?.matchEligibility || {};
+
+  const ageAtYearEnd = age === "" ? null : Number(age);
+
+  const r = calculatorResult({
+    salary,
+    pct,
+    payPeriods: pp,
+    ageAtYearEnd,
+    priorPlanAmount: priorChecked ? priorAmount : 0,
+    plan: {
+      safeHarborType: sh?.type || "none",
+      hasDiscretionaryMatch,
+      hasRoth,
+      hasPreTax,
+      planAllowsCatchUp,
+    },
+    year: limitYear.year,
+  });
+
+  const limits = r.limits;
+  const yearLimits = IRS_LIMITS[limits.year];
+
+  // ── Card 2 chips ──
+  const catchUpChip = r.band === "50+"
+    ? (r.rothBlocked ? "blocked" : "applies")
+    : r.band === "60-63"
+      ? "replaced"
+      : "notyet";
+  const superChip = r.band === "60-63"
+    ? (r.rothBlocked ? "blocked" : "applies")
+    : "notyourage";
+
+  const chipLabel = {
+    applies: t.calc2ChipApplies,
+    replaced: t.calc2ChipReplaced,
+    notyet: t.calc2ChipNotYet,
+    blocked: t.calc2ChipBlocked,
+    notyourage: t.calc2ChipNotYourAge,
+  };
+  const chipColor = {
+    applies: { bg: C.greenSoft, fg: C.green },
+    replaced: { bg: C.surfaceAlt, fg: C.textMuted },
+    notyet: { bg: C.surfaceAlt, fg: C.textMuted },
+    blocked: { bg: C.dangerSoft, fg: C.danger },
+    notyourage: { bg: C.surfaceAlt, fg: C.textMuted },
+  };
+
+  // ── Match "tops out" hint (card 3) ──
+  const topOutPct = sh?.type ? TOP_OUT_PCT[sh.type] : undefined;
+  let matchHint = null;
+  if (topOutPct) {
+    matchHint = pct < topOutPct
+      ? tpl(t.calc2MatchStopsHint, { x: topOutPct, pct })
+      : tpl(t.calc2MatchFullHint, { x: topOutPct });
+  } else if (hasDiscretionaryMatch) {
+    matchHint = t.calc2MatchDiscretionaryHint;
+  } else {
+    matchHint = t.calc2MatchNoneHint;
+  }
+
+  const pctOfLimitUsed = r.room > 0 ? Math.round((r.you / r.room) * 100) : 0;
+
+  // ── Roth catch-up rule box tone ──
+  const rothBoxTone = r.rothBlocked ? "red" : r.overRothLine ? "orange" : "green";
+
+  const traditionalTerm = getTerm("traditional", lang);
+  const rothTerm = getTerm("roth", lang);
+
+  const toggleBubble = (which) => setOpenBubble((prev) => (prev === which ? null : which));
+  const toggleInfoRow = (key) => setOpenInfoRow((prev) => (prev === key ? null : key));
+
+  const payFreqs = [
+    { value: 52, label: t.calc2PayWeekly },
+    { value: 26, label: t.calc2PayBiweekly },
+    { value: 24, label: t.calc2PaySemimonthly },
+    { value: 12, label: t.calc2PayMonthly },
+  ];
+
+  // ── Card 1 — Start with you ──
+  const StartWithYou = (
+    <div style={card}>
+      <div style={heading}>{t.calc2StartTitle}</div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={label11}>{tpl(t.calc2AgeLabel, { year: limitYear.year })}</label>
+        <input
+          type="number" min={18} max={100} value={age}
+          onChange={(e) => setAge(e.target.value)}
+          placeholder="—"
+          style={inputBase}
+        />
+        <div style={{ fontSize: 12, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2AgeHelper}</div>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={label11}>{t.calc2SalaryLabel}</label>
+        <div style={{ position: "relative" }}>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, fontSize: 16 }}>$</span>
+          <input
+            type="number" min={0} value={salary}
+            onChange={(e) => setSalary(Math.max(0, +e.target.value))}
+            style={{ ...inputBase, paddingLeft: 24 }}
+          />
+        </div>
+      </div>
+      <div>
+        <label style={label11}>{t.calc2PayFreqLabel}</label>
+        <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(4, 1fr)" : "1fr 1fr", gap: 8 }}>
+          {payFreqs.map((f) => {
+            const active = pp === f.value;
+            return (
+              <button
+                key={f.value}
+                aria-pressed={active}
+                onClick={() => setPp(f.value)}
+                style={{
+                  minHeight: 44, borderRadius: 8, cursor: "pointer", fontFamily: F.body, fontSize: 13, fontWeight: 600,
+                  background: active ? C.accentSoft : "#FFFFFF",
+                  border: active ? `2px solid ${C.accent}` : `1px solid ${C.inputBorder}`,
+                  color: active ? C.accentText : C.text,
+                  padding: "8px 6px",
+                }}
+              >
+                {f.label} ({f.value})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Card 2 — Your {year} limit ──
+  const LimitCard = (
+    <div style={{ ...card, position: "relative" }}>
+      <div style={heading}>{tpl(t.calc2LimitTitle, { year: limitYear.year })}</div>
+      <div style={{ fontFamily: F.display, fontSize: 40, fontWeight: 700, color: C.accentText, marginBottom: 16, fontVariantNumeric: "tabular-nums" }}>
+        {fmtRounded(r.limit)}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderTop: `1px solid ${C.border}` }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{t.calc2RegularLabel}</div>
+          <div style={{ fontSize: 12, color: C.textDim }}>{t.calc2RegularSub}</div>
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums" }}>{fmtRounded(limits.base)}</div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderTop: `1px solid ${C.border}`, gap: 10 }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{t.calc2CatchUpLabel}</div>
+          <div style={{ fontSize: 12, color: C.textDim }}>{t.calc2CatchUpSub}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[catchUpChip].bg, color: chipColor[catchUpChip].fg }}>
+            {chipLabel[catchUpChip]}
+          </span>
+          <span style={{
+            fontSize: 14, fontWeight: 700, fontVariantNumeric: "tabular-nums",
+            color: catchUpChip === "applies" ? C.green : C.textDim,
+            textDecoration: catchUpChip === "applies" ? "none" : "line-through",
+          }}>
+            +{fmtRounded(yearLimits.catchUp50)}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderTop: `1px solid ${C.border}`, gap: 10 }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{t.calc2SuperCatchUpLabel}</div>
+          <div style={{ fontSize: 12, color: C.textDim }}>{t.calc2SuperCatchUpSub}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[superChip].bg, color: chipColor[superChip].fg }}>
+            {chipLabel[superChip]}
+          </span>
+          <span style={{
+            fontSize: 14, fontWeight: 700, fontVariantNumeric: "tabular-nums",
+            color: superChip === "applies" ? C.green : C.textDim,
+            textDecoration: superChip === "applies" ? "none" : "line-through",
+          }}>
+            +{fmtRounded(yearLimits.catchUp6063)}
+          </span>
+        </div>
+      </div>
+
+      {ageAtYearEnd === null && (
+        <div style={{ fontSize: 12, color: C.textDim, marginTop: 10, lineHeight: 1.4 }}>{t.calc2NoAgeEntered}</div>
+      )}
+      {ageAtYearEnd !== null && ageAtYearEnd < 50 && (
+        <div style={{ fontSize: 12, color: C.textDim, marginTop: 10, lineHeight: 1.4 }}>{t.calc2UnderFifty}</div>
       )}
 
-      {showExpanded && (
-        <div style={{ padding: asTab ? "16px 16px 32px" : "0 16px 18px" }}>
-          {!planData && <div style={{ padding: "16px", textAlign: "center", color: C.calcMuted, fontSize: 13, background: "#F3EDE3", borderRadius: 10, border: `1px dashed ${C.calcBorder}` }}>{t.calcWaiting}</div>}
+      {/* ── How your money can go in ── */}
+      <div style={{ marginTop: 20 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 10 }}>{t.calc2TableTitle}</div>
 
-          {planData && <>
-            <div style={{ fontSize: 11, color: C.calcMuted, marginBottom: 10 }}>
-              <div>{tpl(t.calcLimitsYear, { year: limitYear.year })}</div>
-              {limitYear.isFallback && <div style={{ color: "#B84A3A", marginTop: 2 }}>{tpl(t.calcLimitsFallback, { currentYear })}</div>}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
-              <div><label style={lS}>{t.calcSalary}</label>
-                <div style={{ position: "relative" }}>
-                  <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.calcMuted, fontSize: 13 }}>$</span>
-                  <input type="number" value={salary} onChange={e => setSalary(Math.max(0, +e.target.value))} style={{ ...iS, paddingLeft: 22 }} />
-                </div>
-              </div>
-              <div><label style={lS}>{t.calcDob}</label>
-                <input type="date" value={dob} onChange={e => setDob(e.target.value)} style={iS} />
-              </div>
-              <div><label style={lS}>{t.calcPayPeriod}</label>
-                <select value={pp} onChange={e => setPp(+e.target.value)} style={{ ...iS, cursor: "pointer" }}>
-                  <option value={26}>{t.calcBiweekly}</option><option value={24}>{t.calcSemimonthly}</option><option value={12}>{t.calcMonthly}</option><option value={52}>{t.calcWeekly}</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <label style={{ ...lS, marginBottom: 0 }}>{t.calcContribution}</label>
-                <span style={{ fontSize: 20, fontWeight: 700, color: "#8B6914" }}>{pct}%</span>
-              </div>
-              <input type="range" min={0} max={30} step={1} value={pct} onChange={e => setPct(+e.target.value)} style={{ width: "100%", height: 10, cursor: "pointer" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.calcMuted, marginTop: 3 }}><span>0%</span><span>30%</span></div>
-            </div>
-
-            {/* === LIMIT TRACKER === */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, color: C.calcMuted, marginBottom: 4, flexWrap: "wrap" }}>
-                {tpl(t.calcTrackerLabel, { annualContribution: fmtRounded(summary.annualContribution), annualLimit: fmtRounded(summary.annualLimit) })}
-              </div>
-              <div style={{ height: 10, background: C.surfaceAlt, borderRadius: 6, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${summary.annualLimit > 0 ? Math.min((summary.annualContribution / summary.annualLimit) * 100, 100) : 0}%`, background: C.accent, borderRadius: 6, transition: "width .3s ease" }} />
-              </div>
-              <div style={{ fontSize: 11, color: C.calcMuted, marginTop: 6, lineHeight: 1.5 }}>
-                <p style={{ margin: "0 0 2px" }}>
-                  {summary.hitsLimit
-                    ? tpl(t.calcTrackerHitting, { pct, year: limitYear.year, n: summary.limitReachedAtPaycheck, payPeriods: pp })
-                    : tpl(t.calcTrackerNotHitting, { pct, annualContribution: fmtRounded(summary.annualContribution), year: limitYear.year, annualLimit: fmtRounded(summary.annualLimit) })}
-                </p>
-                {salary > 0 && summary.pctToReachLimit !== null && (
-                  <p style={{ margin: "0 0 2px" }}>{tpl(t.calcTrackerPctOfPay, { pctToReachLimit: summary.pctToReachLimit })}</p>
-                )}
-                {summary.hitsLimit && hasSH && ["basic_match", "enhanced_match", "qaca"].includes(sh?.type) && (
-                  <p style={{ margin: 0 }}>{t.calcTrackerTrueUp}</p>
-                )}
-              </div>
-            </div>
-
-            {/* === SAFE HARBOR — calculated, always first === */}
-            {hasSH && (
-              <div style={{ marginBottom: 12, padding: "14px 16px", borderRadius: 12, background: "#E8F8EF", border: `2px solid #5CB88A`, position: "relative" }}>
-                <div style={{ position: "absolute", top: -9, left: 14, background: "#5CB88A", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 6, textTransform: "uppercase", letterSpacing: ".06em" }}>
-                  {lang === "es" ? "Garantizado" : "Guaranteed"}
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 4 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1A5C37", marginBottom: 4 }}>
-                      {lang === "es" ? "Contribución Safe Harbor" : "Safe Harbor Contribution"}
-                    </div>
-                    <div style={{ fontSize: 12, color: "#3D7A55", lineHeight: 1.4 }}>
-                      {shLabels[sh.type]?.[lang] || sh.formula}
-                    </div>
-                    <div style={{ fontSize: 10, color: "#5D9A73", marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                      <span>✓ {lang === "es" ? "100% investido inmediatamente" : "100% vested immediately"}</span>
-                      <span>✓ {lang === "es" ? "No aplica provisión de último día" : "Last-day provision does NOT apply"}</span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
-                    <div style={{ fontSize: 24, fontWeight: 700, color: "#1A5C37" }}>{fmtRounded(shAmt)}</div>
-                    <div style={{ fontSize: 10, color: "#5D9A73" }}>/yr</div>
-                  </div>
-                </div>
-              </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 8, alignItems: "center", marginBottom: 6, position: "relative" }}>
+          <div />
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => toggleBubble("traditional")}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.accentText, textDecoration: "underline dotted", padding: 0 }}
+            >
+              {t.calc2WordTraditional}
+            </button>
+            <span style={{ fontSize: 11, color: C.textDim }}> {t.calc2SuffixBeforeTax}</span>
+            {openBubble === "traditional" && (
+              <Bubble text={traditionalTerm.def} onClose={() => setOpenBubble(null)} closeLabel={t.calc2CloseBubble} />
             )}
-
-            {/* === PAY LIMIT NOTE === */}
-            {summary.payCapped && (
-              <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: "#FFFBF2", border: `1px dashed ${C.calcBorder}`, fontSize: 11, color: C.calcMuted, lineHeight: 1.5 }}>
-                {tpl(t.calcPayLimitNote, { compLimit: fmtRounded(limits.compLimit), year: limitYear.year })}
-              </div>
+          </div>
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => toggleBubble("roth")}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.accentText, textDecoration: "underline dotted", padding: 0 }}
+            >
+              {t.calc2WordRoth}
+            </button>
+            <span style={{ fontSize: 11, color: C.textDim }}> {t.calc2SuffixAfterTax}</span>
+            {openBubble === "roth" && (
+              <Bubble text={rothTerm.def} onClose={() => setOpenBubble(null)} closeLabel={t.calc2CloseBubble} />
             )}
+          </div>
+        </div>
 
-            {/* === DISCRETIONARY MATCH — informational only, no formula, no calculation === */}
-            {!noMatch && (
-              <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 10, background: "#FFFBF2", border: `1px dashed ${C.calcBorder}` }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#8B6914", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 4 }}>
-                  {lang === "es" ? "Match Discrecional" : "Discretionary Match"}
-                </div>
-                <div style={{ fontSize: 13, color: C.calcText, lineHeight: 1.5 }}>
-                  {lang === "es"
-                    ? "Este plan también ofrece un match discrecional del empleador. Esta contribución es discrecional y no está garantizada — el empleador puede cambiarla o eliminarla en cualquier momento."
-                    : "This plan also offers a discretionary employer match. This contribution is discretionary and not guaranteed — the employer can change or eliminate it at any time."}
-                </div>
-                {lastDayProvision && <div style={{ fontSize: 10, color: "#B84A3A", marginTop: 6 }}>
-                  ⚠ {lang === "es" ? "Sujeto a provisión de último día del año y calendario de vesting" : "Subject to last-day-of-year provision and vesting schedule"}
-                </div>}
-                {!lastDayProvision && <div style={{ fontSize: 10, color: C.calcMuted, marginTop: 6 }}>
-                  {lang === "es" ? "Sujeto a calendario de vesting" : "Subject to vesting schedule"}
-                </div>}
-              </div>
-            )}
+        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 8, alignItems: "center", padding: "8px 0", borderTop: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 13, color: C.text }}>{tpl(t.calc2RowRegular, { deferral: fmtRounded(limits.base) })}</div>
+          <TaxCell ok={r.taxType.regular.traditional} column="traditional" hasPreTaxUnknown={r.hasPreTaxUnknown} t={t} />
+          <TaxCell ok={r.taxType.regular.roth} column="roth" t={t} />
+        </div>
 
-            {/* === NO EMPLOYER CONTRIBUTIONS AT ALL === */}
-            {!hasSH && noMatch && (
-              <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 10, background: "#FDF2F0", border: `1px solid #E8C4BE` }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#B84A3A", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 4 }}>
-                  {lang === "es" ? "Contribuciones del Empleador" : "Employer Contributions"}
-                </div>
-                <div style={{ fontSize: 13, color: "#B84A3A" }}>
-                  {lang === "es"
-                    ? "Este plan no incluye contribución safe harbor ni match discrecional del empleador."
-                    : "This plan does not include a safe harbor contribution or discretionary employer match."}
-                </div>
-              </div>
-            )}
+        {r.catchUpRaw > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 8, alignItems: "center", padding: "8px 0", borderTop: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 13, color: C.text }}>{tpl(t.calc2RowCatchUp, { catchUpRaw: fmtRounded(r.catchUpRaw) })}</div>
+            <TaxCell ok={r.taxType.catchUp?.traditional} column="traditional" t={t} unavailable={!r.taxType.catchUp?.available} />
+            <TaxCell ok={r.taxType.catchUp?.roth} column="roth" t={t} unavailable={!r.taxType.catchUp?.available} />
+          </div>
+        )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-              <div style={{ padding: "8px 10px", borderRadius: 8, background: "#FFF8EB", border: `1px solid #EBD9A8` }}>
-                <div style={{ fontSize: 9, color: C.calcMuted, textTransform: "uppercase", marginBottom: 3 }}>{t.calcIrsLimit}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#8B6914" }}>{fmtRounded(catchUpActive ? limits.total : limits.base)}</div>
-                {catchUpActive && <div style={{ fontSize: 10, color: "#2E7D52", marginTop: 2 }}>+{fmtRounded(limits.catchUp)} catch-up</div>}
-              </div>
-              <div style={{ padding: "8px 10px", borderRadius: 8, background: C.calcCard, border: `1px solid ${C.calcCardBorder}` }}>
-                <div style={{ fontSize: 9, color: C.calcMuted, textTransform: "uppercase", marginBottom: 3 }}>{t.calcCatchUp}</div>
-                <div style={{ fontSize: catchUpDisplay.length > 10 ? 11 : 14, fontWeight: 700, color: catchUpColor }}>{catchUpDisplay}</div>
-              </div>
-              <div style={{ padding: "8px 10px", borderRadius: 8, background: C.calcCard, border: `1px solid ${C.calcCardBorder}` }}>
-                <div style={{ fontSize: 9, color: C.calcMuted, textTransform: "uppercase", marginBottom: 3 }}>{t.calcRothAvail}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: hasRoth ? "#2E7D52" : "#B84A3A" }}>{hasRoth ? t.calcYes : t.calcNo}</div>
-              </div>
-              <div style={{ padding: "8px 10px", borderRadius: 8, background: C.calcCard, border: `1px solid ${C.calcCardBorder}` }}>
-                <div style={{ fontSize: 9, color: C.calcMuted, textTransform: "uppercase", marginBottom: 3 }}>{t.calcPreTax}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#2E7D52" }}>{t.calcYes}</div>
-              </div>
-            </div>
+        {r.hasPreTaxUnknown && (
+          <div style={{ fontSize: 11, color: C.textDim, marginTop: 8, lineHeight: 1.4 }}>{t.calc2PreTaxUnknownNote}</div>
+        )}
 
-            {/* === ROTH CATCH-UP RULE (2026+) === */}
-            {showRothCard && (
-              <div style={{ marginBottom: 12, padding: "14px 16px", borderRadius: 12, background: "#FFF4E0", border: `2px solid ${C.accent}`, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#8B6914", marginBottom: 6 }}>
-                  {tpl(t.calcRothCardTitle, { year: limitYear.year })}
-                </div>
-                <div style={{ fontSize: 12, color: C.calcText, marginBottom: 10, lineHeight: 1.4 }}>
-                  {tpl(t.calcRothCardQuestion, { threshold: fmtRounded(limits.rothCatchUpWageThreshold || 0) })}
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                  <button onClick={() => setRothAnswer("yes")} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.accent}`, background: rothAnswer === "yes" ? C.accent : "transparent", color: rothAnswer === "yes" ? "#fff" : C.calcText, fontFamily: F.body, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t.calcRothBtnYes}</button>
-                  <button onClick={() => setRothAnswer("no")} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.accent}`, background: rothAnswer === "no" ? C.accent : "transparent", color: rothAnswer === "no" ? "#fff" : C.calcText, fontFamily: F.body, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t.calcRothBtnNo}</button>
-                  <button onClick={() => setRothAnswer("notsure")} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.accent}`, background: rothAnswer === "notsure" ? C.accent : "transparent", color: rothAnswer === "notsure" ? "#fff" : C.calcText, fontFamily: F.body, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t.calcRothBtnNotSure}</button>
-                </div>
-                <div style={{ fontSize: 12, color: C.calcText, lineHeight: 1.5, marginBottom: 8 }}>
-                  {rothMessage}
-                </div>
-                <div style={{ fontSize: 10, color: C.calcMuted }}>{t.calcRothFooter}</div>
-              </div>
-            )}
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10, lineHeight: 1.5 }}>
+          {r.taxType.regular.traditional && r.taxType.regular.roth
+            ? t.calc2BothOffered
+            : r.taxType.regular.roth
+              ? t.calc2RothOnlyNote
+              : t.calc2TraditionalOnlyNote}
+          {r.catchUpRaw > 0 && (
+            <>
+              {" "}
+              {r.rothBlocked
+                ? t.calc2CatchUpBlockedNote
+                : r.overRothLine
+                  ? t.calc2CatchUpOverLineNote
+                  : t.calc2CatchUpEitherNote}
+            </>
+          )}
+        </div>
+      </div>
 
-            {/* Summary totals — only your contribution + safe harbor */}
-            <div style={{ display: "grid", gridTemplateColumns: hasSH ? "1fr 1fr 1.3fr 1fr" : "1fr 1.3fr 1fr", gap: 8, marginBottom: 10 }}>
-              <div style={{ padding: "10px 12px", borderRadius: 10, background: "#FFFFFF", border: `1px solid ${C.calcCardBorder}` }}>
-                <div style={{ fontSize: 9, color: C.calcMuted, marginBottom: 3, textTransform: "uppercase", letterSpacing: ".04em" }}>{t.calcYourContrib}</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: C.calcText }}>{fmtRounded(empContrib)}</div>
-              </div>
-              {hasSH && <div style={{ padding: "10px 12px", borderRadius: 10, background: "#E8F8EF", border: `1px solid #B8DFC9` }}>
-                <div style={{ fontSize: 9, color: "#3D7A55", marginBottom: 3, textTransform: "uppercase", letterSpacing: ".04em" }}>Safe Harbor</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: "#1A5C37" }}>{fmtRounded(shAmt)}</div>
-              </div>}
-              <div style={{ padding: "10px 12px", borderRadius: 10, background: "#FFF8EB", border: `1px solid #EBD9A8` }}>
-                <div style={{ fontSize: 9, color: C.calcMuted, marginBottom: 3, textTransform: "uppercase", letterSpacing: ".04em" }}>{hasSH ? (lang === "es" ? "Total Garantizado / Año" : "Guaranteed Total / Year") : t.calcTotal}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#8B6914" }}>{fmtRounded(total)}</div>
-                {!noMatch && <div style={{ fontSize: 9, color: C.calcMuted, marginTop: 2 }}>{lang === "es" ? "+ match discrecional (no calculado)" : "+ discretionary match (not calculated)"}</div>}
-              </div>
-              <div style={{ padding: "10px 12px", borderRadius: 10, background: "#FFFFFF", border: `1px solid ${C.calcCardBorder}` }}>
-                <div style={{ fontSize: 9, color: C.calcMuted, marginBottom: 3, textTransform: "uppercase", letterSpacing: ".04em" }}>{t.calcPerPaycheck}</div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: C.calcText }}>{fmtDollars(perPaycheck)}</div>
-              </div>
-            </div>
-
-            <div style={{ fontSize: 10, color: C.calcMuted, lineHeight: 1.6, marginTop: 6 }}>
-              <p style={{ margin: "0 0 4px" }}>{secureNote}</p>
-              {lastDayProvision !== null && <p style={{ margin: "0 0 4px", color: lastDayProvision ? "#B84A3A" : C.calcMuted }}>
-                {lastDayProvision ? t.calcLastDayYes : t.calcLastDayNo}
-              </p>}
-              <p style={{ margin: 0, color: "#9A8E7F" }}>{t.calcNote}</p>
-            </div>
-          </>}
+      {/* ── Roth catch-up rule box ── */}
+      {r.band !== null && limits.rothCatchUpWageThreshold !== null && (
+        <div style={{
+          marginTop: 16, padding: 16, borderRadius: 12,
+          background: rothBoxTone === "green" ? C.greenSoft : rothBoxTone === "orange" ? C.warningDim : C.dangerSoft,
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 6 }}>
+            {tpl(t.calc2RothBoxTitle, { year: limitYear.year })}
+          </div>
+          <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>
+            {rothBoxTone === "green" && tpl(t.calc2RothBoxGreen, { salary: fmtRounded(salary), threshold: fmtRounded(limits.rothCatchUpWageThreshold) })}
+            {rothBoxTone === "orange" && tpl(t.calc2RothBoxOrange, { salary: fmtRounded(salary), threshold: fmtRounded(limits.rothCatchUpWageThreshold), catchUp: fmtRounded(r.catchUpRaw), deferral: fmtRounded(limits.base) })}
+            {rothBoxTone === "red" && tpl(t.calc2RothBoxRed, { salary: fmtRounded(salary), threshold: fmtRounded(limits.rothCatchUpWageThreshold), year: limitYear.year, deferral: fmtRounded(limits.base) })}
+          </div>
+          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 8, lineHeight: 1.4 }}>{t.calc2RothBoxFooter}</div>
         </div>
       )}
+
+      {/* ── Prior-plan checkbox ── */}
+      <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", minHeight: 44 }}>
+          <input type="checkbox" checked={priorChecked} onChange={(e) => setPriorChecked(e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>{tpl(t.calc2PriorCheckbox, { year: limitYear.year })}</span>
+        </label>
+        {priorChecked && (
+          <div style={{ marginTop: 12 }}>
+            <label style={label11}>{tpl(t.calc2PriorAmountLabel, { year: limitYear.year })}</label>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, fontSize: 16 }}>$</span>
+              <input
+                type="number" min={0} value={priorAmount}
+                onChange={(e) => setPriorAmount(Math.max(0, +e.target.value))}
+                style={{ ...inputBase, paddingLeft: 24 }}
+              />
+            </div>
+            <div style={{ fontSize: 11, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2PriorHelper}</div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginTop: 12 }}>
+              <span>{t.calc2PriorUsedRow}</span>
+              <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>−{fmtRounded(r.priorUsed)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginTop: 6 }}>
+              <span>{tpl(t.calc2PriorRoomRow, { year: limitYear.year })}</span>
+              <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtRounded(r.room)}</span>
+            </div>
+            {r.priorOver && (
+              <div style={{ fontSize: 12, color: C.danger, marginTop: 10, lineHeight: 1.4 }}>
+                {tpl(t.calc2PriorOverNote, { year: limitYear.year, year1: limitYear.year + 1 })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── Card 3 — How much of your pay you save ──
+  const SaveCard = (
+    <div style={card}>
+      <div style={heading}>{t.calc2SaveTitle}</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 8 }}>
+        <button
+          aria-label={t.calc2MinusAria}
+          onClick={() => setPct((p) => Math.max(0, p - 1))}
+          style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${C.inputBorder}`, background: "#FFFFFF", cursor: "pointer", fontSize: 20, color: C.text }}
+        >−</button>
+        <div style={{ fontFamily: F.display, fontSize: 40, fontWeight: 700, color: C.accentText, minWidth: 90, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>{pct}%</div>
+        <button
+          aria-label={t.calc2PlusAria}
+          onClick={() => setPct((p) => Math.min(30, p + 1))}
+          style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${C.inputBorder}`, background: "#FFFFFF", cursor: "pointer", fontSize: 20, color: C.text }}
+        >+</button>
+      </div>
+      <input
+        type="range" min={0} max={30} step={1} value={pct}
+        onChange={(e) => setPct(+e.target.value)}
+        style={{ width: "100%", height: 10, cursor: "pointer", accentColor: C.accent }}
+      />
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textDim, marginTop: 4 }}><span>0%</span><span>30%</span></div>
+
+      {matchHint && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 12, lineHeight: 1.4 }}>{matchHint}</div>}
+
+      <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: C.textMuted, marginBottom: 6 }}>
+          <span>{t.calc2LimitUsedLabel}</span>
+          <span style={{ fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums" }}>{tpl(t.calc2LimitUsedValue, { you: fmtRounded(r.you), room: fmtRounded(r.room) })}</span>
+        </div>
+        <div style={{ height: 10, background: C.surfaceAlt, borderRadius: 6, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${r.room > 0 ? Math.min((r.you / r.room) * 100, 100) : 0}%`, background: r.hitsLimit ? C.warning : C.accent, borderRadius: 6, transition: "width .3s ease" }} />
+        </div>
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 8, lineHeight: 1.4 }}>
+          {r.room === 0
+            ? tpl(t.calc2LimitUsedNoRoom, { year: limitYear.year })
+            : r.hitsLimit
+              ? tpl(t.calc2LimitUsedHits, { pct, year: limitYear.year, n: r.hitAtPaycheck, payPeriods: pp })
+              : tpl(t.calc2LimitUsedElse, { n: pctOfLimitUsed, pctToMax: r.pctToMax ?? 0 })}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Card 4 — Result ──
+  const ResultCard = (
+    <div style={card}>
+      <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 4 }}>{hasSH ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly}</div>
+      <div style={{ fontFamily: F.display, fontSize: wide ? 64 : 48, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums" }}>
+        {fmtRounded(r.total)} <span style={{ fontSize: 16, fontWeight: 500, color: C.textMuted }}>{t.calc2PerYear}</span>
+      </div>
+
+      <div style={{ height: 10, borderRadius: 6, overflow: "hidden", display: "flex", marginTop: 12, marginBottom: 10 }}>
+        <div style={{ width: `${r.total > 0 ? (r.you / r.total) * 100 : 0}%`, background: C.accent }} />
+        <div style={{ width: `${r.total > 0 ? (r.employer / r.total) * 100 : 0}%`, background: C.green }} />
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginBottom: 4 }}>
+        <span>{t.calc2FromYou}</span>
+        <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtRounded(r.you)}</span>
+      </div>
+      {hasSH && (
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginBottom: 4 }}>
+          <span>{t.calc2FromEmployer}</span>
+          <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtRounded(r.employer)}</span>
+        </div>
+      )}
+      {hasDiscretionaryMatch && (
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, lineHeight: 1.4 }}>{t.calc2DiscretionaryExtra}</div>
+      )}
+      {!hasSH && !hasDiscretionaryMatch && (
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, lineHeight: 1.4 }}>{t.calc2NoEmployerMoney}</div>
+      )}
+      {r.overTotalLimit && (
+        <div style={{ fontSize: 12, color: C.danger, marginTop: 8, lineHeight: 1.4 }}>{getTerm("totalLimit", lang).def}</div>
+      )}
+
+      <div style={{ marginTop: 16, padding: 14, borderRadius: 10, background: C.accentSoft, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+        <span style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{t.calc2PerPaycheckLabel}</span>
+        <span style={{ fontSize: 18, fontWeight: 700, color: C.accentText, fontVariantNumeric: "tabular-nums" }}>{fmtDollars(r.perPaycheck)}</span>
+      </div>
+      {r.hitsLimit && (
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 8, lineHeight: 1.4 }}>
+          {tpl(t.calc2PerPaycheckHits, { n: r.hitAtPaycheck, payPeriods: pp, year: limitYear.year })}
+        </div>
+      )}
+
+      <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.5, marginTop: 16 }}>
+        <p style={{ margin: "0 0 6px" }}>{tpl(t.calc2NoteAssumesFullYear, { year: limitYear.year })}</p>
+        {hasSH && <p style={{ margin: "0 0 6px" }}>{t.calc2NoteSafeHarborTiming}</p>}
+        {(hasSH || hasDiscretionaryMatch) && (
+          <p style={{ margin: 0 }}>
+            {t.calc2NoteWaitPeriod}{" "}
+            <button onClick={onOpenEligibility} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: C.accentText, textDecoration: "underline dotted", fontFamily: F.body, fontSize: 11 }}>
+              {t.calc2CheckEligibilityLink}
+            </button>
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── Card 5 — Good to know about your plan ──
+  const infoRows = [];
+  if (hasSH) {
+    infoRows.push({
+      key: "safeHarbor",
+      title: t.calc2RowGuaranteedTitle,
+      chip: { label: t.calc2ChipGuaranteed, bg: C.greenSoft, fg: C.green },
+      body: `${shLabel(sh, lang)} ${t.calc2VestedNote}`,
+    });
+  }
+  if (hasDiscretionaryMatch) {
+    infoRows.push({
+      key: "discretionary",
+      title: t.calc2RowDiscretionaryTitle,
+      chip: { label: t.calc2ChipNotGuaranteed, bg: C.warningDim, fg: C.warning },
+      body: getTerm("discretionaryMatch", lang).def + (lastDayProvision ? " " + t.calc2LastDayNote : ""),
+    });
+  }
+  if (!hasSH && !hasDiscretionaryMatch) {
+    infoRows.push({
+      key: "none",
+      title: t.calc2RowNoneTitle,
+      chip: { label: t.calc2ChipNone, bg: C.surfaceAlt, fg: C.textMuted },
+      body: "",
+    });
+  }
+  if (salary > limits.compLimit) {
+    infoRows.push({
+      key: "payLimit",
+      title: t.calc2RowPayLimitTitle,
+      chip: { label: fmtRounded(limits.compLimit), bg: C.accentSoft, fg: C.accentText },
+      body: getTerm("payLimit", lang).def,
+    });
+  }
+  if (!hasSH && salary > limits.hceThreshold) {
+    infoRows.push({
+      key: "hce",
+      title: t.calc2RowHceTitle,
+      chip: { label: t.calc2ChipMayApply, bg: C.warningDim, fg: C.warning },
+      body: getTerm("hce", lang).def,
+    });
+  }
+
+  const GoodToKnowCard = (
+    <div style={card}>
+      <div style={heading}>{t.calc2GoodToKnowTitle}</div>
+      {infoRows.map((row) => {
+        const open = openInfoRow === row.key;
+        return (
+          <div key={row.key} style={{ borderTop: `1px solid ${C.border}` }}>
+            <button
+              onClick={() => toggleInfoRow(row.key)}
+              aria-expanded={open}
+              style={{
+                width: "100%", minHeight: 52, display: "flex", alignItems: "center", justifyContent: "space-between",
+                background: "none", border: "none", cursor: "pointer", fontFamily: F.body, textAlign: "left", padding: "10px 0", gap: 10,
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{row.title}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: row.chip.bg, color: row.chip.fg }}>{row.chip.label}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </span>
+            </button>
+            {open && row.body && (
+              <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, paddingBottom: 14 }}>{row.body}</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const Footer = (
+    <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.5, padding: "0 4px" }}>{t.calc2Footer}</div>
+  );
+
+  return (
+    <div ref={rootRef} style={{ flex: 1, overflowY: "auto", background: C.bg, padding: "20px 16px 40px" }}>
+      <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>{t.calc2Title}</h2>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 12, color: C.textDim }}>{tpl(t.calc2LimitsYear, { year: limitYear.year })}</div>
+            {limitYear.isFallback && <div style={{ fontSize: 11, color: C.warning, marginTop: 2 }}>{tpl(t.calc2LimitsFallback, { currentYear })}</div>}
+          </div>
+        </div>
+
+        <div style={wide
+          ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }
+          : { display: "flex", flexDirection: "column", gap: 16 }
+        }>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {StartWithYou}
+            {LimitCard}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {SaveCard}
+            {ResultCard}
+            {GoodToKnowCard}
+            {Footer}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// column: 'traditional' | 'roth' — determines the wording when the option isn't available.
+function TaxCell({ ok, unavailable, column, hasPreTaxUnknown, t }) {
+  if (unavailable) {
+    return <div style={{ fontSize: 12, fontWeight: 600, color: C.danger, textAlign: "center" }}>{t.calc2NotAvailable}</div>;
+  }
+  if (column === "traditional" && hasPreTaxUnknown) {
+    return <div style={{ fontSize: 12, fontWeight: 600, color: C.green, textAlign: "center" }}>{t.calc2Likely}</div>;
+  }
+  if (ok) {
+    return <div style={{ fontSize: 12, fontWeight: 600, color: C.green, textAlign: "center" }}>{t.calc2Yes}</div>;
+  }
+  return <div style={{ fontSize: 12, fontWeight: 600, color: C.danger, textAlign: "center" }}>{column === "traditional" ? t.calc2RothOnly : t.calc2NotOffered}</div>;
+}
+
+function Bubble({ text, onClose, closeLabel }) {
+  return (
+    <div style={{
+      position: "absolute", top: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)",
+      width: 240, maxWidth: "80vw", background: C.text, color: C.surface, borderRadius: 12,
+      padding: "12px 14px", fontSize: 12, lineHeight: 1.5, zIndex: 30, boxShadow: "0 8px 24px rgba(0,0,0,.25)",
+    }}>
+      <div style={{
+        position: "absolute", top: -6, left: "50%", transform: "translateX(-50%) rotate(45deg)",
+        width: 12, height: 12, background: C.text,
+      }} />
+      <button
+        onClick={onClose}
+        aria-label={closeLabel}
+        style={{ position: "absolute", top: 6, right: 8, background: "none", border: "none", color: C.surface, cursor: "pointer", fontSize: 14, padding: 4, lineHeight: 1 }}
+      >
+        ✕
+      </button>
+      <div style={{ paddingRight: 16 }}>{text}</div>
     </div>
   );
 }
