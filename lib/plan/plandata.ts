@@ -28,6 +28,12 @@ export interface ContribEligibility {
   autoEnrollPct: number;
 }
 
+export interface MatchEligibility {
+  requirement?: string;
+  entryDates?: string;
+  immediateMatch: boolean | null;
+}
+
 export interface PlanData {
   planName?: string;
   ein?: string;
@@ -40,10 +46,11 @@ export interface PlanData {
   safeHarbor: SafeHarbor;
   profitSharing: ProfitSharing;
   contribEligibility: ContribEligibility;
-  matchEligibility?: any;
+  matchEligibility: MatchEligibility;
   loanAvailable: boolean | null;
   hardshipAvailable: boolean | null;
   hasRoth: boolean | null;
+  hasPreTax: boolean | null;
   rothAvailable: boolean | null;
   planAllowsCatchUp: boolean | null;
   vestingSchedule?: string;
@@ -132,6 +139,7 @@ export function normalizePlanData(raw: any): PlanData | null {
   const sh = raw.safeHarbor && typeof raw.safeHarbor === 'object' ? raw.safeHarbor : {};
   const ps = raw.profitSharing && typeof raw.profitSharing === 'object' ? raw.profitSharing : {};
   const ce = raw.contribEligibility && typeof raw.contribEligibility === 'object' ? raw.contribEligibility : {};
+  const me = raw.matchEligibility && typeof raw.matchEligibility === 'object' ? raw.matchEligibility : {};
 
   return {
     // identity
@@ -164,12 +172,18 @@ export function normalizePlanData(raw: any): PlanData | null {
       autoEnroll: toBool(ce.autoEnroll, false),
       autoEnrollPct: typeof ce.autoEnrollPct === 'number' ? ce.autoEnrollPct : 0,
     },
-    matchEligibility: raw.matchEligibility ?? undefined,
+    matchEligibility: {
+      requirement: typeof me.requirement === 'string' ? me.requirement.trim() : undefined,
+      entryDates: typeof me.entryDates === 'string' ? me.entryDates.trim() : undefined,
+      immediateMatch: toBool(me.immediateMatch, null),
+    },
     // features — booleans coerced
     loanAvailable: toBool(raw.loanAvailable, null),
     hardshipAvailable: toBool(raw.hardshipAvailable, null),
     // rothAvailable / hasRoth — accept either field name
     hasRoth: toBool(raw.hasRoth ?? raw.rothAvailable, false),
+    // do NOT default to true — an unknown answer must stay unknown
+    hasPreTax: toBool(raw.hasPreTax, null),
     rothAvailable: toBool(raw.rothAvailable ?? raw.hasRoth, false),
     planAllowsCatchUp: toBool(raw.planAllowsCatchUp, true),
     // vesting — must be a string

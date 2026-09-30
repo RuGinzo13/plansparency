@@ -85,6 +85,11 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [activeTab, setActiveTab] = useState("dashboard");
   const [planData, setPlanData] = useState(initialPlanData);
   const [planGuideTab, setPlanGuideTab] = useState<"guide" | "investments">("guide");
+  // Lifted out of PlanDashboard so openEligibility() can expand the section
+  // that holds "When Can You Start?" from outside the dashboard.
+  const [dashboardCollapsedSections, setDashboardCollapsedSections] = useState<Record<string, boolean>>({
+    yourMoney: true, companyMoney: true, whileEmployed: true, afterEmployment: true,
+  });
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0); // 0-100 during upload phase
@@ -287,6 +292,16 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setFileName(""); setInput(""); setLoading(false); setCalcExpanded(false);
     setStreamingText(''); setStagedFiles([]); pendingFilesRef.current = []; fileIdsRef.current = [];
     setDocType(null); setStage(STAGE.CHOOSER);
+  };
+
+  // Jumps to the Plan Guide's "When Can You Start?" tile from anywhere (e.g. the calculator).
+  const openEligibility = () => {
+    setActiveTab("dashboard");
+    setPlanGuideTab("guide");
+    setDashboardCollapsedSections(prev => ({ ...prev, yourMoney: false }));
+    setTimeout(() => {
+      document.getElementById("when-can-you-start")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
   };
 
   // Supplemental upload: user already in APP/stmtDashboard — skip privacy, append fileId, ask Claude to review new doc
@@ -683,14 +698,14 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
               hasFunds={(planData?.fundsData || []).length > 0}
             />
             {planGuideTab === "guide" && (
-              <PlanDashboard t={t} planData={planData} lang={lang} onSectionClick={(prompt) => sendMessage(prompt)} onChat={() => setActiveTab("chat")} onUploadAnother={startFreshUpload} />
+              <PlanDashboard t={t} planData={planData} lang={lang} onSectionClick={(prompt) => sendMessage(prompt)} onChat={() => setActiveTab("chat")} onUploadAnother={startFreshUpload} collapsedSections={dashboardCollapsedSections} setCollapsedSections={setDashboardCollapsedSections} />
             )}
             {planGuideTab === "investments" && (
               <InvestmentsPanel fundsData={planData?.fundsData || []} lang={lang} />
             )}
           </>
         )}
-        {activeTab === "calculator" && <CalcPanel t={t} planData={planData} expanded={true} setExpanded={() => {}} lang={lang} asTab={true} />}
+        {activeTab === "calculator" && <CalcPanel t={t} planData={planData} expanded={true} setExpanded={() => {}} lang={lang} asTab={true} onOpenEligibility={openEligibility} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} />}
         {activeTab === "chat" && chatPanel}
 

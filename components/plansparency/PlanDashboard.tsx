@@ -1,10 +1,10 @@
 // @ts-nocheck
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { C, F } from './theme';
 
-export function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, lang }) {
+export function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAnother, lang, collapsedSections, setCollapsedSections }) {
   const pd = planData || {};
   const tiers = pd.matchTiers || [];
   const noMatch = pd.noMatch || tiers.length === 0;
@@ -119,22 +119,34 @@ export function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAno
         : "Explain the vesting schedule. Clearly distinguish: which contributions are immediately vested (like safe harbor) and which follow a vesting schedule (like discretionary match and profit sharing)? What happens if I leave before I'm fully vested?",
     });
 
-    list.push({
-      id: "eligContrib", emoji: "🚪",
-      title: es ? "¿Cuándo Puedes Empezar?" : "When Can You Start?",
-      status: pd.contribEligibility?.requirement || (es ? "Ver documento" : "See your document"),
-      desc: pd.contribEligibility?.autoEnroll
+    {
+      const me = pd.matchEligibility || {};
+      const matchEligLine = me.requirement
         ? (es
-            ? `Te inscribieron automáticamente al ${pd.contribEligibility.autoEnrollPct}%. Puedes cambiar esto.`
-            : `You were auto-enrolled at ${pd.contribEligibility.autoEnrollPct}%. You can change this anytime.`)
-        : (es
-            ? "Hay requisitos de edad y tiempo de servicio antes de poder unirte."
-            : "There are age and service requirements before you can join the plan."),
-      accent: C.accent, bg: C.accentDim,
-      prompt: es
-        ? "Explícame la elegibilidad para contribuir al plan. ¿Cuáles son los requisitos de edad y servicio? ¿Cuándo puedo empezar a aportar mi propio dinero?"
-        : "Explain contribution eligibility for this plan. What are the age and service requirements? When can I start contributing my own money?",
-    });
+            ? `El dinero del empleador empieza: ${me.requirement}${me.entryDates ? ` (entrada: ${me.entryDates})` : ""}`
+            : `Employer money starts: ${me.requirement}${me.entryDates ? ` (entry: ${me.entryDates})` : ""}`)
+        : me.immediateMatch === true
+          ? (es ? "El dinero del empleador empieza de inmediato." : "Employer money starts right away.")
+          : (es ? "Dinero del empleador: consulta tu documento del plan." : "Employer money: see your plan document.");
+
+      list.push({
+        id: "eligContrib", emoji: "🚪",
+        title: es ? "¿Cuándo Puedes Empezar?" : "When Can You Start?",
+        status: pd.contribEligibility?.requirement || (es ? "Ver documento" : "See your document"),
+        desc: (pd.contribEligibility?.autoEnroll
+          ? (es
+              ? `Te inscribieron automáticamente al ${pd.contribEligibility.autoEnrollPct}%. Puedes cambiar esto.`
+              : `You were auto-enrolled at ${pd.contribEligibility.autoEnrollPct}%. You can change this anytime.`)
+          : (es
+              ? "Hay requisitos de edad y tiempo de servicio antes de poder unirte."
+              : "There are age and service requirements before you can join the plan.")
+        ) + "\n" + matchEligLine,
+        accent: C.accent, bg: C.accentDim,
+        prompt: es
+          ? "Explícame la elegibilidad para contribuir al plan. ¿Cuáles son los requisitos de edad y servicio? ¿Cuándo puedo empezar a aportar mi propio dinero?"
+          : "Explain contribution eligibility for this plan. What are the age and service requirements? When can I start contributing my own money?",
+      });
+    }
 
     list.push({
       id: "roth", emoji: "☀️",
@@ -230,10 +242,9 @@ export function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAno
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planData, lang]);
 
-  // All sections start collapsed; user taps header to expand
-  const [collapsedSections, setCollapsedSections] = useState<Record<string,boolean>>({
-    yourMoney: true, companyMoney: true, whileEmployed: true, afterEmployment: true,
-  });
+  // collapsedSections/setCollapsedSections are owned by PlansparencyApp so the
+  // calculator's "Check when you qualify" link can expand a section from
+  // outside the dashboard. All sections start collapsed; user taps header to expand.
   const toggleSection = (key: string) =>
     setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -274,7 +285,7 @@ export function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAno
   ];
 
   const renderTile = (tile) => (
-    <button key={tile.id} onClick={() => onSectionClick(tile.prompt)} style={{
+    <button key={tile.id} id={tile.id === "eligContrib" ? "when-can-you-start" : undefined} onClick={() => onSectionClick(tile.prompt)} style={{
       background: C.surface, border: `1.5px solid ${tile.accent}28`, borderRadius: 16,
       padding: "14px 12px", cursor: "pointer", fontFamily: F.body,
       textAlign: "left", transition: "all .2s", display: "flex",
@@ -288,7 +299,7 @@ export function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAno
         <div style={{ fontSize: 9, fontWeight: 700, color: tile.accent, background: `${tile.accent}14`, border: `1px solid ${tile.accent}28`, borderRadius: 20, padding: "3px 7px", maxWidth: "56%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", alignSelf: "flex-start", marginTop: 2 }}>{tile.status}</div>
       </div>
       <div style={{ fontSize: 12, fontWeight: 700, color: C.text, lineHeight: 1.3 }}>{tile.title}</div>
-      <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5 }}>{tile.desc}</div>
+      <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5, whiteSpace: "pre-line" }}>{tile.desc}</div>
       <div style={{ fontSize: 10, fontWeight: 700, color: tile.accent, display: "flex", alignItems: "center", gap: 3 }}>
         {es ? "Toca para saber más" : "Tap to learn more"}
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
