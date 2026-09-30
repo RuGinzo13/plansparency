@@ -528,3 +528,10 @@ The addressable sections of the app — superseded by the updated Component Map 
 **Why:** Auto mode depends on a classifier that was down today; Manual mode needs clicks; `bypassPermissions` skips every safeguard on Ross's own Mac. An allowlist + deny list gives unattended runs with hard stops on the dangerous commands.
 **What was rejected:** `bypassPermissions` (no guardrails, not in an isolated machine); relying on auto mode (outage-prone).
 
+---
+
+## September 29, 2026 — Calculator Redesign Approved; One Glossary
+**What was decided:** Ross approved the calculator mockup (Design canvas "Calculator Redesign", phone + web) and asked to implement it now and revisit later (#23). Order: about you (age, pay, pay frequency) → your {year} limit (regular, catch-up, super catch-up, Traditional/Roth table with definition bubbles, Roth catch-up rule, prior-plan checkbox) → save slider → result (you + guaranteed employer; per-paycheck = employee only; full-year, timing and eligibility notes) → plan details. Web = two columns. Ask for **age at Dec 31**, not date of birth (less personal data; limits only depend on age). Roth catch-up rule is estimated from the pay entered and always says "likely" plus the W-2 Box 3 caveat. Discretionary match is never calculated. Definitions and key terms must be consistent everywhere: one glossary (`lib/glossary.ts`) with IRS amounts filled from the yearly limits file. Also built: Design System artifact "Plansparency" (tokens from `theme.ts`, flagged issues, proposed fixes).
+**Why:** The old calculator buried the answer and repeated numbers; Key Terms still showed 2025 limits and had advice-style lines ("good choice if").
+**What was rejected:** full date of birth; a separate Roth yes/no question as the only input (replaced by the salary-based estimate); Figma/Canva/v0 as a design source (second source of truth).
+

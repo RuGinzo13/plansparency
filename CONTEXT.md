@@ -404,3 +404,11 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 ---
 
 *Single source of truth for build state. Edited in place in the repo; mirrored to the claude.ai project.*
+
+---
+
+## Design References (added Sept 29, 2026)
+- **Design System "Plansparency"** (claude.ai artifact, Ross's gallery): colors, type, spacing and core components exactly as `components/plansparency/theme.ts` had them at `e573bf2`, with contrast problems flagged and fixes proposed. PHASE-07 applies most fixes; update the artifact after it lands.
+- **Design canvas "Calculator Redesign"** (claude.ai artifact): approved clickable mockup, phone + web boards. Source for PHASE-07 Step 6. Revisit per OPEN-ITEMS #23.
+- **Definitions:** after PHASE-07, `lib/glossary.ts` is the only place a term is defined (Key Terms, calculator bubbles, Plan Guide wording). IRS amounts in definitions come from `lib/plan/irs-limits.ts`.
+

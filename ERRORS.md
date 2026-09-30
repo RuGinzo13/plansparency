@@ -311,3 +311,10 @@ One new entry: the keep-alive that was supposed to stop Supabase pausing never w
 **What worked:** A plain database read (`select plan_name from plans`) surfaced both. Rows deleted Sept 28 with Ross's confirmation; PDF cleanup + Files API expiry/cleanup in PHASE-04/05.
 **Note for next time:** Every session that touches storage should list what's stored and check it against the test-document list. A privacy claim ("we don't store anything") must be checked against every service the file passes through, not just our own database.
 
+---
+
+## PHASE-06 Didn't Commit `.claude/settings.json` + Stale Key Terms — found Sept 29, 2026
+**What didn't work:** PHASE-06 Step 5 said to stage `.claude/settings.json`; it is still untracked after the phase (Claude Code skipped it and nobody checked). Separately, Key Terms had the 2025 limits typed into the definitions, so it showed wrong numbers all through 2026, and `KeyTermsPanel` used `F.head`, which doesn't exist in `theme.ts`.
+**What worked:** Found by reading the repo while planning PHASE-07; PHASE-07 Step 1 commits the file and Step 2 moves every definition into one glossary filled from the yearly limits table.
+**Note for next time:** After each phase, Cowork runs `git status` and checks that every file the last step named is actually committed. Never type a dollar limit into copy; read it from the limits table.
+
