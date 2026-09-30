@@ -4,7 +4,7 @@ import { parsePlanData, stripPlanData } from '@/lib/plan/plandata';
 import { endSessionFiles } from '@/lib/client/session';
 
 const C = { bg: '#0F1621', surface: '#1A2333', border: '#2A3A50', accent: '#B8860B', accentDim: 'rgba(184,134,11,.15)', text: '#F4EFE6', muted: '#8A9BB0', danger: '#B83232' };
-const F = "'DM Sans','Segoe UI',sans-serif";
+const F = "var(--font-body), 'Segoe UI', system-ui, sans-serif";
 const btn = { border: 'none', cursor: 'pointer', fontFamily: F, fontWeight: 600, borderRadius: 10, transition: 'all .15s' } as const;
 
 const FIRST_MSG = `I just uploaded my 401(k) plan document. Please read through it and give me a brief welcome summary — plan name, employer contribution types (distinguish safe harbor from discretionary match and profit sharing), vesting schedule, and one standout feature. Mention Roth and catch-up availability.
@@ -105,7 +105,7 @@ export default function AdvisorPage() {
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: F, padding: '40px 24px' }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond',Georgia,serif", fontSize: 28, fontWeight: 700, margin: 0 }}>Your Plans</h1>
+          <h1 style={{ fontFamily: "var(--font-display), Georgia, serif", fontSize: 28, fontWeight: 700, margin: 0 }}>Your Plans</h1>
           <button onClick={() => setHasToken(false)} style={{ ...btn, padding: '9px 18px', fontSize: 13, background: C.accentDim, color: C.accent, border: `1px solid ${C.accent}40` }}>+ Upload Another Plan</button>
         </div>
         {plans.length === 0 && <p style={{ color: C.muted }}>No plans uploaded yet.</p>}
@@ -131,7 +131,7 @@ export default function AdvisorPage() {
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: F, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 520 }}>
-        <h1 style={{ fontFamily: "'Cormorant Garamond',Georgia,serif", fontSize: 32, fontWeight: 700, textAlign: 'center', margin: '0 0 10px' }}>Upload a Plan</h1>
+        <h1 style={{ fontFamily: "var(--font-display), Georgia, serif", fontSize: 32, fontWeight: 700, textAlign: 'center', margin: '0 0 10px' }}>Upload a Plan</h1>
         <p style={{ color: C.muted, textAlign: 'center', fontSize: 14, lineHeight: 1.6, margin: '0 0 32px' }}>Upload your client's plan document. We'll read it and generate a shareable link for their participants.</p>
 
         {status ? (

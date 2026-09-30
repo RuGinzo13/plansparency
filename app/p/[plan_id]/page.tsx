@@ -27,7 +27,7 @@ function PlanNotFound({ note }: { note?: string }) {
       alignItems: 'center',
       justifyContent: 'center',
       padding: 40,
-      fontFamily: "'DM Sans','Segoe UI',sans-serif",
+      fontFamily: "var(--font-body), 'Segoe UI', system-ui, sans-serif",
     }}>
       <p style={{ fontSize: 16, color: '#F4EFE6', textAlign: 'center', maxWidth: 420, lineHeight: 1.6, margin: 0 }}>
         Plan not found. Ask your plan advisor for the correct link.
