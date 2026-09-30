@@ -3,16 +3,18 @@
 
 import React from 'react';
 import { C, F } from './theme';
+import { getGlossary } from '@/lib/glossary';
 
-export function KeyTermsPanel({ t }) {
+export function KeyTermsPanel({ t, lang }) {
   const [openIndex, setOpenIndex] = React.useState(null);
+  const terms = getGlossary(lang);
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 32px" }}>
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: C.text, fontFamily: F.head }}>{t.keyTermsTitle}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: C.text, fontFamily: F.display }}>{t.keyTermsTitle}</div>
         <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>{t.keyTermsSubtitle}</div>
       </div>
-      {t.keyTerms.map((item, i) => {
+      {terms.map((item, i) => {
         const open = openIndex === i;
         return (
           <div key={i} style={{

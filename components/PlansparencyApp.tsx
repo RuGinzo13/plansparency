@@ -691,7 +691,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           </>
         )}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} expanded={true} setExpanded={() => {}} lang={lang} asTab={true} />}
-        {activeTab === "keyterms" && <KeyTermsPanel t={t} />}
+        {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} />}
         {activeTab === "chat" && chatPanel}
 
         {activeTab !== "chat" && (

@@ -141,8 +141,8 @@ export function PlanDashboard({ t, planData, onSectionClick, onChat, onUploadAno
       title: es ? "¿Pagar Impuestos Ahora o Después?" : "Pay Taxes Now or Later?",
       status: planHasRoth ? (es ? "Roth disponible ✓" : "Roth available ✓") : (es ? "Solo pre-impuesto" : "Pre-tax only"),
       desc: es
-        ? "Pre-impuesto: pagas al retirar. Roth: pagas ahora, retiras libre de impuestos después."
-        : "Pre-tax: pay taxes when you withdraw. Roth: pay now, then withdraw tax-free in retirement.",
+        ? "Tradicional: pagas impuestos cuando retiras. Roth: pagas ahora, los retiros calificados después pueden ser libres de impuestos."
+        : "Traditional: taxed when you take it out. Roth: taxed now, qualified withdrawals later can be tax-free.",
       accent: planHasRoth ? C.green : C.textDim,
       bg: planHasRoth ? C.greenDim : "rgba(154,136,120,.08)",
       prompt: es
