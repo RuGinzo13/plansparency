@@ -2,17 +2,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { parsePlanData, stripPlanData } from '@/lib/plan/plandata';
 import { endSessionFiles } from '@/lib/client/session';
+import { i18n } from '@/lib/i18n';
 
 const C = { bg: '#0F1621', surface: '#1A2333', border: '#2A3A50', accent: '#B8860B', accentDim: 'rgba(184,134,11,.15)', text: '#F4EFE6', muted: '#8A9BB0', danger: '#B83232' };
 const F = "var(--font-body), 'Segoe UI', system-ui, sans-serif";
 const btn = { border: 'none', cursor: 'pointer', fontFamily: F, fontWeight: 600, borderRadius: 10, transition: 'all .15s' } as const;
-
-const FIRST_MSG = `I just uploaded my 401(k) plan document. Please read through it and give me a brief welcome summary — plan name, employer contribution types (distinguish safe harbor from discretionary match and profit sharing), vesting schedule, and one standout feature. Mention Roth and catch-up availability.
-
-IMPORTANT — include at the very end of your response a hidden data block on its own line in this EXACT format:
-<!--PLANDATA:{"matchTiers":[{"pct":100,"upTo":4}],"hasRoth":true,"planAllowsCatchUp":true,"noMatch":false,"recordkeeperUrl":"https://www.example.com","recordkeeperName":"Example","lastDayProvision":false,"planName":"Example 401(k) Plan","ein":"","planNumber":"","contribEligibility":{"requirement":"Age 21 and 1 year of service","entryDates":"First of month after eligibility","autoEnroll":false,"autoEnrollPct":0},"matchEligibility":{"requirement":"1 year of service","entryDates":"Same as contribution eligibility","immediateMatch":false},"vestingSchedule":"6-year graded: 20% per year","loanAvailable":true,"rothAvailable":true,"hardshipAvailable":true,"investmentOptions":"Self-directed with target-date funds","distributionInfo":{"inServiceAge":59.5,"rmdAge":73,"rolloversIn":true,"separationOptions":"Lump sum, installments, or rollover"},"safeHarbor":{"type":"none","formula":"","vestingImmediate":true},"profitSharing":{"available":false,"type":"discretionary","formula":"","lastDayApplies":false},"fundsData":[]}-->
-
-Fill every field from the actual document. matchTiers: DISCRETIONARY match tiers only (pct, upTo). noMatch: true only if NO discretionary match exists. safeHarbor.type: none|nonelective|basic_match|enhanced_match|qaca. fundsData: fund objects with name/category/expenseRatio/factSheetUrl if a fund lineup is present, else [].`;
 
 const fileToBase64 = (f: File): Promise<string> => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res((r.result as string).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
 
@@ -53,7 +47,7 @@ export default function AdvisorPage() {
       const chatRes = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: FIRST_MSG }], fileIds: [fileId], lang: 'en', planData: null }),
+        body: JSON.stringify({ messages: [{ role: 'user', content: i18n.en.firstMessage }], fileIds: [fileId], lang: 'en', planData: null }),
       });
       if (!chatRes.ok) { const d = await chatRes.json().catch(() => ({})); throw new Error(d.error || `Chat error ${chatRes.status}`); }
       const reader = chatRes.body?.getReader();
