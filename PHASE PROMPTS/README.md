@@ -13,11 +13,12 @@ Phase prompt files for Claude Code. Written in Cowork, run in VS Code.
 
 **Structure:** one file per phase (`PHASE-NN-name.md`), split into numbered STEPS. Each step = one commit.
 
-**One-time setup for zero-click runs**
+**One-time setup (walk-away runs)**
 1. In VS Code: File → Open Folder → `plansparency-nextjs` (the repo itself, not the `Plansparency` folder above it).
-2. In the Claude Code panel, set the permission mode to the one that accepts edits automatically (not Manual, not Auto). The repo's `.claude/settings.json` then pre-approves every command the phases use and blocks the dangerous ones.
+2. In the Claude Code panel, set the permission mode to **Auto**. It stays Auto for every phase. Anthropic's safety check approves normal work; the repo's `.claude/settings.json` still hard-blocks the dangerous commands (force-push, hard reset, reading `.env`, the Vercel CLI).
+3. **If Claude Code says Auto mode is unavailable** (safety check outage): leave it. It pauses safely. When the service is back, type `continue` in the same conversation. Don't switch to Manual, don't commit by hand.
 
-**How to run any phase** (one fresh Claude Code conversation, no babysitting):
+**How to run any phase** (one fresh Claude Code conversation in Auto mode, then walk away):
 
     Read "PHASE PROMPTS/PHASE-NN-name.md" and execute all steps in order.
 

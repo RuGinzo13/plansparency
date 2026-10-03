@@ -73,12 +73,12 @@ When writing prompts for Claude Code:
 
 **Never give terminal commands directly to Ross.** Claude Code prompts are what gets handed off — Claude Code runs the commands. If something needs to be done in a dashboard (Supabase, Vercel, Stripe), give step-by-step instructions for the human, not a command.
 
-**Every prompt must run with zero approval clicks (Ross, Sept 28, 2026).** Claude Code runs phases unattended using the allowlist in `plansparency-nextjs/.claude/settings.json` (mode `acceptEdits`: file edits auto-approved; listed git/npm/npx/curl commands auto-approved; force-push, hard reset, rebase, amend, reading `.env*` denied). When writing a phase:
-- Use only command forms on that allowlist. If a phase genuinely needs a new command, add it to `.claude/settings.json` in the same phase-writing session (Cowork edits it) and say so in chat.
+**Every phase runs in Auto mode, unattended (Ross, Oct 3, 2026; replaces the Sept 28 accept-edits setup).** Ross starts a phase, walks away, and comes back to it finished. No approval clicks, ever. Claude Code's permission mode is **Auto** (`"defaultMode": "auto"` in `plansparency-nextjs/.claude/settings.json`, and Auto picked in the VS Code panel). In Auto mode Anthropic's safety check approves normal work on its own; the `deny` list in `.claude/settings.json` (force-push, hard reset, clean, rebase, amend, filter-branch, Vercel CLI, reading or editing `.env*`) is still enforced before that check and can't be overridden. **If the safety check is down** (message like "Auto mode is unavailable" or "no safety verdict"): file edits and reads keep working, commands get blocked, and the run pauses safely. Ross does nothing until it's back, then types `continue`. Never switch to Manual to push through, and never commit by hand. When writing a phase:
+- Prefer the command forms already on the `allow` list (they're the known-good set). Never write a step that depends on anything in the `deny` list.
 - Claude Code must be opened with `plansparency-nextjs` as the workspace folder, so commands run from the repo root. Never write `cd <dir> && git …` (a `cd` combined with git always prompts).
 - One command per Bash call where possible; no `$(…)` substitutions; no chained `&&` except `export PATH=… && <allowed command>`.
 - Never `git add -A` / `git add .`; list files.
-- Anything that would need approval (installs, deletes outside /tmp, irreversible actions) goes in a separate phase marked 🛑 and flagged in chat first.
+- Every phase must be able to finish with nobody watching. Irreversible actions (deleting production data, database schema changes, rotating live secrets, installs) go in their own phase marked 🛑, flagged in chat first, and run only when Ross says so.
 
 **Break complex builds into steps.** One focused concern per STEP and per commit (not per conversation, since Sept 28, 2026). Keep each step small enough to verify on its own; keep a whole phase to roughly 3–4 steps so one conversation doesn't overload. A step that can't be checked automatically (it needs Ross's eyes) goes last or gets a checkpoint.
 

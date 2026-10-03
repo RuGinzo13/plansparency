@@ -3,7 +3,7 @@
      Every step MUST end with: checks pass -> exact `git add <files>` -> exact commit message -> push.
      The LAST step MUST also stage any modified Cowork docs (CLAUDE.md, CONTEXT.md, MEMORY.md, ERRORS.md, OPEN-ITEMS.md, PHASE PROMPTS/).
      Only use a 🛑 CHECKPOINT before an irreversible action.
-     Commands: only forms allowed in .claude/settings.json; run from repo root; no `cd x && git`; no `$(...)`. -->
+     Runs in Auto mode, unattended: never depend on a command in the deny list of .claude/settings.json; prefer allow-list forms; run from repo root; no `cd x && git`; no `$(...)`. -->
 ## STEP N — Short title
 **Status:** Ready | Done (commit `abc1234`, YYYY-MM-DD)
 **Open item:** OPEN-ITEMS.md #__

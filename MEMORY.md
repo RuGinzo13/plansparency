@@ -535,3 +535,11 @@ The addressable sections of the app — superseded by the updated Component Map 
 **Why:** The old calculator buried the answer and repeated numbers; Key Terms still showed 2025 limits and had advice-style lines ("good choice if").
 **What was rejected:** full date of birth; a separate Roth yes/no question as the only input (replaced by the salary-based estimate); Figma/Canva/v0 as a design source (second source of truth).
 
+---
+
+## October 3, 2026 — Phases Run in Auto Mode
+**What was decided:** Ross won't babysit VS Code. Every phase runs in Claude Code's **Auto** permission mode: start it, walk away, come back to it finished. `.claude/settings.json` `defaultMode` changed from `acceptEdits` to `auto`; the deny list stays (it's enforced before Auto's safety check). Outage rule: if Auto mode's safety check is down, the run pauses safely (edits and reads continue, commands blocked); Ross waits and types `continue`, never switches to Manual or commits by hand.
+**Why:** In accept-edits mode, commands outside the allow list still stopped for a click, so Ross ended up on Manual and watching. Auto approves normal work without a list.
+**What was rejected:** bypassPermissions (no safety check at all on Ross's own Mac; deny list would be the only guard); Manual and accept-edits (both need clicks).
+**Known trade-off:** Auto depends on Anthropic's safety service; Sept 28 and Sept 30 outages would pause a run. Nothing breaks, it just waits.
+
