@@ -101,7 +101,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
-  const pendingFilesRef = useRef<File[]>([]);  // replaces pendingFileRef
+  const pendingFilesRef = useRef<File[]>([]);
   const addDocRef = useRef(null);
   const abortRef = useRef(null);
   const fileIdsRef = useRef<string[]>([]);  // replaces fileIdRef; array of all uploaded file IDs
@@ -425,7 +425,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         </div>
       </div>
       <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-        <button onClick={() => { pendingFileRef.current = null; setStage("landing"); }} style={{ ...btnBase, flex: 1, padding: "12px", fontSize: 14, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>{t.privacyCancel}</button>
+        <button onClick={() => { pendingFilesRef.current = []; setStage("landing"); }} style={{ ...btnBase, flex: 1, padding: "12px", fontSize: 14, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>{t.privacyCancel}</button>
         <button onClick={proceedAfterConsent} style={{ ...btnBase, flex: 1, padding: "12px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},#B8863A)`, color: "#0F1621" }}><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Shield color="#0F1621" sz={14} />{t.privacyAgree}</span></button>
       </div></div></div></div>;
 

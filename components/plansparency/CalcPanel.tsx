@@ -241,7 +241,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <div style={{ fontSize: 12, color: C.textDim }}>{t.calc2CatchUpSub}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[catchUpChip].bg, color: chipColor[catchUpChip].fg }}>
+          <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[catchUpChip].bg, color: chipColor[catchUpChip].fg }}>
             {chipLabel[catchUpChip]}
           </span>
           <span style={{
@@ -260,7 +260,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <div style={{ fontSize: 12, color: C.textDim }}>{t.calc2SuperCatchUpSub}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[superChip].bg, color: chipColor[superChip].fg }}>
+          <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[superChip].bg, color: chipColor[superChip].fg }}>
             {chipLabel[superChip]}
           </span>
           <span style={{
@@ -568,7 +568,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
             >
               <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{row.title}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: row.chip.bg, color: row.chip.fg }}>{row.chip.label}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: row.chip.bg, color: row.chip.fg }}>{row.chip.label}</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
