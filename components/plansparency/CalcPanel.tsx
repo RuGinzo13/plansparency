@@ -62,9 +62,18 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   const [salary, setSalary] = useState(50000);
   const [pp, setPp] = useState(26);
   const [pct, setPct] = useState(6);
-  const [priorChecked, setPriorChecked] = useState(false);
+  const [startedChecked, setStartedChecked] = useState(false);
+  const [leftText, setLeftText] = useState(""); // "" = all paychecks this year
+  const [priorYes, setPriorYes] = useState(false);
   const [priorAmount, setPriorAmount] = useState(0);
-  const [openBubble, setOpenBubble] = useState(null); // 'traditional' | 'roth' | null
+  const [box3Text, setBox3Text] = useState("");
+  const [pinnedBubble, setPinnedBubble] = useState(null); // 'traditional' | 'roth' | null (click-pinned)
+  const [previewBubble, setPreviewBubble] = useState(null); // hover or keyboard focus, mouse devices only
+  const [canHover, setCanHover] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    setCanHover(window.matchMedia("(hover: hover)").matches);
+  }, []);
   const [openInfoRow, setOpenInfoRow] = useState(null);
 
   if (!planData) {
@@ -92,12 +101,18 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
 
   const ageAtYearEnd = age === "" ? null : Number(age);
 
+  const paychecksLeft = leftText === "" ? pp : Math.max(1, Math.min(pp, Math.round(Number(leftText)) || pp));
+  const box3Entered = !startedChecked && box3Text !== "" ? Math.max(0, Number(box3Text)) : null;
+
   const r = calculatorResult({
     salary,
     pct,
     payPeriods: pp,
     ageAtYearEnd,
-    priorPlanAmount: priorChecked ? priorAmount : 0,
+    startedThisYear: startedChecked,
+    paychecksLeft,
+    lastYearBox3: box3Entered,
+    priorPlanAmount: startedChecked && priorYes ? priorAmount : 0,
     plan: {
       safeHarborType: sh?.type || "none",
       hasDiscretionaryMatch,
@@ -154,10 +169,44 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   // ── Roth catch-up rule box tone ──
   const rothBoxTone = r.rothBlocked ? "red" : r.overRothLine ? "orange" : "green";
 
+  const thr = limits.rothCatchUpWageThreshold !== null ? fmtRounded(limits.rothCatchUpWageThreshold) : "";
+  let rothBoxBody = "";
+  if (r.rothBasis === "newHire") {
+    rothBoxBody = tpl(t.calc2RothBoxNewHire, { year: limitYear.year });
+  } else if (r.rothBasis === "box3") {
+    rothBoxBody = rothBoxTone === "red"
+      ? tpl(t.calc2RothBoxBox3Red, { threshold: thr, year: limitYear.year, deferral: fmtRounded(limits.base) })
+      : rothBoxTone === "orange"
+        ? tpl(t.calc2RothBoxBox3Over, { threshold: thr, catchUp: fmtRounded(r.catchUpRaw), deferral: fmtRounded(limits.base) })
+        : tpl(t.calc2RothBoxBox3Under, { threshold: thr });
+  } else {
+    rothBoxBody = rothBoxTone === "green"
+      ? tpl(t.calc2RothBoxGreen, { salary: fmtRounded(salary), threshold: thr })
+      : rothBoxTone === "orange"
+        ? tpl(t.calc2RothBoxOrange, { salary: fmtRounded(salary), threshold: thr, catchUp: fmtRounded(r.catchUpRaw), deferral: fmtRounded(limits.base) })
+        : tpl(t.calc2RothBoxRed, { salary: fmtRounded(salary), threshold: thr, year: limitYear.year, deferral: fmtRounded(limits.base) });
+  }
+
   const traditionalTerm = getTerm("traditional", lang);
   const rothTerm = getTerm("roth", lang);
 
-  const toggleBubble = (which) => setOpenBubble((prev) => (prev === which ? null : which));
+  const openBubble = (which) => (pinnedBubble === which || previewBubble === which ? which : null);
+  const closeBubbles = () => { setPinnedBubble(null); setPreviewBubble(null); };
+  const toggleBubble = (which) => {
+    setPreviewBubble(null);
+    setPinnedBubble((prev) => (prev === which ? null : which));
+  };
+  // Mouse devices: hover or focus previews the bubble; a click pins it; Escape closes it.
+  const bubbleProps = (which) => canHover
+    ? {
+        onMouseEnter: () => setPreviewBubble(which),
+        onMouseLeave: () => setPreviewBubble(null),
+        onKeyDown: (e) => { if (e.key === "Escape") closeBubbles(); },
+      }
+    : { onKeyDown: (e) => { if (e.key === "Escape") closeBubbles(); } };
+  const focusProps = (which) => canHover
+    ? { onFocus: () => setPreviewBubble(which), onBlur: () => setPreviewBubble(null) }
+    : {};
   const toggleInfoRow = (key) => setOpenInfoRow((prev) => (prev === key ? null : key));
 
   const payFreqs = [
@@ -286,28 +335,30 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: 8, alignItems: "center", marginBottom: 6, position: "relative" }}>
           <div />
-          <div style={{ position: "relative" }}>
+          <div style={{ position: "relative" }} {...bubbleProps("traditional")}>
             <button
               onClick={() => toggleBubble("traditional")}
+              {...focusProps("traditional")}
               style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.accentText, textDecoration: "underline dotted", padding: 0 }}
             >
               {t.calc2WordTraditional}
             </button>
             <span style={{ fontSize: 11, color: C.textDim }}> {t.calc2SuffixBeforeTax}</span>
-            {openBubble === "traditional" && (
-              <Bubble text={traditionalTerm.def} onClose={() => setOpenBubble(null)} closeLabel={t.calc2CloseBubble} />
+            {openBubble("traditional") && (
+              <Bubble text={traditionalTerm.def} onClose={closeBubbles} closeLabel={t.calc2CloseBubble} />
             )}
           </div>
-          <div style={{ position: "relative" }}>
+          <div style={{ position: "relative" }} {...bubbleProps("roth")}>
             <button
               onClick={() => toggleBubble("roth")}
+              {...focusProps("roth")}
               style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.accentText, textDecoration: "underline dotted", padding: 0 }}
             >
               {t.calc2WordRoth}
             </button>
             <span style={{ fontSize: 11, color: C.textDim }}> {t.calc2SuffixAfterTax}</span>
-            {openBubble === "roth" && (
-              <Bubble text={rothTerm.def} onClose={() => setOpenBubble(null)} closeLabel={t.calc2CloseBubble} />
+            {openBubble("roth") && (
+              <Bubble text={rothTerm.def} onClose={closeBubbles} closeLabel={t.calc2CloseBubble} />
             )}
           </div>
         </div>
@@ -342,7 +393,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
               {r.rothBlocked
                 ? t.calc2CatchUpBlockedNote
                 : r.overRothLine
-                  ? t.calc2CatchUpOverLineNote
+                  ? (r.rothBasis === "estimate" ? t.calc2CatchUpOverLineNote : t.calc2CatchUpOverLineExactNote)
                   : t.calc2CatchUpEitherNote}
             </>
           )}
@@ -358,45 +409,93 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 6 }}>
             {tpl(t.calc2RothBoxTitle, { year: limitYear.year })}
           </div>
-          <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>
-            {rothBoxTone === "green" && tpl(t.calc2RothBoxGreen, { salary: fmtRounded(salary), threshold: fmtRounded(limits.rothCatchUpWageThreshold) })}
-            {rothBoxTone === "orange" && tpl(t.calc2RothBoxOrange, { salary: fmtRounded(salary), threshold: fmtRounded(limits.rothCatchUpWageThreshold), catchUp: fmtRounded(r.catchUpRaw), deferral: fmtRounded(limits.base) })}
-            {rothBoxTone === "red" && tpl(t.calc2RothBoxRed, { salary: fmtRounded(salary), threshold: fmtRounded(limits.rothCatchUpWageThreshold), year: limitYear.year, deferral: fmtRounded(limits.base) })}
-          </div>
-          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 8, lineHeight: 1.4 }}>{t.calc2RothBoxFooter}</div>
+          <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{rothBoxBody}</div>
+          {!startedChecked && (
+            <div style={{ marginTop: 12 }}>
+              <label style={{ fontSize: 12, color: C.text, display: "block", marginBottom: 6, lineHeight: 1.4 }}>{t.calc2Box3Label}</label>
+              <div style={{ position: "relative", maxWidth: 220 }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, fontSize: 16 }}>$</span>
+                <input
+                  type="number" min={0} value={box3Text} placeholder="—"
+                  onChange={(e) => setBox3Text(e.target.value)}
+                  style={{ ...inputBase, paddingLeft: 24 }}
+                />
+              </div>
+            </div>
+          )}
+          {r.rothBasis !== "newHire" && (
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 8, lineHeight: 1.4 }}>{t.calc2RothBoxFooter}</div>
+          )}
         </div>
       )}
 
-      {/* ── Prior-plan checkbox ── */}
+      {/* ── Started this year ── */}
       <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
         <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", minHeight: 44 }}>
-          <input type="checkbox" checked={priorChecked} onChange={(e) => setPriorChecked(e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>{tpl(t.calc2PriorCheckbox, { year: limitYear.year })}</span>
+          <input type="checkbox" checked={startedChecked} onChange={(e) => setStartedChecked(e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>{tpl(t.calc2StartedCheckbox, { year: limitYear.year })}</span>
         </label>
-        {priorChecked && (
-          <div style={{ marginTop: 12 }}>
-            <label style={label11}>{tpl(t.calc2PriorAmountLabel, { year: limitYear.year })}</label>
-            <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, fontSize: 16 }}>$</span>
-              <input
-                type="number" min={0} value={priorAmount}
-                onChange={(e) => setPriorAmount(Math.max(0, +e.target.value))}
-                style={{ ...inputBase, paddingLeft: 24 }}
-              />
-            </div>
-            <div style={{ fontSize: 11, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2PriorHelper}</div>
+        {startedChecked && (
+          <div style={{ marginTop: 12, marginLeft: 28 }}>
+            <label style={label11}>{tpl(t.calc2PaychecksLeftLabel, { year: limitYear.year })}</label>
+            <input
+              type="number" min={1} max={pp} value={leftText} placeholder={String(pp)}
+              onChange={(e) => setLeftText(e.target.value)}
+              style={{ ...inputBase, maxWidth: 140 }}
+            />
+            <div style={{ fontSize: 11, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2PaychecksLeftHelper}</div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginTop: 12 }}>
-              <span>{t.calc2PriorUsedRow}</span>
-              <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>−{fmtRounded(r.priorUsed)}</span>
+            <div style={{ marginTop: 16 }}>
+              <label style={label11}>{tpl(t.calc2PriorQuestion, { year: limitYear.year })}</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 280 }}>
+                {[{ v: true, label: t.calc2AnswerYes }, { v: false, label: t.calc2AnswerNo }].map((o) => {
+                  const active = priorYes === o.v;
+                  return (
+                    <button
+                      key={String(o.v)}
+                      aria-pressed={active}
+                      onClick={() => setPriorYes(o.v)}
+                      style={{
+                        minHeight: 44, borderRadius: 8, cursor: "pointer", fontFamily: F.body, fontSize: 13, fontWeight: 600,
+                        background: active ? C.accentSoft : "#FFFFFF",
+                        border: active ? `2px solid ${C.accent}` : `1px solid ${C.inputBorder}`,
+                        color: active ? C.accentText : C.text,
+                        padding: "8px 6px",
+                      }}
+                    >
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginTop: 6 }}>
-              <span>{tpl(t.calc2PriorRoomRow, { year: limitYear.year })}</span>
-              <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtRounded(r.room)}</span>
-            </div>
-            {r.priorOver && (
-              <div style={{ fontSize: 12, color: C.danger, marginTop: 10, lineHeight: 1.4 }}>
-                {tpl(t.calc2PriorOverNote, { year: limitYear.year, year1: limitYear.year + 1 })}
+
+            {priorYes && (
+              <div style={{ marginTop: 16 }}>
+                <label style={label11}>{tpl(t.calc2PriorAmountLabel, { year: limitYear.year })}</label>
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, fontSize: 16 }}>$</span>
+                  <input
+                    type="number" min={0} value={priorAmount}
+                    onChange={(e) => setPriorAmount(Math.max(0, +e.target.value))}
+                    style={{ ...inputBase, paddingLeft: 24 }}
+                  />
+                </div>
+                <div style={{ fontSize: 11, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2PriorHelper}</div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginTop: 12 }}>
+                  <span>{t.calc2PriorUsedRow}</span>
+                  <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>−{fmtRounded(r.priorUsed)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginTop: 6 }}>
+                  <span>{tpl(t.calc2PriorRoomRow, { year: limitYear.year })}</span>
+                  <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtRounded(r.room)}</span>
+                </div>
+                {r.priorOver && (
+                  <div style={{ fontSize: 12, color: C.danger, marginTop: 10, lineHeight: 1.4 }}>
+                    {tpl(t.calc2PriorOverNote, { year: limitYear.year, year1: limitYear.year + 1 })}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -443,7 +542,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           {r.room === 0
             ? tpl(t.calc2LimitUsedNoRoom, { year: limitYear.year })
             : r.hitsLimit
-              ? tpl(t.calc2LimitUsedHits, { pct, year: limitYear.year, n: r.hitAtPaycheck, payPeriods: pp })
+              ? tpl(t.calc2LimitUsedHits, { pct, year: limitYear.year, n: r.hitAtPaycheck, payPeriods: r.paychecksCounted })
               : tpl(t.calc2LimitUsedElse, { n: pctOfLimitUsed, pctToMax: r.pctToMax ?? 0 })}
         </div>
       </div>
@@ -489,12 +588,16 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
       </div>
       {r.hitsLimit && (
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 8, lineHeight: 1.4 }}>
-          {tpl(t.calc2PerPaycheckHits, { n: r.hitAtPaycheck, payPeriods: pp, year: limitYear.year })}
+          {tpl(t.calc2PerPaycheckHits, { n: r.hitAtPaycheck, payPeriods: r.paychecksCounted, year: limitYear.year })}
         </div>
       )}
 
       <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.5, marginTop: 16 }}>
-        <p style={{ margin: "0 0 6px" }}>{tpl(t.calc2NoteAssumesFullYear, { year: limitYear.year })}</p>
+        <p style={{ margin: "0 0 6px" }}>
+          {startedChecked
+            ? tpl(t.calc2NoteStartedPartYear, { n: r.paychecksCounted, year: limitYear.year })
+            : tpl(t.calc2NoteAssumesFullYear, { year: limitYear.year })}
+        </p>
         {hasSH && <p style={{ margin: "0 0 6px" }}>{t.calc2NoteSafeHarborTiming}</p>}
         {(hasSH || hasDiscretionaryMatch) && (
           <p style={{ margin: 0 }}>
@@ -548,6 +651,15 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
       title: t.calc2RowHceTitle,
       chip: { label: t.calc2ChipMayApply, bg: C.warningDim, fg: C.warning },
       body: getTerm("hce", lang).def,
+    });
+  }
+
+  if (r.trueUpRelevant) {
+    infoRows.push({
+      key: "trueUp",
+      title: t.calc2RowTrueUpTitle,
+      chip: { label: t.calc2ChipAskHr, bg: C.warningDim, fg: C.warning },
+      body: getTerm("trueUp", lang).def,
     });
   }
 

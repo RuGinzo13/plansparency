@@ -25,6 +25,7 @@ export type TermId =
   | 'rothCatchUpRule'
   | 'payLimit'
   | 'totalLimit'
+  | 'trueUp'
   | 'hce'
   | 'rollover'
   | 'rmd'
@@ -169,6 +170,14 @@ const ENTRIES: GlossaryEntry[] = [
     def: {
       en: "Everything going into your account in one year, from you and your employer together, can't be more than {totalAdditions} in {year}. Catch-up savings don't count toward it.",
       es: "Todo lo que entra en tu cuenta en un año, entre tú y tu empleador juntos, no puede ser más de {totalAdditions} en {year}. El ahorro de catch-up no cuenta para este límite.",
+    },
+  },
+  {
+    id: 'trueUp',
+    term: { en: 'True-up', es: 'True-up (ajuste de fin de año)' },
+    def: {
+      en: "If you reach the yearly limit before December, money stops coming out of your paychecks, and a match paid per paycheck can stop too. Some plans make up the missing match at year-end (a 'true-up'). Others don't. This calculator assumes no true-up.",
+      es: "Si llegas al límite anual antes de diciembre, deja de salir dinero de tus cheques de pago, y un match que se paga por cheque también puede detenerse. Algunos planes completan el match que falta al final del año (un 'true-up'). Otros no. Esta calculadora supone que no hay true-up.",
     },
   },
   {
