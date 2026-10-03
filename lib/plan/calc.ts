@@ -56,10 +56,19 @@ export interface CalculatorInput {
   payPeriods: number;
   ageAtYearEnd: number | null;
   // 0 if the "already saved elsewhere this year" box is unchecked
+  // Only used when startedThisYear (the screen sends 0 otherwise)
   priorPlanAmount: number;
   plan: CalculatorPlanInput;
   year?: number;
+  // Started this job during the year: only the paychecks left count (default false)
+  startedThisYear?: boolean;
+  // Paychecks left at this job this year; clamped to 1..payPeriods, ignored unless startedThisYear
+  paychecksLeft?: number;
+  // W-2 Box 3 wages from THIS employer last year; null = not known
+  lastYearBox3?: number | null;
 }
+
+export type RothBasis = 'box3' | 'newHire' | 'estimate';
 
 export interface TaxTypeAvailability {
   traditional: boolean;
@@ -75,8 +84,10 @@ export interface CalculatorResult {
   band: '60-63' | '50+' | null;
   // The band's catch-up amount before the Roth catch-up rule can zero it out.
   catchUpRaw: number;
-  // Estimate from this year's pay — the real test is last year's W-2 Box 3.
+  // Exact when rothBasis is "box3", false when "newHire", otherwise an estimate
+  // from this year's pay (the real test is last year's W-2 Box 3).
   overRothLine: boolean;
+  rothBasis: RothBasis;
   rothBlocked: boolean;
   // The catch-up amount actually usable toward `limit` (0 when rothBlocked).
   catchUp: number;
@@ -89,6 +100,8 @@ export interface CalculatorResult {
   perPaycheck: number;
   hitsLimit: boolean;
   hitAtPaycheck: number | null;
+  // How many paychecks hitAtPaycheck is counted within ("paycheck 3 of 13")
+  paychecksCounted: number;
   pctToMax: number | null;
   payForEmployer: number;
   effectivePct: number;
@@ -97,6 +110,8 @@ export interface CalculatorResult {
   catchUpUsed: number;
   overTotalLimit: boolean;
   hasPreTaxUnknown: boolean;
+  // Reaching the limit early can stop a per-paycheck match; plan may or may not true-up
+  trueUpRelevant: boolean;
   taxType: {
     regular: TaxTypeAvailability;
     // Present only when catchUpRaw > 0 — there's no catch-up row otherwise.
@@ -112,14 +127,29 @@ export function calculatorResult({
   priorPlanAmount,
   plan,
   year,
+  startedThisYear = false,
+  paychecksLeft,
+  lastYearBox3 = null,
 }: CalculatorInput): CalculatorResult {
   const limits = getIRSLimitsForAge(ageAtYearEnd, year);
   const band: CalculatorResult['band'] = limits.enhanced ? '60-63' : limits.catchUpEligible ? '50+' : null;
 
   const catchUpRaw = plan.planAllowsCatchUp !== false ? limits.catchUp : 0;
 
-  const overRothLine =
-    limits.rothCatchUpWageThreshold !== null && salary > limits.rothCatchUpWageThreshold;
+  const threshold = limits.rothCatchUpWageThreshold;
+  let rothBasis: RothBasis;
+  let overRothLine: boolean;
+  if (lastYearBox3 !== null) {
+    rothBasis = 'box3';
+    overRothLine = threshold !== null && lastYearBox3 > threshold;
+  } else if (startedThisYear) {
+    // No wages from this employer last year, so the rule can't apply
+    rothBasis = 'newHire';
+    overRothLine = false;
+  } else {
+    rothBasis = 'estimate';
+    overRothLine = threshold !== null && salary > threshold;
+  }
 
   const rothBlocked = catchUpRaw > 0 && overRothLine && plan.hasRoth === false;
 
@@ -131,15 +161,23 @@ export function calculatorResult({
   const priorOver = priorPlanAmount > limit;
   const room = limit - priorUsed;
 
-  const wanted = (salary * pct) / 100;
+  const left = Number.isFinite(paychecksLeft) ? Math.round(paychecksLeft as number) : payPeriods;
+  const paychecksCounted = startedThisYear ? Math.max(1, Math.min(payPeriods, left)) : payPeriods;
+  const share = startedThisYear && payPeriods > 0 ? paychecksCounted / payPeriods : 1;
+  const payThisYear = salary * share;
+
+  const yearly = (salary * pct) / 100;
+  const eachCheck = payPeriods > 0 ? yearly / payPeriods : 0;
+  // Full year stays exactly salary * pct (no divide-then-multiply rounding drift)
+  const wanted = startedThisYear && payPeriods > 0 ? (yearly * paychecksCounted) / payPeriods : yearly;
   const you = Math.min(wanted, room);
-  const perPaycheck = room > 0 && payPeriods > 0 ? wanted / payPeriods : 0;
+  const perPaycheck = room > 0 ? eachCheck : 0;
   const hitsLimit = wanted > room && room > 0;
   const hitAtPaycheck =
     hitsLimit && perPaycheck > 0 ? Math.max(1, Math.ceil(room / perPaycheck)) : null;
-  const pctToMax = salary > 0 ? Math.ceil((room / salary) * 100) : null;
+  const pctToMax = payThisYear > 0 ? Math.ceil((room / payThisYear) * 100) : null;
 
-  const payForEmployer = Math.min(salary, limits.compLimit);
+  const payForEmployer = Math.min(payThisYear, limits.compLimit);
   const effectivePct = wanted > 0 ? pct * (you / wanted) : 0;
   const employer = safeHarborAmount(plan.safeHarborType, payForEmployer, effectivePct);
 
@@ -148,6 +186,13 @@ export function calculatorResult({
   const overTotalLimit = you - catchUpUsed + employer > limits.totalAdditions;
 
   const hasPreTaxUnknown = plan.hasPreTax === null;
+
+  const trueUpRelevant =
+    hitsLimit &&
+    (plan.safeHarborType === 'basic_match' ||
+      plan.safeHarborType === 'enhanced_match' ||
+      plan.safeHarborType === 'qaca' ||
+      plan.hasDiscretionaryMatch);
 
   const regular: TaxTypeAvailability = {
     traditional: plan.hasPreTax !== false,
@@ -168,6 +213,7 @@ export function calculatorResult({
     band,
     catchUpRaw,
     overRothLine,
+    rothBasis,
     rothBlocked,
     catchUp,
     limit,
@@ -179,6 +225,7 @@ export function calculatorResult({
     perPaycheck,
     hitsLimit,
     hitAtPaycheck,
+    paychecksCounted,
     pctToMax,
     payForEmployer,
     effectivePct,
@@ -187,6 +234,7 @@ export function calculatorResult({
     catchUpUsed,
     overTotalLimit,
     hasPreTaxUnknown,
+    trueUpRelevant,
     taxType: { regular, catchUp: catchUpTax },
   };
 }

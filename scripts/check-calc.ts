@@ -21,6 +21,9 @@ function run(
     priorPlanAmount?: number;
     plan?: Partial<CalculatorPlanInput>;
     year?: number;
+    startedThisYear?: boolean;
+    paychecksLeft?: number;
+    lastYearBox3?: number | null;
   },
   checks: (r: ReturnType<typeof calculatorResult>) => void
 ) {
@@ -32,6 +35,9 @@ function run(
     priorPlanAmount: input.priorPlanAmount ?? 0,
     plan: { ...basePlan, ...input.plan },
     year: input.year ?? 2026,
+    startedThisYear: input.startedThisYear,
+    paychecksLeft: input.paychecksLeft,
+    lastYearBox3: input.lastYearBox3,
   });
   try {
     checks(r);
@@ -123,5 +129,66 @@ run(
     assert.strictEqual(r.taxType.catchUp!.traditional, false);
   }
 );
+
+// started this year, 13 of 26 paychecks left, $110,000, 6%, age 34, basic_match
+run(
+  'started this year, 13 of 26 left, $110,000, 6%',
+  { salary: 110000, pct: 6, ageAtYearEnd: 34, startedThisYear: true, paychecksLeft: 13 },
+  (r) => {
+    assert.ok(Math.abs(r.wanted - 3300) < 0.001, `wanted ${r.wanted}`);
+    assert.ok(Math.abs(r.perPaycheck - 253.85) < 0.01, `perPaycheck ${r.perPaycheck}`);
+    assert.ok(Math.abs(r.employer - 2200) < 0.001, `employer ${r.employer}`);
+    assert.strictEqual(r.paychecksCounted, 13);
+  }
+);
+
+// started this year, 13 of 26 left, $200,000, 30%, age 34 → hits the limit at paycheck 11 of 13
+run(
+  'started this year, 13 of 26 left, $200,000, 30%',
+  { salary: 200000, pct: 30, ageAtYearEnd: 34, startedThisYear: true, paychecksLeft: 13 },
+  (r) => {
+    assert.ok(Math.abs(r.wanted - 30000) < 0.001, `wanted ${r.wanted}`);
+    assert.strictEqual(r.you, 24500);
+    assert.strictEqual(r.hitsLimit, true);
+    assert.strictEqual(r.hitAtPaycheck, 11);
+    assert.strictEqual(r.paychecksCounted, 13);
+  }
+);
+
+// exact Roth rule from W-2 Box 3 (salary alone is under the line)
+run(
+  'age 55, $140,000, Box 3 180,000',
+  { salary: 140000, pct: 6, ageAtYearEnd: 55, lastYearBox3: 180000, plan: { hasRoth: true } },
+  (r) => {
+    assert.strictEqual(r.overRothLine, true);
+    assert.strictEqual(r.rothBasis, 'box3');
+  }
+);
+
+// new hire: no wages here last year, rule can't apply
+run(
+  'age 55, $200,000, started this year',
+  { salary: 200000, pct: 6, ageAtYearEnd: 55, startedThisYear: true },
+  (r) => {
+    assert.strictEqual(r.overRothLine, false);
+    assert.strictEqual(r.rothBasis, 'newHire');
+  }
+);
+
+// nothing else known → estimate from salary
+run('age 55, $200,000, estimate', { salary: 200000, pct: 6, ageAtYearEnd: 55 }, (r) => {
+  assert.strictEqual(r.rothBasis, 'estimate');
+  assert.strictEqual(r.overRothLine, true);
+});
+
+// true-up note only when the limit is reached on a match plan
+run('true-up: $62,000 at 30% never reaches the limit', { salary: 62000, pct: 30, ageAtYearEnd: 34 }, (r) => {
+  assert.strictEqual(r.hitsLimit, false);
+  assert.strictEqual(r.trueUpRelevant, false);
+});
+run('true-up: $110,000 at 30% reaches the limit', { salary: 110000, pct: 30, ageAtYearEnd: 34 }, (r) => {
+  assert.strictEqual(r.hitsLimit, true);
+  assert.strictEqual(r.trueUpRelevant, true);
+});
 
 console.log('all calculator checks passed');
