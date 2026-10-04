@@ -10,7 +10,7 @@ export const C = {
   accentText: "#7F5F0F", accentSoft: "#F6ECD6",
   warningDim: "#FBE9D9", greenSoft: "#E8F1EA", dangerSoft: "#F6E0E0",
   inputBorder: "#9A8878", primaryEnd: "#B8863A", onPrimary: "#0F1621",
-  accentBorder: "#E5C77A",
+  accentBorder: "#E5C77A", highlight: "#F1EBE0",
 };
 export const F = { display: "var(--font-display), Georgia, serif", body: "var(--font-body), 'Segoe UI', system-ui, sans-serif" };
 

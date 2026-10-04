@@ -658,7 +658,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           </>
         )}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
-        {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} />}
+        {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openStock} onOpenCalculator={() => setActiveTab("calculator")} />}
         {activeTab === "chat" && chatPanel}
 
         {activeTab !== "chat" && (
