@@ -1,6 +1,7 @@
 // Sanity script for lib/answers/stockAnswers.ts.
 // Run with: npx --yes tsx scripts/check-answers.ts
-import { STOCK_QUESTIONS, getStockAnswer, type StockId } from '../lib/answers/stockAnswers';
+import { QUESTION_LABELS, getStockAnswer, type StockId } from '../lib/answers/stockAnswers';
+const STOCK_QUESTIONS = (Object.keys(QUESTION_LABELS) as StockId[]).map((id) => ({ id }));
 import { samples } from './samples';
 import { parseVesting } from '../lib/plan/planFacts';
 

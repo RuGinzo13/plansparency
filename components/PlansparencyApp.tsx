@@ -9,7 +9,7 @@
 //   components/plansparency/nav.tsx     TabBar, PlanGuideTabBar, AppHeader
 //   components/plansparency/KeyTermsPanel.tsx
 //   components/plansparency/InvestmentsPanel.tsx   FundRow, DisclosureCallout, CATEGORY_ORDER, RISK_MAP, FUND_DISCLAIMER, InvestmentsPanel
-//   components/plansparency/PlanOverview.tsx, PlanGlance.tsx, StockAnswerCard.tsx
+//   components/plansparency/PlanOverview.tsx, PlanGlance.tsx, AnswerBody.tsx, useStickyPanel.ts
 //   components/plansparency/CalcPanel.tsx
 //   components/plansparency/StatementDashboard.tsx  SuggestionBox, StatementDashboard
 // SectionIcon, PageBackground, TrustRow, and MiniBar were deleted as unused.
@@ -34,10 +34,9 @@ import { PlanOverview } from '@/components/plansparency/PlanOverview';
 import { CalcPanel } from '@/components/plansparency/CalcPanel';
 import { StatementDashboard } from '@/components/plansparency/StatementDashboard';
 import { Landing } from '@/components/plansparency/Landing';
-import { STOCK_QUESTIONS, STOCK_QUESTION_LABELS_ES, getStockAnswer, questionLabel } from '@/lib/answers/stockAnswers';
+import { getStockAnswer, questionLabel } from '@/lib/answers/stockAnswers';
 import { getOverview } from '@/lib/plan/overview';
 import { useStickyPanel } from '@/components/plansparency/useStickyPanel';
-import { StockAnswerCard } from '@/components/plansparency/StockAnswerCard';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
 
@@ -110,11 +109,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [streamingText, setStreamingText] = useState('');
   const [sessionEndReason, setSessionEndReason] = useState<'idle' | 'expired' | null>(null);
   const chatEndRef = useRef(null);
-  const lastUserRef = useRef(null);
-  const askScrollRef = useRef(null);
-  const askHeaderRef = useRef(null);
-  const askLayoutRef = useRef(null);
-  const [pickedChip, setPickedChip] = useState(null); // id (or label) of the last tapped quick-question button
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const pendingFilesRef = useRef<File[]>([]);
@@ -124,17 +118,11 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const lastActivityRef = useRef(Date.now());
 
   const t = i18n[lang];
-  const sticky = useStickyPanel(askScrollRef, askHeaderRef, askLayoutRef, `${stage}-${activeTab}`);
   const planSticky = useStickyPanel(planScrollRef, planHeaderRef, planLayoutRef, `${stage}-${activeTab}-${planGuideTab}`);
 
   const bumpActivity = () => { lastActivityRef.current = Date.now(); };
 
-  useEffect(() => {
-    // After a stock answer, show the question at the top so a long answer is read from its start.
-    const last = messages[messages.length - 1];
-    if (last?.stock && lastUserRef.current) lastUserRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    else chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
   useEffect(() => { if (stage === "chat" && !loading) inputRef.current?.focus(); }, [stage, loading]);
 
   // Best-effort file cleanup on tab/browser close — sendBeacon works during unload.
@@ -194,7 +182,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const clearSession = () => {
     endSessionFiles(fileIdsRef.current);
     setSessionEndReason(null);
-    setFileName(""); setMessages([]); setPickedChip(null); setInput(""); setLoading(false);
+    setFileName(""); setMessages([]); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
     setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText(''); setUploadError("");
     pendingFilesRef.current = [];
@@ -229,7 +217,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (!files?.length) return;
     bumpActivity();
     if (resetState) {
-      setMessages([]); setPickedChip(null); setPlanData(null); setStmtData(null);
+      setMessages([]); setPlanData(null); setStmtData(null);
     }
     const primaryFile = files[0];
     setUploadError(""); setFileName(primaryFile.name);
@@ -309,7 +297,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // addDocRef is used for in-session supplemental uploads (APP/stmtDashboard stages) — bypasses privacy screen.
   const startFreshUpload = () => {
     endSessionFiles(fileIdsRef.current);
-    setMessages([]); setPickedChip(null); setPlanData(null); setStmtData(null);
+    setMessages([]); setPlanData(null); setStmtData(null);
     setFileName(""); setInput(""); setLoading(false);
     setStreamingText(''); setStagedFiles([]); pendingFilesRef.current = []; fileIdsRef.current = [];
     setDocType(null); setStage(STAGE.CHOOSER);
@@ -407,6 +395,14 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const pickRow = (k, id) => { setTopic(k); setOpenCardId(id); scrollToCard(id); };
   const retryCard = (id) => setCardAI(prev => { const next = { ...prev }; delete next[cardKey(id)]; return next; });
 
+  // Count opens of written answers (one log line with the card id, nothing else).
+  useEffect(() => {
+    if (stage !== STAGE.APP || activeTab !== "dashboard" || planGuideTab !== "guide" || !openCardId || !planData) return;
+    if (!getStockAnswer(openCardId, planData, lang)) return;
+    fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "stock_answer", id: openCardId }) }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openCardId, lang]);
+
   // No written answer for a card: the AI answers the card's question from the plan document.
   const startCardAI = async (id) => {
     const key = cardKey(id);
@@ -469,7 +465,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       };
       const updatedMsgs = [...messages, followUp];
       setMessages(updatedMsgs);
-      setActiveTab("chat");
+      setActiveTab("dashboard");
       setStage(STAGE.APP);
       setLoading(true);
       setStreamingText('');
@@ -501,11 +497,9 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   const sendMessage = async (text, source = 'typed') => {
     if (!text.trim() || loading) return;
-    if (source === 'typed') setPickedChip(null);
     bumpActivity();
     const um = { role: "user", content: text.trim() }; const nm = [...messages, um]; setMessages(nm); setInput(""); setLoading(true); setStreamingText('');
-    if (stage === STAGE.APP) setActiveTab("chat");
-    else if (stage === STAGE.STMT_DASHBOARD) setStage(STAGE.CHAT);
+    if (stage === STAGE.STMT_DASHBOARD) setStage(STAGE.CHAT);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
@@ -536,28 +530,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setLoading(false);
   };
 
-  // ── Quick-question chips ──
-  // English with plan details: instant stock answers (no AI call) when every
-  // detail the answer needs is there; otherwise the tap goes to the AI as before.
-  const stockChipsOn = !!planData && docType !== "statement";
-  const chipList = stockChipsOn
-    ? STOCK_QUESTIONS.map(q => ({ id: q.id, label: lang === "es" ? STOCK_QUESTION_LABELS_ES[q.id] : q.label }))
-    : t.quickAsks.map(q => ({ id: null, label: q }));
-  const onChip = (chip) => {
-    if (loading) return;
-    setPickedChip(chip.id ?? chip.label);
-    const answer = chip.id ? getStockAnswer(chip.id, planData, lang) : null;
-    if (!answer) { sendMessage(chip.label, "button"); return; }
-    bumpActivity();
-    setMessages(prev => [...prev, { role: "user", content: chip.label }, { role: "assistant", content: answer.text, stock: true, stockId: chip.id, link: answer.link }]);
-    fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "stock_answer", id: chip.id }) }).catch(() => {});
-  };
-  // One way to open a written answer: from the glance panel and from Your plan.
-  const openStock = (id) => {
-    setActiveTab("chat");
-    const chip = chipList.find(c => c.id === id);
-    if (chip) onChip(chip);
-  };
   const handleKeyDown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } };
   const handleDrop = e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files?.[0]) stageFile(e.dataTransfer.files[0]); };
   const lastMsg = messages[messages.length - 1];
@@ -653,96 +625,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Dashboard (TOC) ──
   // ── SPD App (dashboard + calculator + key terms + chat) ──
   if (stage === STAGE.APP) {
-    const visibleMessages = messages.filter(m => !m.summary && (m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))));
-    let lastUserIdx = -1;
-    visibleMessages.forEach((m, i) => { if (m.role === "user") lastUserIdx = i; });
-    const aiBubbleStyle = { padding: 20, borderRadius: "4px 16px 16px 16px", background: C.surface, border: `1px solid ${C.border}`, fontSize: 15, lineHeight: 1.6 };
-    const canAsk = !!input.trim() && !loading;
-    const chatPanel = (
-      <div ref={askScrollRef} style={{ flex: 1, overflowY: "auto" }}>
-        <style>{`@media (max-width: 700px) { .plan-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }`}</style>
-        <div ref={askHeaderRef} style={{ position: "sticky", top: 0, zIndex: 5, background: C.bg, borderBottom: `1px solid ${C.borderLight}` }}>
-          <div style={{ maxWidth: 1180, margin: "0 auto", padding: "16px 20px 12px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: C.textMuted }}>{t.askHeader}</div>
-            <h1 className="plan-name" style={{ margin: 0, fontFamily: F.display, fontSize: "clamp(24px, 4.5vw, 36px)", fontWeight: 700, lineHeight: 1.05, color: C.text }}>{planData?.planName || fileName || "Your Plan"}</h1>
-          </div>
-        </div>
-        <div ref={askLayoutRef} style={{ maxWidth: 1180, margin: "0 auto", padding: "20px 20px 40px", display: "flex", flexWrap: "wrap", flexDirection: "row-reverse", gap: 28, alignItems: "flex-start" }}>
-          <main style={{ flex: "999 1 520px", minWidth: 0, display: "flex", flexDirection: "column", gap: 18 }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {chipList.map(q => {
-                const on = pickedChip === (q.id ?? q.label);
-                return (
-                  <button key={q.label} aria-pressed={on} disabled={loading} onClick={() => onChip(q)}
-                    style={{ minHeight: 44, padding: "8px 14px", borderRadius: 100, fontFamily: "inherit", fontSize: 14, fontWeight: 600, textAlign: "left", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1,
-                      background: on ? C.text : C.accentSoft, color: on ? C.surface : C.accentText, border: `1px solid ${on ? C.text : C.accentBorder}` }}
-                  >{q.label}</button>
-                );
-              })}
-            </div>
-
-            {visibleMessages.length === 0 && !loading && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "32px 24px", border: `1px dashed ${C.border}`, borderRadius: 16, textAlign: "center" }}>
-                <div style={{ fontFamily: F.display, fontSize: 24, fontWeight: 700, color: C.text }}>{t.askEmptyTitle}</div>
-                <div style={{ fontSize: 15, lineHeight: 1.5, color: C.textMuted, maxWidth: 420 }}>{t.askEmptyBody}</div>
-              </div>
-            )}
-
-            {visibleMessages.map((msg, i) => (
-              msg.stock ? (
-                <div key={i} style={{ animation: "fadeIn .3s", scrollMarginTop: sticky.headerH + 12 }}>
-                  <StockAnswerCard text={msg.content} link={msg.link} stockId={msg.stockId} review={planData?.review} onOpenCalculator={() => setActiveTab("calculator")} />
-                </div>
-              ) : (
-                <div key={i} ref={i === lastUserIdx ? lastUserRef : undefined} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s", scrollMarginTop: sticky.headerH + 12 }}>
-                  {msg.role === "user" ? (
-                    <div style={{ maxWidth: "80%", background: C.text, color: C.surface, fontSize: 15, fontWeight: 600, padding: "12px 16px", borderRadius: "16px 16px 4px 16px", border: "none", lineHeight: 1.5 }}>{msg.content}</div>
-                  ) : (
-                    <div style={{ maxWidth: "85%", ...aiBubbleStyle }}><Md text={msg.content} /></div>
-                  )}
-                </div>
-              )
-            ))}
-            {loading && (
-              <div style={{ display: "flex" }}>
-                {streamingText ? (
-                  <div style={{ maxWidth: "85%", ...aiBubbleStyle }}>
-                    <Md text={streamingText} />
-                    <span style={{ display: "inline-block", width: 2, height: "1em", background: C.accent, verticalAlign: "text-bottom", marginLeft: 2, animation: "blink 1s step-end infinite" }} />
-                  </div>
-                ) : (
-                  <div style={{ ...aiBubbleStyle, display: "flex", gap: 6 }}>
-                    {[0, 1, 2].map(i => <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent, opacity: .5, animation: `bounce 1.2s ease-in-out ${i * .15}s infinite` }} />)}
-                  </div>
-                )}
-              </div>
-            )}
-            <div ref={chatEndRef} />
-
-            <section style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8 }}>
-              <label htmlFor="follow-up" style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{t.askStillWondering}</label>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "4px 4px 4px 14px", border: `1px solid ${C.inputBorder}`, borderRadius: 14, background: C.aiBubble }}>
-                <textarea id="follow-up" ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.askFollowUp} rows={1}
-                  style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 15, fontFamily: F.body, resize: "none", padding: "10px 0", boxSizing: "border-box", lineHeight: 1.5, maxHeight: 100, minHeight: 44 }}
-                  onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }} />
-                <button onClick={() => sendMessage(input)} disabled={!canAsk}
-                  style={{ minHeight: 40, padding: "0 16px", border: "none", borderRadius: 10, fontFamily: F.body, fontSize: 14, fontWeight: 700, flexShrink: 0, cursor: canAsk ? "pointer" : "default",
-                    background: canAsk ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.border, color: canAsk ? C.onPrimary : C.textDim }}>
-                  {t.askButton}
-                </button>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 12, color: C.textDim }}>{t.footerDisclaimer}</span>
-                <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, padding: "3px 10px", fontSize: 11, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = ".7"}>{t.clearSession}</button>
-              </div>
-            </section>
-          </main>
-
-        </div>
-      </div>
-    );
-
     return (
       <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
         <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUpload(e.target.files[0]); e.target.value = ""; }} />
@@ -787,13 +669,13 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           </>
         )}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
-        {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openStock} onOpenCalculator={() => setActiveTab("calculator")} />}
-        {activeTab === "chat" && chatPanel}
+        {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openCard} onOpenCalculator={() => setActiveTab("calculator")} />}
 
-        {activeTab !== "chat" && (
+        {(
           <div style={{ flexShrink: 0, padding: "8px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: 7 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textDim} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <p style={{ margin: 0, fontSize: 10, color: C.textDim, lineHeight: 1.6 }}>{t.planProvisionDisclaimer}</p>
+            <p style={{ margin: 0, flex: 1, fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>{t.planProvisionDisclaimer}</p>
+            <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, flexShrink: 0, minHeight: 36, padding: "3px 10px", fontSize: 11, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .8 }}>{t.clearSession}</button>
           </div>
         )}
 
@@ -868,10 +750,10 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         </div>
       )}
       {showChips && <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", padding: "4px 0 8px" }}>
-        {chipList.map(q => <button key={q.label} onClick={() => onChip(q)}
+        {t.quickAsks.map(q => <button key={q} onClick={() => sendMessage(q, "button")}
           style={{ padding: "7px 13px", borderRadius: 100, fontSize: 12, background: C.accentDim, color: C.accent, border: `1px solid rgba(212,168,83,.18)`, cursor: "pointer", fontFamily: F.body, transition: "all .15s", whiteSpace: "nowrap" }}
           onMouseEnter={e => e.currentTarget.style.background = C.accentGlow} onMouseLeave={e => e.currentTarget.style.background = C.accentDim}
-        >{q.label}</button>)}</div>}
+        >{q}</button>)}</div>}
       <div ref={chatEndRef} />
     </div>
 

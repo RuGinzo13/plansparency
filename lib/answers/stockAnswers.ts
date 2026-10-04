@@ -40,10 +40,6 @@ export function questionLabel(id: StockId, lang: 'en' | 'es'): string {
   return QUESTION_LABELS[id][lang].split('{year}').join(String(getLimitYear().year));
 }
 
-// Kept until the Ask tab is removed (PHASE-16 Step 4).
-export const STOCK_QUESTIONS: { id: StockId; label: string }[] = (Object.keys(QUESTION_LABELS) as StockId[]).map((id) => ({ id, label: questionLabel(id, 'en') }));
-export const STOCK_QUESTION_LABELS_ES = Object.fromEntries((Object.keys(QUESTION_LABELS) as StockId[]).map((id) => [id, questionLabel(id, 'es')])) as Record<StockId, string>;
-
 const para = (lead: string, rest: string) => `**${lead}** ${rest}`.trim();
 const join = (paras: string[]) => paras.join('\n\n');
 
