@@ -434,7 +434,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const handleKeyDown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } };
   const handleDrop = e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files?.[0]) stageFile(e.dataTransfer.files[0]); };
   const lastMsg = messages[messages.length - 1];
-  const showChips = stage === "chat" && !loading && lastMsg?.role === "assistant";
+  const showChips = (stage === STAGE.CHAT || stage === STAGE.APP) && !loading && lastMsg?.role === "assistant";
 
   // ── Privacy ──
   if (stage === "privacy") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
