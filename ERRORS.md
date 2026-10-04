@@ -338,5 +338,12 @@ One new entry: the keep-alive that was supposed to stop Supabase pausing never w
 - **Fix:** `PHASE PROMPTS/PHASE-11-show-quick-buttons.md` (one-line change). Lesson: every UI phase gets a "trace the render path" check, and "done" waits for Ross's click-through.
 
 
+## Oct 4, 2026: PHASE-10 Ask tab built without the approved design (Cowork)
+- **What happened:** after PHASE-11 the buttons showed, but the Ask tab looked nothing like the "Stock answers, button taps" canvas Ross approved.
+- **Cause:** Cowork's PHASE-10 Step 4 described behavior only ("chips are the labels", "small badge under the message") and never copied the canvas layout or values. Claude Code did what the prompt said.
+- **Rule from now on:** any UI prompt built from a canvas must copy the canvas values (sizes, colors as `C` tokens, order, placement) into the prompt and end with a "matches canvas" checklist Claude Code fills in. Cowork reviews the diff against the canvas before telling Ross to look.
+- **Fix:** `PHASE PROMPTS/PHASE-12-ask-tab-match-canvas.md`.
+
+
 ## Session Summary, October 3–4, 2026
 Three new failures, all logged above with fixes: (1) PHASE-07 claimed done items it hadn't fully done (chip size, advisor FIRST_MSG), fixed in PHASE-08; (2) revenue report v1 costed invite-link sessions as if the PDF was sent every question, corrected after reading the code; (3) Cowork `git status` left `.git/index.lock`, deleted, Cowork now uses read-only git only.
