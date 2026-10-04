@@ -318,3 +318,14 @@ One new entry: the keep-alive that was supposed to stop Supabase pausing never w
 **What worked:** Found by reading the repo while planning PHASE-07; PHASE-07 Step 1 commits the file and Step 2 moves every definition into one glossary filled from the yearly limits table.
 **Note for next time:** After each phase, Cowork runs `git status` and checks that every file the last step named is actually committed. Never type a dollar limit into copy; read it from the limits table.
 
+
+
+## Oct 4, 2026: Revenue re-run v1 overstated paid-tier cost (Cowork)
+- **What happened:** v1 report assumed invite-link sessions send the full PDF to the AI every question, so it showed paid tiers losing money (~$1.03/session).
+- **Actual:** `/p` chat sends planData + saved summary only (~$0.16/session). The PDF is downloaded to the browser but unused (#32).
+- **Fix:** report rebuilt same day (REVISED), #37 rewritten. Lesson: trace the actual request path in code before costing it.
+
+
+## Oct 4, 2026: Cowork git status left .git/index.lock (Cowork)
+- **What happened:** `git status` from the Cowork shell could not remove its own lock file (deletes were off), which would have blocked Claude Code commits.
+- **Fix:** deleted the empty lock with permission. From now on Cowork runs only `git --no-optional-locks status` / `git log` (read-only, no lock).

@@ -567,3 +567,14 @@ The addressable sections of the app — superseded by the updated Component Map 
 ## October 3, 2026 — Advisor Authorization Added to High-Priority Security
 **Concern (Ross):** an advisor could upload a plan they don't serve and pose as its advisor to employees they cold-call. Nothing in the current build prevents it. Recorded in OPEN-ITEMS high-priority security section with 8 proposed layers; the key one is plan-sponsor approval of the advisor before any link goes live, verified independently by Plansparency. Not yet decided.
 
+
+
+## Oct 4, 2026: AI cost picture (corrected)
+- Paid tiers (invite links) cost ~$0.16/session today, ~$0.08 with caching: close to the old $0.195 model. The free self-upload tool (~$1.03 today, ~$0.40 cached) is the cost risk and needs a cap.
+- Real numbers come from PHASE-10 `chat_usage` logs, not estimates.
+
+
+## Oct 4, 2026: Stock answers (#39)
+- Button taps only. Typed questions always go to the AI. No guess-matching of typed text in v1.
+- Ross alone approves stock answer wording (not firm compliance).
+- Built from advisor-reviewed fields; a missing field sends that tap to the AI, never a blank.
