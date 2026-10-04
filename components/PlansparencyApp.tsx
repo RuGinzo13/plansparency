@@ -34,7 +34,9 @@ import { PlanDashboard } from '@/components/plansparency/PlanDashboard';
 import { CalcPanel } from '@/components/plansparency/CalcPanel';
 import { StatementDashboard } from '@/components/plansparency/StatementDashboard';
 import { Landing } from '@/components/plansparency/Landing';
-import { STOCK_QUESTIONS, getStockAnswer } from '@/lib/answers/stockAnswers';
+import { STOCK_QUESTIONS, STOCK_QUESTION_LABELS_ES, getStockAnswer } from '@/lib/answers/stockAnswers';
+import { getOverview } from '@/lib/plan/overview';
+import { PlanGlance } from '@/components/plansparency/PlanGlance';
 import { StockAnswerCard } from '@/components/plansparency/StockAnswerCard';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
@@ -103,7 +105,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [sessionEndReason, setSessionEndReason] = useState<'idle' | 'expired' | null>(null);
   const chatEndRef = useRef(null);
   const lastUserRef = useRef(null);
-  const [pickedChip, setPickedChip] = useState(null); // label of the last tapped quick-question button
+  const [pickedChip, setPickedChip] = useState(null); // id (or label) of the last tapped quick-question button
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const pendingFilesRef = useRef<File[]>([]);
@@ -261,7 +263,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         const raw = await callClaude([m1], null, lang, null, () => {}, analyzeSignal, collectedIds);
         const pd = normalizePlanData(parsePlanData(raw));
         if (pd) setPlanData(pd);
-        setMessages([m1, { role: "assistant", content: stripPlanData(raw) }]);
+        setMessages([m1, { role: "assistant", content: stripPlanData(raw), summary: true }]);
         if (!pd) {
           setUploadError(t.errorPlanData);
           setStage(STAGE.LANDING);
@@ -411,16 +413,24 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Quick-question chips ──
   // English with plan details: instant stock answers (no AI call) when every
   // detail the answer needs is there; otherwise the tap goes to the AI as before.
-  const stockChipsOn = lang === "en" && !!planData && docType !== "statement";
-  const chipList = stockChipsOn ? STOCK_QUESTIONS : t.quickAsks.map(q => ({ id: null, label: q }));
+  const stockChipsOn = !!planData && docType !== "statement";
+  const chipList = stockChipsOn
+    ? STOCK_QUESTIONS.map(q => ({ id: q.id, label: lang === "es" ? STOCK_QUESTION_LABELS_ES[q.id] : q.label }))
+    : t.quickAsks.map(q => ({ id: null, label: q }));
   const onChip = (chip) => {
     if (loading) return;
-    setPickedChip(chip.label);
-    const answer = chip.id ? getStockAnswer(chip.id, planData, "en") : null;
+    setPickedChip(chip.id ?? chip.label);
+    const answer = chip.id ? getStockAnswer(chip.id, planData, lang) : null;
     if (!answer) { sendMessage(chip.label, "button"); return; }
     bumpActivity();
     setMessages(prev => [...prev, { role: "user", content: chip.label }, { role: "assistant", content: answer.text, stock: true, stockId: chip.id, link: answer.link }]);
     fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "stock_answer", id: chip.id }) }).catch(() => {});
+  };
+  // One way to open a written answer: from the glance panel and from Your plan.
+  const openStock = (id) => {
+    setActiveTab("chat");
+    const chip = chipList.find(c => c.id === id);
+    if (chip) onChip(chip);
   };
   const handleKeyDown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } };
   const handleDrop = e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files?.[0]) stageFile(e.dataTransfer.files[0]); };
@@ -517,15 +527,16 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Dashboard (TOC) ──
   // ── SPD App (dashboard + calculator + key terms + chat) ──
   if (stage === STAGE.APP) {
-    const visibleMessages = messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir")));
+    const visibleMessages = messages.filter(m => !m.summary && (m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))));
     let lastUserIdx = -1;
     visibleMessages.forEach((m, i) => { if (m.role === "user") lastUserIdx = i; });
     const aiBubbleStyle = { padding: 20, borderRadius: "4px 16px 16px 16px", background: C.surface, border: `1px solid ${C.border}`, fontSize: 15, lineHeight: 1.6 };
     const canAsk = !!input.trim() && !loading;
+    const overview = getOverview(planData, lang, { hasFunds: false });
     const chatPanel = (
-      <>
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0" }}>
-          <div style={{ width: "100%", maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 20px 40px", display: "flex", flexWrap: "wrap", flexDirection: "row-reverse", gap: 28, alignItems: "flex-start" }}>
+          <main style={{ flex: "999 1 520px", minWidth: 0, display: "flex", flexDirection: "column", gap: 18 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: C.textMuted }}>{t.askHeader}</div>
               <h1 style={{ margin: 0, fontFamily: F.display, fontSize: "clamp(26px, 6vw, 36px)", fontWeight: 700, lineHeight: 1.05, color: C.text }}>{planData?.planName || fileName || "Your Plan"}</h1>
@@ -533,7 +544,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {chipList.map(q => {
-                const on = pickedChip === q.label;
+                const on = pickedChip === (q.id ?? q.label);
                 return (
                   <button key={q.label} aria-pressed={on} disabled={loading} onClick={() => onChip(q)}
                     style={{ minHeight: 44, padding: "8px 14px", borderRadius: 100, fontFamily: "inherit", fontSize: 14, fontWeight: 600, textAlign: "left", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1,
@@ -542,6 +553,13 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
                 );
               })}
             </div>
+
+            {visibleMessages.length === 0 && !loading && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "32px 24px", border: `1px dashed ${C.border}`, borderRadius: 16, textAlign: "center" }}>
+                <div style={{ fontFamily: F.display, fontSize: 24, fontWeight: 700, color: C.text }}>{t.askEmptyTitle}</div>
+                <div style={{ fontSize: 15, lineHeight: 1.5, color: C.textMuted, maxWidth: 420 }}>{t.askEmptyBody}</div>
+              </div>
+            )}
 
             {visibleMessages.map((msg, i) => (
               msg.stock ? (
@@ -573,29 +591,32 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
               </div>
             )}
             <div ref={chatEndRef} />
-          </div>
-        </div>
 
-        <div style={{ padding: "10px 16px 12px", borderTop: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
-          <div style={{ width: "100%", maxWidth: 760, margin: "0 auto" }}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "4px 4px 4px 14px", border: `1px solid ${C.inputBorder}`, borderRadius: 14, background: C.aiBubble }}>
-              <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.askFollowUp} rows={1}
-                style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 15, fontFamily: F.body, resize: "none", padding: "10px 0", boxSizing: "border-box", lineHeight: 1.5, maxHeight: 100, minHeight: 44 }}
-                onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }} />
-              <button onClick={() => sendMessage(input)} disabled={!canAsk}
-                style={{ minHeight: 40, padding: "0 16px", border: "none", borderRadius: 10, fontFamily: F.body, fontSize: 14, fontWeight: 700, flexShrink: 0, cursor: canAsk ? "pointer" : "default",
-                  background: canAsk ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.border, color: canAsk ? C.onPrimary : C.textDim }}>
-                {t.askButton}
-              </button>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-              <span style={{ fontSize: 10, color: C.textDim }}>{t.footerDisclaimer}</span>
-              <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, padding: "3px 10px", fontSize: 10, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = ".7"}>{t.clearSession}</button>
-            </div>
-          </div>
+            <section style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8 }}>
+              <label htmlFor="follow-up" style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{t.askStillWondering}</label>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "4px 4px 4px 14px", border: `1px solid ${C.inputBorder}`, borderRadius: 14, background: C.aiBubble }}>
+                <textarea id="follow-up" ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.askFollowUp} rows={1}
+                  style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 15, fontFamily: F.body, resize: "none", padding: "10px 0", boxSizing: "border-box", lineHeight: 1.5, maxHeight: 100, minHeight: 44 }}
+                  onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }} />
+                <button onClick={() => sendMessage(input)} disabled={!canAsk}
+                  style={{ minHeight: 40, padding: "0 16px", border: "none", borderRadius: 10, fontFamily: F.body, fontSize: 14, fontWeight: 700, flexShrink: 0, cursor: canAsk ? "pointer" : "default",
+                    background: canAsk ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.border, color: canAsk ? C.onPrimary : C.textDim }}>
+                  {t.askButton}
+                </button>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, color: C.textDim }}>{t.footerDisclaimer}</span>
+                <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, padding: "3px 10px", fontSize: 11, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = ".7"}>{t.clearSession}</button>
+              </div>
+            </section>
+          </main>
+
+          {overview.glance.length > 0 && (
+            <PlanGlance rows={overview.glance} review={planData?.review} recordkeeperName={planData?.recordkeeperName} recordkeeperUrl={planData?.recordkeeperUrl} pickedId={pickedChip} onPick={openStock} lang={lang} />
+          )}
         </div>
-      </>
+      </div>
     );
 
     return (

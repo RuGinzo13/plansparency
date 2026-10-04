@@ -69,7 +69,7 @@ export default async function ParticipantPlanPage({ params }: { params: Promise<
 
   // 4. Build initial messages from the stored summary
   // ?? '' guards against a NULL initial_summary column (no NOT NULL constraint in schema)
-  const initialMessages = [{ role: 'assistant', content: plan.initial_summary ?? '' }];
+  const initialMessages = [{ role: 'assistant', content: plan.initial_summary ?? '', summary: true }];
 
   // 5. Render the client app pre-loaded with plan data
   return (

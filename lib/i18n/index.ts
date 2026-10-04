@@ -42,6 +42,9 @@ export const i18n = {
     askHeader: "Ask about your plan",
     askFollowUp: "Ask a follow-up in your own words",
     askButton: "Ask",
+    askEmptyTitle: "Pick a question to start",
+    askEmptyBody: "Tap a question above, or any detail in \"Your plan at a glance\", and the answer shows up here in seconds.",
+    askStillWondering: "Still wondering something?",
     footerDisclaimer: "Plansparency provides education about your plan, not personalized financial advice.",
     planProvisionDisclaimer: "Education only — not financial advice. Plan provisions reflect the documents you uploaded and are current as of the date of those documents. Plan provisions are subject to change — always confirm current details with your plan administrator or HR department.",
     firstMessage: `I just uploaded my 401(k) plan document. Please read through it and give me a brief welcome summary of my plan — plan name, employer contribution types (distinguish safe harbor from discretionary match and profit sharing), vesting schedule, and one standout feature. Mention Roth and catch-up availability.
@@ -320,6 +323,9 @@ Fill EVERY field from the actual statement:
     askHeader: "Pregunta sobre tu plan",
     askFollowUp: "Haz otra pregunta con tus propias palabras",
     askButton: "Preguntar",
+    askEmptyTitle: "Elige una pregunta para empezar",
+    askEmptyBody: "Toca una pregunta arriba, o cualquier dato en \"Tu plan de un vistazo\", y la respuesta aparece aquí en segundos.",
+    askStillWondering: "¿Te queda alguna duda?",
     footerDisclaimer: "Plansparency ofrece educación, no asesoría financiera personalizada.",
     planProvisionDisclaimer: "Solo educación — no es asesoramiento financiero. Las disposiciones del plan reflejan los documentos cargados y están vigentes a la fecha de esos documentos. Las disposiciones del plan están sujetas a cambios — confirma los detalles actuales con el administrador del plan o tu departamento de Recursos Humanos.",
     firstMessage: `Acabo de subir mi documento de plan 401(k). Dame un resumen de bienvenida — nombre del plan, tipos de contribución del empleador (distingue safe harbor de match discrecional y profit sharing), calendario de vesting, y una característica destacada. Menciona disponibilidad de Roth y catch-up. Responde en español.

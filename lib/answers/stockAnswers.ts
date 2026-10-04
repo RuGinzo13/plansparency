@@ -31,6 +31,18 @@ export const STOCK_QUESTIONS: { id: StockId; label: string }[] = [
   { id: 'limit', label: `How much can I save in ${getLimitYear().year}?` },
 ];
 
+// Spanish question labels. The answers themselves go to the AI in Spanish for now.
+export const STOCK_QUESTION_LABELS_ES: Record<StockId, string> = {
+  match: '¿Cómo funciona el match de mi empleador?',
+  vesting: '¿Cuándo es mío el match?',
+  elig: '¿Cuándo puedo empezar a ahorrar?',
+  roth: 'Roth o Tradicional: ¿cuál es la diferencia?',
+  loans: '¿Puedo pedir un préstamo de mi 401(k)?',
+  hardship: '¿Puedo sacar dinero por una dificultad económica?',
+  leave: '¿Qué pasa con mi 401(k) si dejo mi trabajo?',
+  limit: `¿Cuánto puedo ahorrar en ${getLimitYear().year}?`,
+};
+
 const para = (lead: string, rest: string) => `**${lead}** ${rest}`.trim();
 const join = (paras: string[]) => paras.join('\n\n');
 
