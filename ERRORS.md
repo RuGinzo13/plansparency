@@ -345,5 +345,11 @@ One new entry: the keep-alive that was supposed to stop Supabase pausing never w
 - **Fix:** `PHASE PROMPTS/PHASE-12-ask-tab-match-canvas.md`.
 
 
+## Oct 4, 2026: Vesting reader missed the most common real format (Cowork)
+- **What happened:** On Ross's Tierra Sur test plan the vesting slider showed "See the schedule below". The schedule text was clear ("6-year graded — 0% at 0-1 year, 20% at 2 … 100% at 6+ years").
+- **Cause:** Cowork's PHASE-13 test table used tidy made-up strings ("20% after 2 years …"), not text the plan reader actually returns. Year ranges ("0-1"), "6+" and a leading safe-harbor clause break the parser.
+- **Fix:** PHASE-16 Step 1 item 4, with this exact string as a test. Lesson: build parser tests from real plan-reader output (`plandata_json` of saved test plans), not invented examples.
+
+
 ## Session Summary, October 3–4, 2026
 Three new failures, all logged above with fixes: (1) PHASE-07 claimed done items it hadn't fully done (chip size, advisor FIRST_MSG), fixed in PHASE-08; (2) revenue report v1 costed invite-link sessions as if the PDF was sent every question, corrected after reading the code; (3) Cowork `git status` left `.git/index.lock`, deleted, Cowork now uses read-only git only.
