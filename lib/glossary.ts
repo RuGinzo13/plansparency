@@ -2,7 +2,7 @@
 // Key Terms, the calculator's definition bubbles, and anywhere else that
 // explains a plan concept all read from here, so the wording and the dollar
 // numbers never drift apart. Dollar placeholders are filled from
-// lib/plan/irs-limits.ts for the current limit year — never type a limit by
+// lib/plan/irs-limits.ts for the current limit year, never type a limit by
 // hand into a definition.
 
 import { IRS_LIMITS, getLimitYear } from './plan/irs';
@@ -93,8 +93,8 @@ const BASE_ENTRIES: GlossaryEntry[] = [
     id: 'safeHarbor',
     term: { en: 'Safe harbor contribution', es: 'Contribución safe harbor' },
     def: {
-      en: "A guaranteed employer contribution required by law. It's immediately 100% yours — no vesting wait. Unlike a regular match, a nonelective safe harbor doesn't require you to contribute to receive it.",
-      es: "Una contribución garantizada del empleador requerida por ley. Es 100% tuya inmediatamente — sin período de espera de vesting. El safe harbor no electivo no requiere que contribuyas para recibirlo.",
+      en: "A guaranteed employer contribution required by law. It's immediately 100% yours, no vesting wait. Unlike a regular match, a nonelective safe harbor doesn't require you to contribute to receive it.",
+      es: "Una contribución garantizada del empleador requerida por ley. Es 100% tuya inmediatamente, sin período de espera de vesting. El safe harbor no electivo no requiere que contribuyas para recibirlo.",
     },
   },
   {
@@ -109,8 +109,8 @@ const BASE_ENTRIES: GlossaryEntry[] = [
     id: 'profitSharing',
     term: { en: 'Profit sharing', es: 'Profit sharing' },
     def: {
-      en: "An extra employer contribution based on company performance. It's discretionary — the employer decides each year whether to give it and how much. Not guaranteed like a safe harbor.",
-      es: "Una contribución adicional del empleador basada en el desempeño de la empresa. Es discrecional — el empleador decide cada año si la da y cuánto. No está garantizada como el safe harbor.",
+      en: "An extra employer contribution based on company performance. It's discretionary, the employer decides each year whether to give it and how much. Not guaranteed like a safe harbor.",
+      es: "Una contribución adicional del empleador basada en el desempeño de la empresa. Es discrecional, el empleador decide cada año si la da y cuánto. No está garantizada como el safe harbor.",
     },
   },
   {
@@ -213,8 +213,8 @@ const BASE_ENTRIES: GlossaryEntry[] = [
     id: 'rollover',
     term: { en: 'Rollover', es: 'Rollover (transferencia)' },
     def: {
-      en: "Moving money from one retirement account to another — like from an old job's 401(k) to an IRA or new employer's plan — without paying taxes. Must be done correctly (direct rollover) to avoid a tax hit.",
-      es: "Mover dinero de una cuenta de retiro a otra — como de un 401(k) anterior a una IRA o plan de nuevo empleador — sin pagar impuestos. Debe hacerse correctamente (rollover directo).",
+      en: "Moving money from one retirement account to another, like from an old job's 401(k) to an IRA or new employer's plan, without paying taxes. Must be done correctly (direct rollover) to avoid a tax hit.",
+      es: "Mover dinero de una cuenta de retiro a otra, como de un 401(k) anterior a una IRA o plan de nuevo empleador, sin pagar impuestos. Debe hacerse correctamente (rollover directo).",
     },
   },
   {
@@ -237,7 +237,7 @@ const BASE_ENTRIES: GlossaryEntry[] = [
     id: 'loan',
     term: { en: 'Plan Loan', es: 'Préstamo del Plan' },
     def: {
-      en: "Borrowing from your own 401(k) balance. You repay yourself with interest. There are limits (usually up to 50% of your vested balance, max $50,000) and risks — if you leave your job, the loan may become due immediately.",
+      en: "Borrowing from your own 401(k) balance. You repay yourself with interest. There are limits (usually up to 50% of your vested balance, max $50,000) and risks, if you leave your job, the loan may become due immediately.",
       es: "Pedir prestado de tu propio saldo del 401(k). Te reembolsas a ti mismo con intereses. Hay límites (normalmente hasta el 50% de tu saldo investido, máx $50,000) y riesgos.",
     },
   },
@@ -363,8 +363,8 @@ const EXTRAS: Partial<Record<TermId, Extra>> = {
     term: { en: 'Hardship withdrawal', es: 'Retiro por dificultad' },
     short: { en: 'Take money out early for a serious emergency.', es: 'Saca dinero antes de tiempo por una emergencia grave.' },
     def: {
-      en: "Taking money out while you still work there, for a serious money emergency like medical bills or stopping an eviction. It's taxed as income, and if you're under 59½ there's usually an extra 10% tax. You don't pay it back.",
-      es: "Sacar dinero mientras sigues trabajando ahí, por una emergencia de dinero grave como cuentas médicas o evitar un desalojo. Se grava como ingreso, y si tienes menos de 59½ normalmente hay un 10% extra de impuesto. No se devuelve.",
+      en: "Taking money out while you still work there, for a serious money emergency like medical bills or stopping an eviction. It's taxed as income, and if you're under 59½ there's usually an extra 10% early withdrawal tax. You don't pay it back.",
+      es: "Sacar dinero mientras sigues trabajando ahí, por una emergencia de dinero grave como cuentas médicas o evitar un desalojo. Se grava como ingreso, y si tienes menos de 59½ normalmente hay un 10% extra de impuesto por retiro anticipado. No se devuelve.",
     },
     rel: ['loan', 'inService'],
     ask: 'hardship',
@@ -423,8 +423,8 @@ const NEW_ENTRIES: GlossaryEntry[] = [
     term: { en: 'In-service withdrawal', es: 'Retiro en servicio' },
     short: { en: 'Taking money out while you still work there, no hardship needed.', es: 'Sacar dinero mientras sigues trabajando ahí, sin necesitar una dificultad.' },
     def: {
-      en: "Some plans let you take money out while you're still working, once you reach a certain age (often 59½) or from certain money, like money you rolled in from an old plan. It's taxed as income, and under 59½ there's usually an extra 10% tax. Not every plan allows it.",
-      es: "Algunos planes te dejan sacar dinero mientras sigues trabajando, cuando llegas a cierta edad (a menudo 59½) o de cierto dinero, como el que transferiste de un plan anterior. Se grava como ingreso, y si tienes menos de 59½ normalmente hay un 10% extra de impuesto. No todos los planes lo permiten.",
+      en: "Some plans let you take money out while you're still working, once you reach a certain age (often 59½) or from certain money, like money you rolled in from an old plan. It's taxed as income, and under 59½ there's usually an extra 10% early withdrawal tax. Not every plan allows it.",
+      es: "Algunos planes te dejan sacar dinero mientras sigues trabajando, cuando llegas a cierta edad (a menudo 59½) o de cierto dinero, como el que transferiste de un plan anterior. Se grava como ingreso, y si tienes menos de 59½ normalmente hay un 10% extra de impuesto por retiro anticipado. No todos los planes lo permiten.",
     },
     rel: ['hardship', 'standardWithdrawal'],
   },
@@ -433,8 +433,8 @@ const NEW_ENTRIES: GlossaryEntry[] = [
     term: { en: 'Standard withdrawal', es: 'Retiro estándar' },
     short: { en: 'Taking money out after you leave your job or retire.', es: 'Sacar dinero después de dejar tu trabajo o jubilarte.' },
     def: {
-      en: "Once you leave your job or retire, you can take money out of your 401(k). Traditional money is taxed as income when it comes out. Under 59½ there's usually an extra 10% tax, unless you left your job in or after the year you turned 55. In your 70s, the IRS requires you to start taking out a minimum amount each year.",
-      es: "Cuando dejas tu trabajo o te jubilas, puedes sacar dinero de tu 401(k). El dinero Tradicional se grava como ingreso cuando sale. Si tienes menos de 59½ normalmente hay un 10% extra de impuesto, a menos que hayas dejado tu trabajo en el año en que cumpliste 55 o después. En tus 70, el IRS exige que empieces a sacar una cantidad mínima cada año.",
+      en: "Once you leave your job or retire, you can take money out of your 401(k). Traditional money is taxed as income when it comes out. Under 59½ there's usually an extra 10% early withdrawal tax, unless you left your job in or after the year you turned 55. In your 70s, the IRS requires you to start taking out a minimum amount each year.",
+      es: "Cuando dejas tu trabajo o te jubilas, puedes sacar dinero de tu 401(k). El dinero Tradicional se grava como ingreso cuando sale. Si tienes menos de 59½ normalmente hay un 10% extra de impuesto por retiro anticipado, a menos que hayas dejado tu trabajo en el año en que cumpliste 55 o después. En tus 70, el IRS exige que empieces a sacar una cantidad mínima cada año.",
     },
     rel: ['rollover', 'inService'],
     ask: 'leave',

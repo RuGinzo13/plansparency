@@ -73,7 +73,7 @@ export async function uploadFile(
     clearProgress();
     if (e.name === 'AbortError') {
       const te: any = new Error(
-        'Upload timed out — please check your internet connection and try again.'
+        'Upload timed out. Please check your internet connection and try again.'
       );
       te.status = 504;
       throw te;

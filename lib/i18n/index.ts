@@ -39,7 +39,7 @@ export const i18n = {
     landSubCode: "Your employer or advisor set up your plan here. Enter the plan code from your enrollment materials.",
     readingTitle: "Making your plan transparent...",
     readingSubPrefix: "Reading through", readingSubSuffix: "so you don't have to",
-    disclaimer: "Education only — not financial advice",
+    disclaimer: "Education only, not financial advice",
     inputPlaceholder: "Ask about your plan...",
     askHeader: "Ask about your plan",
     askFollowUp: "Ask a follow-up in your own words",
@@ -48,7 +48,7 @@ export const i18n = {
     askEmptyBody: "Tap a question above, or any detail in \"Your plan at a glance\", and the answer shows up here in seconds.",
     askStillWondering: "Still wondering something?",
     footerDisclaimer: "Plansparency provides education about your plan, not personalized financial advice.",
-    planProvisionDisclaimer: "Education only — not financial advice. Plan provisions reflect the documents you uploaded and are current as of the date of those documents. Plan provisions are subject to change — always confirm current details with your plan administrator or HR department.",
+    planProvisionDisclaimer: "Education only, not financial advice. Plan provisions reflect the documents you uploaded and are current as of the date of those documents. They can change, so always confirm current details with your plan administrator or HR department.",
     firstMessage: `I just uploaded my 401(k) plan document. Please read through it and give me a brief welcome summary of my plan — plan name, employer contribution types (distinguish safe harbor from discretionary match and profit sharing), vesting schedule, and one standout feature. Mention Roth and catch-up availability.
 
 IMPORTANT — include at the very end of your response a hidden data block on its own line in this EXACT format:
@@ -89,7 +89,7 @@ Fill in based on the actual plan document:
   * expenseRatio: decimal if stated in document (0.0045 = 0.45%), else null
   * factSheetUrl: official fund company fact sheet URL only if you are certain of the exact URL for this fund and share class. For Vanguard: https://investor.vanguard.com/investment-products/mutual-funds/profile/{TICKER}#overview. For iShares: https://www.ishares.com/us/products/{TICKER}/. For Fidelity: https://fundresearch.fidelity.com/mutual-funds/summary/{TICKER}. Return null for all other fund families unless certain. NEVER guess — a missing link is better than a broken one.`,
     errorRead: "Something went wrong reading your document. Please try again.",
-    errorPlanData: "We couldn't extract your plan data. This sometimes happens with scanned or image-based PDFs. Please try uploading again — if the problem continues, try a different copy of your plan document.",
+    errorPlanData: "We couldn't extract your plan data. This sometimes happens with scanned or image-based PDFs. Please try uploading again. If the problem continues, try a different copy of your plan document.",
     errorReply: "The document you uploaded may not contain that specific answer. Try uploading additional plan documents for more detail, or log into your account for more information.",
     errorFormat: "Please upload a PDF file of your plan document.",
     errUploadNetwork: "The upload lost its connection before it finished. Check your internet and try again. Bigger files take longer.",
@@ -113,7 +113,7 @@ Fill in based on the actual plan document:
       ["No accounts, no tracking.", "No login, no profiles, nothing saved."],
       ["Not personal financial data.", "SPDs and enrollment booklets describe plan rules, not your individual balance or SSN."],
     ],
-    privacyAgree: "I understand — let me upload", privacyCancel: "Go back",
+    privacyAgree: "I understand, let me upload", privacyCancel: "Go back",
     securityBadge: "Session-only • No data stored",
     calcWaiting: "Upload a plan document to auto-detect your match formula and plan features",
     // ── Redesigned calculator (Phase 07) ──
@@ -322,7 +322,7 @@ Fill EVERY field from the actual statement:
     landSubCode: "Tu empleador o asesor configuró tu plan aquí. Ingresa el código del plan de tus materiales de inscripción.",
     readingTitle: "Haciendo tu plan transparente...",
     readingSubPrefix: "Leyendo", readingSubSuffix: "para que tú no tengas que",
-    disclaimer: "Solo educación — no asesoría",
+    disclaimer: "Solo educación, no asesoría",
     inputPlaceholder: "Pregunta sobre tu plan...",
     askHeader: "Pregunta sobre tu plan",
     askFollowUp: "Haz otra pregunta con tus propias palabras",
@@ -331,7 +331,7 @@ Fill EVERY field from the actual statement:
     askEmptyBody: "Toca una pregunta arriba, o cualquier dato en \"Tu plan de un vistazo\", y la respuesta aparece aquí en segundos.",
     askStillWondering: "¿Te queda alguna duda?",
     footerDisclaimer: "Plansparency ofrece educación, no asesoría financiera personalizada.",
-    planProvisionDisclaimer: "Solo educación — no es asesoramiento financiero. Las disposiciones del plan reflejan los documentos cargados y están vigentes a la fecha de esos documentos. Las disposiciones del plan están sujetas a cambios — confirma los detalles actuales con el administrador del plan o tu departamento de Recursos Humanos.",
+    planProvisionDisclaimer: "Solo educación, no es asesoramiento financiero. Las disposiciones del plan reflejan los documentos cargados y están vigentes a la fecha de esos documentos. Pueden cambiar, así que confirma siempre los detalles actuales con el administrador del plan o tu departamento de Recursos Humanos.",
     firstMessage: `Acabo de subir mi documento de plan 401(k). Dame un resumen de bienvenida — nombre del plan, tipos de contribución del empleador (distingue safe harbor de match discrecional y profit sharing), calendario de vesting, y una característica destacada. Menciona disponibilidad de Roth y catch-up. Responde en español.
 
 IMPORTANTE — al final incluye en una línea:
@@ -363,7 +363,7 @@ Llena según el plan real. matchTiers = solo match DISCRECIONAL. safeHarbor y pr
       ["Sin cuentas ni rastreo.", "Nada se guarda."],
       ["No son datos personales.", "Los SPD describen reglas del plan, no tu saldo."],
     ],
-    privacyAgree: "Entiendo — subir", privacyCancel: "Regresar",
+    privacyAgree: "Entiendo, subir", privacyCancel: "Regresar",
     securityBadge: "Solo sesión • Sin datos",
     calcWaiting: "Sube un documento para detectar tu fórmula de match",
     // ── Calculadora rediseñada (Fase 07) ──

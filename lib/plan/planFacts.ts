@@ -51,7 +51,16 @@ export type ParsedVesting = { kind: 'immediate' } | { kind: 'schedule'; byYear: 
 
 export function parseVesting(text: string | null | undefined): ParsedVesting | null {
   if (!has(text)) return null;
-  const t = text.trim();
+  // Dashes in the text are punctuation, not part of a range ("0-1 year" keeps its hyphen).
+  let t = text.trim().replace(/[—–]/g, ' ');
+
+  // A leading clause that only says some money is "100% immediately vested" (safe harbor)
+  // is ignored when another clause gives the schedule for the rest of the employer money.
+  const sentences = t.split(/\.\s+/);
+  if (sentences.length > 1) {
+    const keep = sentences.filter((s) => !/(immediately vested|right away)/i.test(s));
+    if (keep.length > 0 && keep.length < sentences.length && /\d+\s*%/.test(keep.join('. '))) t = keep.join('. ');
+  }
 
   // Immediate: says 100% and "immediate(ly)" / "right away", and names no years.
   if (/100\s*%/.test(t) && /(immediate|right away)/i.test(t) && !/\d+[- ]?years?/i.test(t)) return { kind: 'immediate' };
@@ -69,32 +78,39 @@ export function parseVesting(text: string | null | undefined): ParsedVesting | n
   const cliff100 = t.match(/100%\s*(?:after|at)\s*(\d+)\s*years?/i);
   if (cliff100 && percents.length === 1) return cliffFrom(Number(cliff100[1]));
 
-  // Graded: only explicit pairs, "20% after 2 years" or "2 years: 20%".
-  const pairs: [number, number][] = [];
-  const re1 = /(\d+)\s*%\s*(?:after|at)?\s*(\d+)\s*(?:years?)?/gi;
+  // Graded: only explicit pairs. "20% after 2 years", "0% at 0-1 year" (a range: every year in
+  // it), "100% at 6+ years" (year 6 and later), or "2 years: 20%". [fromYear, toYear, percent]
+  const pairs: [number, number, number][] = [];
+  const re1 = /(\d+)\s*%\s*(?:after|at)?\s*(\d+)(?:\s*-\s*(\d+))?\s*\+?\s*(?:years?)?/gi;
   const re2 = /(\d+)\s*years?\s*[:=-]?\s*(\d+)\s*%/gi;
-  const useRe2 = re2.test(t);
-  re2.lastIndex = 0;
-  const re = useRe2 ? re2 : re1;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(t)) !== null) {
-    pairs.push(useRe2 ? [Number(m[1]), Number(m[2])] : [Number(m[2]), Number(m[1])]); // [year, percent]
+  while ((m = re1.exec(t)) !== null) {
+    const y1 = Number(m[2]);
+    const y2 = m[3] !== undefined ? Number(m[3]) : y1;
+    pairs.push([y1, y2, Number(m[1])]);
+  }
+  if (pairs.length < 2) {
+    pairs.length = 0;
+    while ((m = re2.exec(t)) !== null) pairs.push([Number(m[1]), Number(m[1]), Number(m[2])]);
   }
   if (pairs.length < 2) return null;
-  const maxYear = Math.max(...pairs.map((p) => p[0]));
-  if (maxYear > 10 || pairs.some((p) => p[0] < 1 || p[1] < 0 || p[1] > 100)) return null;
+  const maxYear = Math.max(...pairs.map((p) => p[1]));
+  if (maxYear > 10 || pairs.some((p) => p[0] > p[1] || p[2] < 0 || p[2] > 100)) return null;
+  // Years in a pair's range all take its percent. A year named twice is unclear: no schedule.
   const byYear: number[] = Array(maxYear + 1).fill(0);
   const seen = new Set<number>();
-  for (const [y, pct] of pairs) {
-    if (seen.has(y)) return null;
-    seen.add(y);
-    byYear[y] = pct;
+  for (const [y1, y2, pct] of pairs) {
+    for (let y = y1; y <= y2; y++) {
+      if (seen.has(y)) return null;
+      seen.add(y);
+      byYear[y] = pct;
+    }
   }
-  // Fill years the text skipped (between listed ones) with the previous value, but only
-  // when the listed values are in order and finish at 100.
+  // Fill years the text skipped between listed ones with the previous value, but only
+  // when the listed values never go down and finish at 100.
   const listed = [...pairs].sort((a, b) => a[0] - b[0]);
-  for (let i = 1; i < listed.length; i++) if (listed[i][1] < listed[i - 1][1]) return null;
-  if (listed[listed.length - 1][1] !== 100) return null;
+  for (let i = 1; i < listed.length; i++) if (listed[i][2] < listed[i - 1][2]) return null;
+  if (listed[listed.length - 1][2] !== 100) return null;
   let prev = 0;
   for (let y = 0; y <= maxYear; y++) {
     if (seen.has(y)) prev = byYear[y]; else byYear[y] = prev;

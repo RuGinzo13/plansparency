@@ -17,8 +17,8 @@ const TOP_OUT_PCT = { basic_match: 5, qaca: 6, enhanced_match: 4 };
 function shLabel(sh, lang) {
   const labels = {
     nonelective: {
-      en: "3% of pay — regardless of your contributions",
-      es: "3% del salario — sin importar tus contribuciones",
+      en: "3% of pay, regardless of your contributions",
+      es: "3% del salario, sin importar tus contribuciones",
     },
     basic_match: {
       en: "100% of first 3% + 50% of next 2%",
@@ -216,7 +216,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     { value: 12, label: t.calc2PayMonthly },
   ];
 
-  // ── Card 1 — Start with you ──
+  // ── Card 1, Start with you ──
   const StartWithYou = (
     <div style={card}>
       <div style={heading}>{t.calc2StartTitle}</div>
@@ -225,7 +225,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         <input
           type="number" min={18} max={100} value={age}
           onChange={(e) => setAge(e.target.value)}
-          placeholder="—"
+          placeholder="-"
           style={inputBase}
         />
         <div style={{ fontSize: 12, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2AgeHelper}</div>
@@ -268,7 +268,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     </div>
   );
 
-  // ── Card 2 — Your {year} limit ──
+  // ── Card 2, Your {year} limit ──
   const LimitCard = (
     <div style={{ ...card, position: "relative" }}>
       <div style={heading}>{tpl(t.calc2LimitTitle, { year: limitYear.year })}</div>
@@ -416,7 +416,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
               <div style={{ position: "relative", maxWidth: 220 }}>
                 <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, fontSize: 16 }}>$</span>
                 <input
-                  type="number" min={0} value={box3Text} placeholder="—"
+                  type="number" min={0} value={box3Text} placeholder="-"
                   onChange={(e) => setBox3Text(e.target.value)}
                   style={{ ...inputBase, paddingLeft: 24 }}
                 />
@@ -504,7 +504,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     </div>
   );
 
-  // ── Card 3 — How much of your pay you save ──
+  // ── Card 3, How much of your pay you save ──
   const SaveCard = (
     <div style={card}>
       <div style={heading}>{t.calc2SaveTitle}</div>
@@ -549,7 +549,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     </div>
   );
 
-  // ── Card 4 — Result ──
+  // ── Card 4, Result ──
   const ResultCard = (
     <div style={card}>
       <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 4 }}>{hasSH ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly}</div>
@@ -611,7 +611,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     </div>
   );
 
-  // ── Card 5 — Good to know about your plan ──
+  // ── Card 5, Good to know about your plan ──
   const infoRows = [];
   if (hasSH) {
     infoRows.push({
@@ -730,7 +730,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   );
 }
 
-// column: 'traditional' | 'roth' — determines the wording when the option isn't available.
+// column: 'traditional' | 'roth', determines the wording when the option isn't available.
 function TaxCell({ ok, unavailable, column, hasPreTaxUnknown, t }) {
   if (unavailable) {
     return <div style={{ fontSize: 12, fontWeight: 600, color: C.danger, textAlign: "center" }}>{t.calc2NotAvailable}</div>;

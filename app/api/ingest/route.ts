@@ -26,7 +26,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   // ── 1b. Rate limit (per IP) ──────────────────────────────────────────────
   // Fails open if Upstash is unconfigured/unreachable. Client surfaces 429.
   const rl = await checkRateLimit(req, 'ingest');
-  if (!rl.ok) return jsonError('Too many uploads — please wait a minute and try again.', 429);
+  if (!rl.ok) return jsonError('Too many uploads. Please wait a minute and try again.', 429);
 
   // ── 2. Resolve the PDF bytes from the multipart body ──────────────────────
   let formData: FormData;

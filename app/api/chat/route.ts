@@ -26,7 +26,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   // Client maps 429 → friendly "Too many requests" message. Fails open if Upstash
   // is not configured or unreachable, so the happy path is unchanged.
   const rl = await checkRateLimit(req, 'chat');
-  if (!rl.ok) return jsonError('Too many requests — please wait a minute and try again.', 429);
+  if (!rl.ok) return jsonError('Too many requests. Please wait a minute and try again.', 429);
 
   // ── 2. Parse body ────────────────────────────────────────────────────────────
   let body: {

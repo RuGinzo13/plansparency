@@ -30,9 +30,9 @@ for (const { id } of STOCK_QUESTIONS) {
   check(getStockAnswer(id, null, 'en') === null, `null planData / ${id} should be null`);
 }
 // Spot checks that the answers say what the plan says.
-check(!!getStockAnswer('match', samples.basicSafeHarbor, 'en')?.text.includes('$2,500'), 'basic match example should show $2,500');
-check(!!getStockAnswer('match', samples.nonelective, 'en')?.text.includes('$1,500'), 'nonelective example should show $1,500');
-check(getStockAnswer('match', samples.basicSafeHarbor, 'en')?.link === 'calculator', 'match answer links to the calculator');
+check(!!getStockAnswer('safeHarbor', samples.basicSafeHarbor, 'en')?.text.includes('$2,500'), 'basic match example should show $2,500');
+check(!!getStockAnswer('safeHarbor', samples.nonelective, 'en')?.text.includes('$1,500'), 'nonelective example should show $1,500');
+check(getStockAnswer('safeHarbor', samples.basicSafeHarbor, 'en')?.link === 'calculator', 'match answer links to the calculator');
 check(!!getStockAnswer('limit', samples.catchUpOff, 'en')?.text.includes('at every age'), 'no catch-up wording');
 check(!!getStockAnswer('limit', samples.rothOff, 'en')?.text.includes("doesn't offer Roth"), 'no-Roth catch-up wording');
 check(getStockAnswer('loans', samples.loansHardshipOff, 'en')?.text.includes("doesn't offer loans") === true, 'loans off wording');
@@ -44,6 +44,24 @@ check(getStockAnswer('loans', samples.loansHardshipOff, 'en')?.text.includes("do
   const v = getStockAnswer('vesting', imm, 'en')?.text ?? '';
   check(m.length > 0 && !m.includes('follows a vesting schedule'), 'immediate plan: match answer must not say it follows a schedule');
   check(v.includes('100% yours right away') && !v.includes('What that means'), 'immediate plan: vesting answer says right away, no generic paragraph');
+}
+
+// Separate safe harbor / match / profit answers, in-service, and the tax wording.
+{
+  const A = (id: any, k: string) => getStockAnswer(id, (samples as any)[k], 'en');
+  check(!!A('match', 'basicSafeHarbor')?.text.includes('No extra match'), 'safe harbor only: match says No extra match');
+  check(!!A('safeHarbor', 'nonelective')?.text.includes("even if you don't save"), 'nonelective safeHarbor text');
+  check(!!A('safeHarbor', 'basicSafeHarbor')?.text.includes('must add this every year'), 'safe harbor match text');
+  check(!!A('safeHarbor', 'noMatch')?.text.includes("doesn't use a safe harbor"), 'no safe harbor text');
+  check(A('safeHarbor', 'qaca') === null && A('match', 'qaca') === null, 'qaca: safeHarbor and match return null');
+  check(!!A('match', 'discretionaryLastDay')?.text.includes("The law doesn't require it."), 'match: law does not require it');
+  check(!A('match', 'discretionaryLastDay')?.text.includes('isn\'t guaranteed'), 'match: old #44 wording gone');
+  check(!!A('profit', 'profitSharingOn')?.text.includes('Yes, your plan has profit sharing'), 'profit yes');
+  check(!!A('profit', 'noMatch')?.text.includes("doesn't have profit sharing"), 'profit no');
+  check(A('profit', 'allNull') === null, 'profit unknown is null');
+  for (const k of Object.keys(samples)) check(A('inService', k) === null, `${k}: inService is always null`);
+  check(!!A('leave', 'basicSafeHarbor')?.text.includes('Roth money comes out tax-free if you\'re 59½ or older'), 'leave: new cash-out sentence');
+  check(!!A('hardship', 'basicSafeHarbor')?.text.includes('extra 10% early withdrawal tax'), 'hardship: early withdrawal tax wording');
 }
 
 // parseVesting: must read these exactly, and refuse to guess the rest.
@@ -58,6 +76,8 @@ const vestCases: [string, any][] = [
   ['Vesting per the plan document', null],
   ['', null],
   ['40% after 2 years, 20% after 3', null],
+  ['Safe harbor contributions: 100% immediately vested. Discretionary match and employer/profit sharing contributions: 6-year graded — 0% at 0-1 year, 20% at 2, 40% at 3, 60% at 4, 80% at 5, 100% at 6+ years.', [0, 0, 20, 40, 60, 80, 100]],
+  ['6-year graded — 0% at 0-1 year, 20% at 2, 40% at 3, 60% at 4, 80% at 5, 100% at 6+ years.', [0, 0, 20, 40, 60, 80, 100]],
 ];
 for (const [text, want] of vestCases) {
   const got = parseVesting(text);

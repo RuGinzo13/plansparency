@@ -4,7 +4,7 @@
 // the plan details don't say is left out, never guessed.
 
 import type { PlanData } from './plandata';
-import type { StockId } from '../answers/stockAnswers';
+import { questionLabel, type StockId } from '../answers/stockAnswers';
 import { has, facts, tierText, vestingParts, parseVesting, FULL_MATCH_PCT, STANDARD_FORMULA } from './planFacts';
 import { safeHarborAmount } from './calc';
 import { IRS_LIMITS } from './irs-limits';
@@ -29,7 +29,7 @@ export interface TopicCard {
 export interface VestingBar { label: string; byYear: number[]; parsed: boolean }
 export interface VestingInfo { bars: VestingBar[]; maxYears: number; scheduleText: string; parsed: boolean }
 export interface LeaveOption { title: string; tag: string; body: string; warning?: boolean }
-export interface Overview {
+export interface LegacyOverview {
   headlines: Headline[];
   glance: GlanceRow[];
   topics: { you: TopicCard[]; company: TopicCard[]; while: TopicCard[]; leave: TopicCard[] };
@@ -41,11 +41,13 @@ const num = (n: number) => String(Math.round(n * 100) / 100);
 const noDot = (s: string) => s.trim().replace(/\.$/, '');
 const bool = (v: unknown): v is boolean => typeof v === 'boolean';
 
-export function getOverview(
+// Old shape (headline cards, flat glance rows). Used by the current screens until
+// PHASE-16 Step 3 replaces them; deleted in Step 4.
+export function getOverviewLegacy(
   pdIn: PlanData | null,
   lang: Lang,
   opts: { hasFunds: boolean; fundsCount?: number }
-): Overview {
+): LegacyOverview {
   const L = (en: string, es: string) => (lang === 'es' ? es : en);
   const pd = (pdIn && typeof pdIn === 'object' ? pdIn : null) as PlanData | null;
   const { year } = getLimitYear();
@@ -328,4 +330,129 @@ export function getOverview(
   ];
 
   return { headlines, glance, topics: { you, company, while: whileWorking, leave }, vesting, leaveOptions };
+}
+
+
+// ── New shape: panel groups + one card per question (PHASE-16) ───────────────
+export type TopicKey = 'you' | 'employer' | 'access' | 'leave';
+export interface PanelRow { label: string; value: string; card: StockId }
+export interface PanelGroup { topic: 'you' | 'employer' | 'access'; label: string; rows: PanelRow[] }
+export interface PlanCard { id: StockId; question: string; fact: string; tone: 'good' | 'neutral'; stockId: StockId }
+export interface Overview {
+  groups: PanelGroup[];
+  topics: Record<TopicKey, PlanCard[]>;
+  vesting: VestingInfo | null;
+  leaveOptions: LeaveOption[];
+}
+
+export function getOverview(
+  pdIn: PlanData | null,
+  lang: Lang,
+  _opts?: { hasFunds?: boolean; fundsCount?: number }
+): Overview {
+  const L = (en: string, es: string) => (lang === 'es' ? es : en);
+  const pd = (pdIn && typeof pdIn === 'object' ? pdIn : null) as PlanData | null;
+  const { year } = getLimitYear();
+  const limits = IRS_LIMITS[year];
+  const f = pd ? facts(pd) : null;
+  const tap = L('Tap to see', 'Toca para ver');
+  const yes = L('Yes', 'Sí');
+  const no = 'No';
+  const yn = (v: unknown) => (bool(v) ? (v ? yes : no) : tap);
+
+  // Employer money, in plain words
+  const upTo = (x: number) => L(`Yes, up to ${num(x)}% of pay`, `Sí, hasta ${num(x)}% del salario`);
+  let safeHarborValue = tap;
+  if (pd && f && typeof pd.safeHarbor?.type === 'string') {
+    if (f.type === 'basic_match' || f.type === 'enhanced_match') safeHarborValue = upTo(safeHarborAmount(f.type, 100, FULL_MATCH_PCT[f.type]));
+    else if (f.type === 'nonelective') safeHarborValue = L('Yes, 3% of pay', 'Sí, 3% del salario');
+    else if (f.type === 'qaca') safeHarborValue = yes;
+    else if (f.type === 'none') safeHarborValue = no;
+  }
+  let matchValue = tap;
+  if (pd && f) {
+    if (f.disc) matchValue = upTo(f.tiers.reduce((sum, t) => sum + (t.pct * t.upTo) / 100, 0));
+    else if (f.safeHarbor) matchValue = L('No, safe harbor only', 'No, solo safe harbor');
+    else if (pd.noMatch === true) matchValue = no;
+  }
+  const psAvail = pd?.profitSharing?.available;
+  const profitValue = bool(psAvail) ? (psAvail ? L('Yes, may be added yearly', 'Sí, puede agregarse cada año') : no) : tap;
+
+  const req = pd && has(pd.contribEligibility?.requirement) ? pd.contribEligibility.requirement!.trim() : null;
+  const catchUp = pd && bool(pd.planAllowsCatchUp) ? pd.planAllowsCatchUp : null;
+  const catchUpValue = catchUp === true ? L(`Yes, up to ${fmtRounded(limits.catchUp6063)}`, `Sí, hasta ${fmtRounded(limits.catchUp6063)}`) : catchUp === false ? no : tap;
+  const deferral = fmtRounded(limits.deferral);
+
+  const groups: PanelGroup[] = [
+    {
+      topic: 'you', label: L('Your money', 'Tu dinero'),
+      rows: [
+        { label: L("When you're eligible", 'Cuándo eres elegible'), value: req ?? tap, card: 'elig' },
+        { label: L(`${year} savings limit`, `Límite de ahorro de ${year}`), value: deferral, card: 'limit' },
+        { label: L('Catch-up (age 50+)', 'Catch-up (50+ años)'), value: catchUpValue, card: 'limit' },
+      ],
+    },
+    {
+      topic: 'employer', label: L('Employer money', 'Dinero del empleador'),
+      rows: [
+        { label: 'Safe harbor', value: safeHarborValue, card: 'safeHarbor' },
+        { label: L('Employer match', 'Match del empleador'), value: matchValue, card: 'match' },
+        { label: 'Profit sharing', value: profitValue, card: 'profit' },
+      ],
+    },
+    {
+      topic: 'access', label: L('Access my money', 'Acceso a tu dinero'),
+      rows: [
+        { label: L('Loans', 'Préstamos'), value: yn(pd?.loanAvailable), card: 'loans' },
+        { label: L('Hardships', 'Retiros por dificultad'), value: yn(pd?.hardshipAvailable), card: 'hardship' },
+        { label: L('In-service withdrawal', 'Retiro en servicio'), value: tap, card: 'inService' },
+      ],
+    },
+  ];
+
+  // Vesting wording (the old "the match is yours" headline value)
+  const parsed = pd ? parseVesting(pd.vestingSchedule) : null;
+  const yearsToFull = parsed && parsed.kind === 'schedule' ? parsed.byYear.length - 1 : null;
+  const shImmediate = !!f && f.safeHarbor && pd!.safeHarbor.vestingImmediate !== false;
+  let vestingFact = tap;
+  if (pd && f && (f.safeHarbor || f.disc || f.profit)) {
+    if (shImmediate) vestingFact = L('Right away', 'De inmediato');
+    else if (parsed?.kind === 'schedule') vestingFact = L(`After ${yearsToFull} years`, `Después de ${yearsToFull} años`);
+    else if (parsed?.kind === 'immediate') vestingFact = L('Right away', 'De inmediato');
+    else vestingFact = L('On a schedule', 'Con un calendario');
+  }
+
+  const roth = pd ? (pd.hasRoth ?? pd.rothAvailable) : null;
+  let rothFact = tap;
+  if (pd && bool(pd.hasPreTax) && bool(roth) && (pd.hasPreTax || roth)) {
+    rothFact = pd.hasPreTax && roth ? L('Your plan offers both', 'Tu plan ofrece ambas') : pd.hasPreTax ? L('Traditional only', 'Solo Tradicional') : L('Roth only', 'Solo Roth');
+  }
+  const leaveFact = L('Your savings go with you', 'Tus ahorros se van contigo') + (f && f.safeHarbor ? L(', and your safe harbor money', ', y tu dinero safe harbor') : '');
+
+  const good = (v: string) => /^(Yes|Sí|Right away|De inmediato|Your plan offers both|Tu plan ofrece ambas|Your savings|Tus ahorros)/.test(v);
+  const card = (id: StockId, fact: string, tone?: 'good' | 'neutral'): PlanCard => ({ id, stockId: id, question: questionLabel(id, lang), fact, tone: tone ?? (good(fact) ? 'good' : 'neutral') });
+
+  const topics: Record<TopicKey, PlanCard[]> = {
+    you: [card('elig', req ?? tap, 'neutral'), card('limit', deferral, 'neutral'), card('roth', rothFact)],
+    employer: [card('safeHarbor', safeHarborValue), card('match', matchValue), card('profit', profitValue), card('vesting', vestingFact)],
+    access: [card('loans', yn(pd?.loanAvailable)), card('hardship', yn(pd?.hardshipAvailable)), card('inService', tap, 'neutral')],
+    leave: [card('leave', leaveFact, 'good')],
+  };
+
+  // Vesting bars and leave choices come from the same builder as before.
+  const base = getOverviewLegacy(pdIn, lang, { hasFunds: false });
+  const leaveOptions = base.leaveOptions.map((o) =>
+    o.warning
+      ? {
+          ...o,
+          tag: L('Taxes may apply', 'Pueden aplicar impuestos'),
+          body: L(
+            "Pre-tax (Traditional) money and what it earned are taxed as income. Roth money comes out tax-free if you're 59½ or older and your first Roth deposit was at least 5 years ago. Under 59½, there's usually an extra 10% early withdrawal tax.",
+            'El dinero antes de impuestos (Tradicional) y lo que ganó se gravan como ingreso. El dinero Roth sale libre de impuestos si tienes 59½ o más y tu primer depósito Roth fue hace al menos 5 años. Si tienes menos de 59½, normalmente hay un 10% extra de impuesto por retiro anticipado.'
+          ),
+        }
+      : o
+  );
+
+  return { groups, topics, vesting: base.vesting, leaveOptions };
 }

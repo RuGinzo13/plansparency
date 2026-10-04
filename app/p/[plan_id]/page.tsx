@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ plan_id: 
     .single();
 
   return {
-    title: `${plan?.employer_name ?? plan?.plan_name ?? 'Your'} 401(k) Plan — Plansparency`,
+    title: `${plan?.employer_name ?? plan?.plan_name ?? 'Your'} 401(k) Plan | Plansparency`,
   };
 }
 

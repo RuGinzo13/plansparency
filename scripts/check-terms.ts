@@ -4,6 +4,7 @@ import { getKeyTerms, getTerm, KEY_TERMS_LAYOUT } from '../lib/glossary';
 import { IRS_LIMITS } from '../lib/plan/irs-limits';
 import { getLimitYear } from '../lib/plan/irs';
 import { fmtRounded } from '../lib/format';
+import { i18n } from '../lib/i18n';
 
 const BAD = ['{', 'undefined', 'NaN', '—', '–'];
 let pass = 0;
@@ -41,6 +42,16 @@ if (year === 2026) check(vals === '$24,500|$32,500|$35,750', `2026 limits: ${val
 
 const expectedCatchUp = `Extra savings allowed the year you turn 50 or older. In ${year} that's ${fmtRounded(L.catchUp50)} more. If you're 60 to 63 by Dec 31, the extra is ${fmtRounded(L.catchUp6063)} instead (the 'super catch-up'). Your plan has to allow catch-ups.`;
 check(getTerm('catchUp', 'en').def === expectedCatchUp, 'catchUp definition changed');
+
+// No em or en dashes in any on-screen text. The two AI instruction prompts are not shown to anyone.
+const PROMPT_KEYS = new Set(['firstMessage', 'stmtFirstMessage']);
+function walk(v: unknown, path: string) {
+  if (typeof v === 'string') check(!/[—–]/.test(v), `i18n ${path} has a dash: "${v.slice(0, 50)}"`);
+  else if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
+  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) { if (!PROMPT_KEYS.has(k)) walk(x, `${path}.${k}`); }
+}
+walk(i18n.en, 'en');
+walk(i18n.es, 'es');
 
 console.log(`${pass} checks passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

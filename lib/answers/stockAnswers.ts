@@ -13,104 +13,119 @@ import { getLimitYear } from '../plan/irs';
 import { safeHarborAmount } from '../plan/calc';
 import { fmtRounded } from '../format';
 
-export type StockId = 'match' | 'vesting' | 'elig' | 'roth' | 'loans' | 'hardship' | 'leave' | 'limit';
+export type StockId = 'elig' | 'limit' | 'roth' | 'safeHarbor' | 'match' | 'profit' | 'vesting' | 'loans' | 'hardship' | 'inService' | 'leave';
 
 export interface StockAnswer {
   text: string;
   link?: 'calculator';
 }
 
-export const STOCK_QUESTIONS: { id: StockId; label: string }[] = [
-  { id: 'match', label: 'How does my employer match work?' },
-  { id: 'vesting', label: 'When is the match mine to keep?' },
-  { id: 'elig', label: 'When can I start saving?' },
-  { id: 'roth', label: 'Roth or Traditional: what\'s the difference?' },
-  { id: 'loans', label: 'Can I borrow from my 401(k)?' },
-  { id: 'hardship', label: 'Can I take money out for a hardship?' },
-  { id: 'leave', label: 'What happens to my 401(k) if I leave my job?' },
-  { id: 'limit', label: `How much can I save in ${getLimitYear().year}?` },
-];
-
-// Spanish question labels. The answers themselves go to the AI in Spanish for now.
-export const STOCK_QUESTION_LABELS_ES: Record<StockId, string> = {
-  match: '¿Cómo funciona el match de mi empleador?',
-  vesting: '¿Cuándo es mío el match?',
-  elig: '¿Cuándo puedo empezar a ahorrar?',
-  roth: 'Roth o Tradicional: ¿cuál es la diferencia?',
-  loans: '¿Puedo pedir un préstamo de mi 401(k)?',
-  hardship: '¿Puedo sacar dinero por una dificultad económica?',
-  leave: '¿Qué pasa con mi 401(k) si dejo mi trabajo?',
-  limit: `¿Cuánto puedo ahorrar en ${getLimitYear().year}?`,
+// Question labels shown on the cards and sent to the AI when there is no written answer.
+// "{year}" is filled by questionLabel().
+export const QUESTION_LABELS: Record<StockId, { en: string; es: string }> = {
+  elig: { en: 'When can I start saving?', es: '¿Cuándo puedo empezar a ahorrar?' },
+  limit: { en: 'How much can I save in {year}?', es: '¿Cuánto puedo ahorrar en {year}?' },
+  roth: { en: "Roth or Traditional: what's the difference?", es: 'Roth o Tradicional: ¿cuál es la diferencia?' },
+  safeHarbor: { en: 'What is my safe harbor contribution?', es: '¿Cuál es mi contribución safe harbor?' },
+  match: { en: 'Does my employer add a match?', es: '¿Mi empleador agrega un match?' },
+  profit: { en: 'Does my employer share profits?', es: '¿Mi empleador comparte ganancias?' },
+  vesting: { en: 'When is the match mine to keep?', es: '¿Cuándo es mío el match?' },
+  loans: { en: 'Can I borrow from my 401(k)?', es: '¿Puedo pedir un préstamo de mi 401(k)?' },
+  hardship: { en: 'Can I take money out for a hardship?', es: '¿Puedo sacar dinero por una dificultad económica?' },
+  inService: { en: 'Can I take money out while I still work here?', es: '¿Puedo sacar dinero mientras sigo trabajando aquí?' },
+  leave: { en: 'What happens to my 401(k) if I leave my job?', es: '¿Qué pasa con mi 401(k) si dejo mi trabajo?' },
 };
+
+export function questionLabel(id: StockId, lang: 'en' | 'es'): string {
+  return QUESTION_LABELS[id][lang].split('{year}').join(String(getLimitYear().year));
+}
+
+// Kept until the Ask tab is removed (PHASE-16 Step 4).
+export const STOCK_QUESTIONS: { id: StockId; label: string }[] = (Object.keys(QUESTION_LABELS) as StockId[]).map((id) => ({ id, label: questionLabel(id, 'en') }));
+export const STOCK_QUESTION_LABELS_ES = Object.fromEntries((Object.keys(QUESTION_LABELS) as StockId[]).map((id) => [id, questionLabel(id, 'es')])) as Record<StockId, string>;
 
 const para = (lead: string, rest: string) => `**${lead}** ${rest}`.trim();
 const join = (paras: string[]) => paras.join('\n\n');
 
 const EXAMPLE_SALARY = 50000;
 
-// ── 1. Match ──
+// ── Safe harbor ──
+function safeHarborAnswer(pd: PlanData): StockAnswer | null {
+  const f = facts(pd);
+  if (f.type === 'qaca') return null;
+  if (typeof pd.safeHarbor?.type !== 'string') return null;
+  const out: string[] = [];
+  const formula = has(pd.safeHarbor.formula) ? pd.safeHarbor.formula.trim() : STANDARD_FORMULA[f.type];
+  const rightAway = pd.safeHarbor.vestingImmediate !== false;
+
+  if (f.shMatch) {
+    if (!has(formula)) return null; // enhanced match needs its formula
+    out.push(para('Your employer must add this every year, as long as you\'re eligible.', `It's a safe harbor match: ${formula}.`));
+    const pct = FULL_MATCH_PCT[f.type];
+    out.push(para('Example:', `on a ${fmtRounded(EXAMPLE_SALARY)} salary, saving ${pct}% (${fmtRounded(EXAMPLE_SALARY * pct / 100)} a year) adds ${fmtRounded(safeHarborAmount(f.type, EXAMPLE_SALARY, pct))} a year from your employer.`));
+  } else if (f.nonelective) {
+    out.push(para(`Your employer adds ${formula} for you every year, even if you don't save anything.`, ''));
+    out.push(para('Example:', `on a ${fmtRounded(EXAMPLE_SALARY)} salary, your employer adds ${fmtRounded(safeHarborAmount('nonelective', EXAMPLE_SALARY, 0))} a year, whether or not you save.`));
+  } else {
+    return { text: join([para('No, your plan doesn\'t use a safe harbor contribution.', 'Your employer may still add a match or profit sharing. See those cards.')]) };
+  }
+  if (rightAway) out.push(para('It\'s yours right away.', 'Safe harbor money is 100% yours from day one.'));
+  return { text: join(out), link: 'calculator' };
+}
+
+// ── Employer match (the non-safe-harbor tiers) ──
 function matchAnswer(pd: PlanData): StockAnswer | null {
   const f = facts(pd);
   if (f.type === 'qaca') return null;
   if (typeof pd.safeHarbor?.type !== 'string') return null;
-  if (!(typeof pd.noMatch === 'boolean' || f.tiers.length > 0)) return null;
-  // "No match" says nothing useful if the data contradicts itself.
-  if (!f.safeHarbor && !f.disc && pd.noMatch !== true) return null;
 
-  const out: string[] = [];
-  const formula = has(pd.safeHarbor.formula) ? pd.safeHarbor.formula.trim() : STANDARD_FORMULA[f.type];
-
-  if (f.shMatch) {
-    if (!has(formula)) return null; // enhanced match needs its formula
-    out.push(para('Your employer matches what you save, and it\'s guaranteed.', `This is a safe harbor match: ${formula}.`));
-  } else if (f.nonelective) {
-    out.push(para('Your employer adds money for you even if you don\'t save anything.', `It's guaranteed (safe harbor): ${formula}.`));
-  }
   if (f.disc) {
-    if (f.safeHarbor) {
-      out.push(para('There is also an extra match.', `${tierText(pd)}. It isn't guaranteed: your employer decides each year and can change it.`));
-    } else {
-      out.push(para('Your employer may match what you save.', `This plan's match is ${tierText(pd)}. It isn't guaranteed: your employer decides each year and can change it.`));
+    const out: string[] = [
+      para('Yes, your employer adds a match:', `${tierText(pd)}.`),
+      para('The law doesn\'t require it.', 'Your employer chooses whether to offer it, how much, and can change or stop it.'),
+    ];
+    if (f.tiers.length === 1) {
+      const { pct, upTo } = f.tiers[0];
+      out.push(para('Example:', `on a ${fmtRounded(EXAMPLE_SALARY)} salary, saving ${upTo}% (${fmtRounded(EXAMPLE_SALARY * upTo / 100)} a year) could add ${fmtRounded(EXAMPLE_SALARY * upTo / 100 * pct / 100)} a year from your employer.`));
     }
-  }
-  if (!f.safeHarbor && !f.disc) {
-    out.push(para('This plan doesn\'t have an employer match right now.', 'What you save is still yours, and it still gets tax benefits.'));
-  }
-
-  // Example, using the calculator's own function for safe harbor money.
-  if (f.nonelective) {
-    out.push(para('Example:', `on a ${fmtRounded(EXAMPLE_SALARY)} salary, your employer adds ${fmtRounded(safeHarborAmount('nonelective', EXAMPLE_SALARY, 0))} a year, whether or not you save.`));
-  } else if (f.shMatch) {
-    const pct = FULL_MATCH_PCT[f.type];
-    const employer = safeHarborAmount(f.type, EXAMPLE_SALARY, pct);
-    out.push(para('Example:', `on a ${fmtRounded(EXAMPLE_SALARY)} salary, saving ${pct}% (${fmtRounded(EXAMPLE_SALARY * pct / 100)} a year) adds ${fmtRounded(employer)} a year from your employer.`));
-  } else if (f.disc && f.tiers.length === 1) {
-    const { pct, upTo } = f.tiers[0];
-    out.push(para('Example:', `on a ${fmtRounded(EXAMPLE_SALARY)} salary, saving ${upTo}% (${fmtRounded(EXAMPLE_SALARY * upTo / 100)} a year) could add ${fmtRounded(EXAMPLE_SALARY * upTo / 100 * pct / 100)} a year from your employer.`));
-  }
-
-  if (f.safeHarbor && pd.safeHarbor.vestingImmediate !== false) {
-    out.push(para('It\'s yours right away.', 'Safe harbor money is 100% yours from day one.'));
-  }
-  if (f.disc) {
     if (parseVesting(pd.vestingSchedule)?.kind === 'immediate') {
       out.push(para('It\'s yours right away.', 'Your plan says this match is 100% yours as soon as it\'s paid in.'));
     } else {
-      out.push(para('The extra match follows a vesting schedule.', 'Tap "When is the match mine to keep?" to see when it\'s fully yours.'));
+      out.push(para('It follows a vesting schedule.', 'Open "When is the match mine to keep?" to see when it\'s fully yours.'));
     }
     if (pd.lastDayProvision === true) {
       out.push(para('Be here at year end.', 'You may need to be working here on the last day of the plan year to get the match for that year.'));
     }
+    const me = pd.matchEligibility;
+    if (me?.immediateMatch === false && has(me.requirement) && me.requirement.trim() !== (pd.contribEligibility?.requirement ?? '').trim()) {
+      out.push(para('The match starts later:', `"${me.requirement.trim()}". You can save before then. It just isn't matched yet.`));
+    }
+    return { text: join(out), link: 'calculator' };
   }
-  const me = pd.matchEligibility;
-  if (me?.immediateMatch === false && has(me.requirement) && me.requirement.trim() !== (pd.contribEligibility?.requirement ?? '').trim()) {
-    out.push(para('The match starts later:', `"${me.requirement.trim()}". You can save before then. It just isn't matched yet.`));
+  if (f.safeHarbor) {
+    return { text: join([para('No extra match beyond your safe harbor contribution.', 'Your employer\'s money comes from the safe harbor card above.')]) };
   }
-  if (f.profit) {
-    const lastDay = pd.profitSharing.lastDayApplies === true ? ' You may need to be working here on the last day of the plan year to get it.' : '';
-    out.push(para('There\'s also profit sharing.', `It's a separate amount your employer may add each year, whether or not you save.${lastDay}`));
+  if (pd.noMatch === true) {
+    return { text: join([para('No, this plan doesn\'t have an employer match right now.', 'What you save is still yours, and it still gets tax benefits.')]) };
   }
-  return { text: join(out), link: 'calculator' };
+  return null;
+}
+
+// ── Profit sharing ──
+function profitAnswer(pd: PlanData): StockAnswer | null {
+  const available = pd.profitSharing?.available;
+  if (typeof available !== 'boolean') return null;
+  if (!available) return { text: join([para('No, your plan doesn\'t have profit sharing right now.', '')]) };
+  const out: string[] = [para('Yes, your plan has profit sharing.', 'Your employer decides each year whether to add it and how much. You don\'t have to save anything yourself to get it.')];
+  if (pd.profitSharing.lastDayApplies === true) {
+    out.push(para('Be here at year end.', 'You may need to be working here on the last day of the plan year to get it.'));
+  }
+  if (has(pd.vestingSchedule)) {
+    out.push(parseVesting(pd.vestingSchedule)?.kind === 'immediate'
+      ? para('It\'s yours right away.', 'Your plan says this money is 100% yours as soon as it\'s paid in.')
+      : para('It follows a vesting schedule.', 'Open "When is the match mine to keep?" to see when it\'s fully yours.'));
+  }
+  return { text: join(out) };
 }
 
 // ── 2. Vesting ──
@@ -202,7 +217,7 @@ function hardshipAnswer(pd: PlanData): StockAnswer | null {
       para('Yes, your plan allows hardship withdrawals.', ''),
       para('They\'re for serious, urgent money needs.', 'IRS examples include medical bills, stopping an eviction or foreclosure, buying your main home, college costs, funeral costs, and some home repairs.'),
       para('You don\'t pay it back.', 'That also means the money leaves your retirement savings for good.'),
-      para('Taxes:', 'it counts as income. If you\'re under 59½, there\'s usually an extra 10% tax too.'),
+      para('Taxes:', 'it counts as income. If you\'re under 59½, there\'s usually an extra 10% early withdrawal tax too.'),
       para('To request one,', 'go to your plan\'s website. They\'ll tell you what proof they need.'),
     ]),
   };
@@ -219,7 +234,8 @@ function leaveAnswer(pd: PlanData): StockAnswer | null {
     out.push(para(`${what}:`, 'you keep the part that\'s already yours. Tap "When is the match mine to keep?" for the schedule.'));
   }
   out.push(para('Your main options:', 'leave it in this plan, move it to your new job\'s plan, move it to an IRA, or cash it out.'));
-  out.push(para('Moving it directly', '(a "direct rollover") keeps it tax-free. Cashing out is taxed as income, and if you\'re under 59½ there\'s usually an extra 10% tax.'));
+  out.push(para('Moving it directly', '(a "direct rollover") keeps it tax-free.'));
+  out.push(para('Cashing out:', 'pre-tax (Traditional) money and what it earned are taxed as income. Roth money comes out tax-free if you\'re 59½ or older and your first Roth deposit was at least 5 years ago. Under 59½, there\'s usually an extra 10% early withdrawal tax.'));
   out.push(para('Small balances', '(under $7,000) may be moved out of the plan for you if you don\'t choose.'));
   if (pd.loanAvailable === true) out.push(para('Have a loan?', 'Any unpaid amount may need to be repaid soon after you leave.'));
   out.push(para('Each option has trade-offs.', 'Your plan\'s website can walk you through the steps.'));
@@ -253,14 +269,18 @@ function limitAnswer(pd: PlanData): StockAnswer | null {
 }
 
 const BUILDERS: Record<StockId, (pd: PlanData) => StockAnswer | null> = {
-  match: matchAnswer,
-  vesting: vestingAnswer,
   elig: eligAnswer,
+  limit: limitAnswer,
   roth: rothAnswer,
+  safeHarbor: safeHarborAnswer,
+  match: matchAnswer,
+  profit: profitAnswer,
+  vesting: vestingAnswer,
   loans: loansAnswer,
   hardship: hardshipAnswer,
+  // The plan reader doesn't collect in-service withdrawals, so this always goes to the AI.
+  inService: () => null,
   leave: leaveAnswer,
-  limit: limitAnswer,
 };
 
 // null means "send this question to the AI instead".

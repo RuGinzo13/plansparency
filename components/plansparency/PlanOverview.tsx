@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { C, F } from './theme';
-import { getOverview, type TopicCard } from '@/lib/plan/overview';
+import { getOverviewLegacy as getOverview, type TopicCard } from '@/lib/plan/overview';
 
 export type TopicKey = 'you' | 'company' | 'while' | 'leave';
 

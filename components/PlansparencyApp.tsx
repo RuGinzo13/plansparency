@@ -35,7 +35,7 @@ import { CalcPanel } from '@/components/plansparency/CalcPanel';
 import { StatementDashboard } from '@/components/plansparency/StatementDashboard';
 import { Landing } from '@/components/plansparency/Landing';
 import { STOCK_QUESTIONS, STOCK_QUESTION_LABELS_ES, getStockAnswer } from '@/lib/answers/stockAnswers';
-import { getOverview } from '@/lib/plan/overview';
+import { getOverviewLegacy as getOverview } from '@/lib/plan/overview';
 import { PlanGlance } from '@/components/plansparency/PlanGlance';
 import { useStickyPanel } from '@/components/plansparency/useStickyPanel';
 import { StockAnswerCard } from '@/components/plansparency/StockAnswerCard';
@@ -404,9 +404,9 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       }
       let replyMsg = t.errorReply;
       if ((e as any).status === 429) {
-        replyMsg = "Too many requests — please wait a minute and try again.";
+        replyMsg = "Too many requests. Please wait a minute and try again.";
       } else if (e.message === 'API key not configured') {
-        replyMsg = "Configuration error — please contact support.";
+        replyMsg = "Configuration error. Please contact support.";
       }
       setMessages([...nm, { role: "assistant", content: replyMsg }]);
       abortRef.current = null;

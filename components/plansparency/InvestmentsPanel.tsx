@@ -7,7 +7,7 @@ import { StatChip } from './ui';
 
 function FundRow({ fund, showCategory, riskMap, lang }) {
   const es = lang === "es";
-  const risk = riskMap[fund.category] || { label: "—", color: C.textDim };
+  const risk = riskMap[fund.category] || { label: "N/A", color: C.textDim };
   const erPct = fund.expenseRatio !== null && fund.expenseRatio !== undefined
     ? (fund.expenseRatio * 100).toFixed(2) + "%"
     : null;
@@ -54,24 +54,24 @@ const CATEGORY_ORDER = [
 ];
 const RISK_MAP = {
   "Cash & Stable Value": { label: "Low Risk",  color: C.green },
-  "Bonds":               { label: "Low–Med",   color: C.textMuted },
+  "Bonds":               { label: "Low to Med",   color: C.textMuted },
   "Target Date":         { label: "Varies",    color: C.accent },
   "Asset Allocation":    { label: "Varies",    color: C.accent },
   "Large Cap":           { label: "Medium",    color: C.accent },
-  "Mid Cap":             { label: "Med–High",  color: C.accent },
+  "Mid Cap":             { label: "Med to High",  color: C.accent },
   "Small Cap":           { label: "High Risk", color: C.danger },
-  "International":       { label: "Med–High",  color: C.accent },
+  "International":       { label: "Med to High",  color: C.accent },
   "Specialty":           { label: "High Risk", color: C.danger },
 };
 
-const FUND_DISCLAIMER = "This fund list is for educational reference only. Not investment advice or a recommendation of any fund. Consult your plan advisor for investment guidance. Links open fund company materials — Plansparency is not affiliated with any fund listed.";
+const FUND_DISCLAIMER = "This fund list is for educational reference only. Not investment advice or a recommendation of any fund. Consult your plan advisor for investment guidance. Links open fund company materials, Plansparency is not affiliated with any fund listed.";
 
 function DisclosureCallout({ lang = "en" }) {
   const [open, setOpen] = useState(false);
   const es = lang === "es";
   const title = es
-    ? "Solo Uso Educativo — No Es Asesoría de Inversión"
-    : "Educational Use Only — Not Investment Advice";
+    ? "Solo Uso Educativo: No Es Asesoría de Inversión"
+    : "Educational Use Only: Not Investment Advice";
   return (
     <div style={{
       margin: "12px 16px 4px",
@@ -81,7 +81,7 @@ function DisclosureCallout({ lang = "en" }) {
       flexShrink: 0,
       overflow: "hidden",
     }}>
-      {/* Always-visible header — tap to expand/collapse */}
+      {/* Always-visible header, tap to expand/collapse */}
       <button onClick={() => setOpen(o => !o)} style={{
         width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "12px 16px", background: "none", border: "none", cursor: "pointer",
@@ -100,13 +100,13 @@ function DisclosureCallout({ lang = "en" }) {
         <div style={{ padding: "0 16px 14px", fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>
           {es ? (<>
             <p style={{ margin: "0 0 8px" }}>Los fondos aquí listados provienen directamente de los documentos de tu plan, tal como fueron proporcionados por tu empleador y administrador. Nada en esta página es una recomendación, respaldo o sugerencia de invertir en ningún fondo específico.</p>
-            <p style={{ margin: "0 0 8px" }}>Tú eres responsable de todas las decisiones de inversión en tu plan — incluyendo qué fondos eliges, cuánto asignas y cuándo realizas cambios. Los resultados de tus inversiones, incluyendo ganancias y pérdidas, son tu responsabilidad exclusiva.</p>
-            <p style={{ margin: "0 0 8px" }}>Plansparency no evalúa, compara ni determina si algún fondo es adecuado para tu situación. Los enlaces llevan a materiales publicados por la gestora del fondo — Plansparency no tiene ninguna relación con los fondos listados.</p>
+            <p style={{ margin: "0 0 8px" }}>Tú eres responsable de todas las decisiones de inversión en tu plan, incluyendo qué fondos eliges, cuánto asignas y cuándo realizas cambios. Los resultados de tus inversiones, incluyendo ganancias y pérdidas, son tu responsabilidad exclusiva.</p>
+            <p style={{ margin: "0 0 8px" }}>Plansparency no evalúa, compara ni determina si algún fondo es adecuado para tu situación. Los enlaces llevan a materiales publicados por la gestora del fondo, Plansparency no tiene ninguna relación con los fondos listados.</p>
             <p style={{ margin: 0, fontWeight: 600, color: C.textMuted }}>Si necesitas orientación sobre cómo invertir tu 401(k), habla con el asesor de tu plan o un profesional financiero calificado.</p>
           </>) : (<>
             <p style={{ margin: "0 0 8px" }}>The funds listed here are taken directly from your plan documents exactly as provided by your employer and recordkeeper. Nothing on this page is a recommendation, endorsement, or suggestion to invest in any specific fund.</p>
-            <p style={{ margin: "0 0 8px" }}>You are responsible for all investment decisions in your plan — including which funds you choose, how much you allocate, and when you make changes. Investment outcomes, including gains and losses, are your responsibility alone.</p>
-            <p style={{ margin: "0 0 8px" }}>Plansparency does not evaluate, compare, or assess whether any fund is right for your situation. Any links go to fund company materials published by the fund manager — Plansparency has no relationship with any fund listed.</p>
+            <p style={{ margin: "0 0 8px" }}>You are responsible for all investment decisions in your plan, including which funds you choose, how much you allocate, and when you make changes. Investment outcomes, including gains and losses, are your responsibility alone.</p>
+            <p style={{ margin: "0 0 8px" }}>Plansparency does not evaluate, compare, or assess whether any fund is right for your situation. Any links go to fund company materials published by the fund manager, Plansparency has no relationship with any fund listed.</p>
             <p style={{ margin: 0, fontWeight: 600, color: C.textMuted }}>If you need guidance on how to invest your 401(k), please speak with your plan advisor or a qualified financial professional.</p>
           </>)}
         </div>
@@ -173,7 +173,7 @@ export function InvestmentsPanel({ fundsData, lang }) {
 
   const sortOpts = [
     { id: "category", label: es ? "Por categoría" : "By Category" },
-    { id: "name", label: "A–Z" },
+    { id: "name", label: "A to Z" },
     ...(hasExpenseRatios ? [{ id: "expense", label: es ? "Costo" : "Expense Ratio" }] : []),
   ];
 

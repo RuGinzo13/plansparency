@@ -131,8 +131,8 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
     { label: "Multi-Asset", value: num(alloc.multiAsset), color: "#94A0B2" },
     { label: lang === "es" ? "Otro" : "Other", value: num(alloc.other), color: "#536178" },
   ];
-  const periodLabel = sd.statementPeriod ? `${sd.statementPeriod.start} — ${sd.statementPeriod.end}` : "";
-  const ytdLabel = sd.calendarYTD ? `${sd.calendarYTD.start} — ${sd.calendarYTD.end}` : (lang === "es" ? "Año Calendario" : "Calendar Year-to-Date");
+  const periodLabel = sd.statementPeriod ? `${sd.statementPeriod.start} to ${sd.statementPeriod.end}` : "";
+  const ytdLabel = sd.calendarYTD ? `${sd.calendarYTD.start} to ${sd.calendarYTD.end}` : (lang === "es" ? "Año Calendario" : "Calendar Year-to-Date");
 
   const card = (id, children) => (<div style={{ background: C.surface, border: `1px solid ${expandedCards[id] ? C.accent : C.border}`, borderRadius: 14, overflow: "hidden", transition: "border-color .2s" }}>{children}</div>);
   const cardHeader = (id, icon, title, right) => (<button onClick={() => toggle(id)} style={{ width: "100%", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", justifyContent: "space-between" }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 18 }}>{icon}</span><span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{title}</span></div><div style={{ display: "flex", alignItems: "center", gap: 10 }}>{right}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: expandedCards[id] ? "rotate(180deg)" : "none", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg></div></button>);
@@ -166,11 +166,11 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
         {[[lang === "es" ? "Período" : "Period", ror.period], ["YTD", ror.ytd], [lang === "es" ? "1 Año" : "1 Year", ror.oneYear], [lang === "es" ? "3 Años" : "3 Years", ror.threeYear]].map(([label, val], i) => (
           <div key={i} style={{ padding: "10px 6px", borderRadius: 10, background: C.surface, border: `1px solid ${C.border}`, textAlign: "center" }}>
             <div style={{ fontSize: 9, color: C.textMuted, textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: num(val) > 0 ? C.green : num(val) < 0 ? C.danger : C.textMuted }}>{val ? fmtPctVal(val) : "—"}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: num(val) > 0 ? C.green : num(val) < 0 ? C.danger : C.textMuted }}>{val ? fmtPctVal(val) : "-"}</div>
           </div>))}
       </div>}
 
-      {/* Quick stats — tappable */}
+      {/* Quick stats, tappable */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
         {[[lang === "es" ? "Entró" : "In", num(mi.total), C.green, C.greenDim, "rgba(92,184,138,.15)", "moneyIn"],
           [lang === "es" ? "Salió" : "Out", num(mo.total), num(mo.total) ? C.danger : C.green, num(mo.total) ? C.dangerDim : C.greenDim, num(mo.total) ? "rgba(212,106,90,.15)" : "rgba(92,184,138,.15)", "moneyOut"],
@@ -190,9 +190,9 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
           {expandedCards.moneyIn && <div style={{ padding: "0 16px 16px" }}>{dateLabel()}
             {dataRow(lang === "es" ? "Diferimiento Salarial (Pre-Tax)" : "Salary Deferral (Pre-Tax)", mi.employeeSalaryDeferral, C.green, lang === "es" ? "Tu dinero, antes de impuestos." : "Your money, before taxes. You pay taxes when you withdraw.")}
             {dataRow("Roth", mi.employeeRoth, "#6BB8D4", lang === "es" ? "Tu dinero, después de impuestos. Sale libre de impuestos." : "Your money, after taxes. Grows and comes out tax-free.")}
-            {dataRow(lang === "es" ? "Match del Empleador" : "Employer Match", mi.employerMatch, "#7A9EC9", lang === "es" ? "Discrecional — sujeto a vesting." : "Discretionary — subject to vesting.")}
+            {dataRow(lang === "es" ? "Match del Empleador" : "Employer Match", mi.employerMatch, "#7A9EC9", lang === "es" ? "Discrecional, sujeto a vesting." : "Discretionary, subject to vesting.")}
             {dataRow("Safe Harbor", mi.employerSafeHarbor, "#5CB88A", lang === "es" ? "Garantizado. 100% tuyo inmediatamente." : "Guaranteed. 100% yours immediately.")}
-            {dataRow("Profit Sharing", mi.employerProfitSharing, "#D4A853", lang === "es" ? "Discrecional — el empleador decide anualmente." : "Discretionary — employer decides annually.")}
+            {dataRow("Profit Sharing", mi.employerProfitSharing, "#D4A853", lang === "es" ? "Discrecional, el empleador decide anualmente." : "Discretionary, employer decides annually.")}
             {dataRow(lang === "es" ? "Otro del Empleador" : "Other Employer", mi.employerOther, "#94A0B2", null)}
             {dataRow("Rollover", mi.rolloverIn, "#8B7EC9", lang === "es" ? "De otro plan o IRA." : "From another plan or IRA.")}
             {dataRow(lang === "es" ? "Pago de Préstamo" : "Loan Repayment", mi.loanRepayment, "#94A0B2", null)}
