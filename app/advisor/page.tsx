@@ -299,6 +299,7 @@ export default function AdvisorPage() {
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: wide ? 48 : 28, flexWrap: 'wrap' }}>
       <Logo small={false} />
       <span style={{ fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 100, background: C.accentSoft, color: C.accentText }}>For advisors</span>
+      <a href="/advisor/preview" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', fontSize: 15, fontWeight: 700, color: C.accentText }}>Preview the participant screens with any document →</a>
     </div>
   );
   const shell = (children: React.ReactNode) => (

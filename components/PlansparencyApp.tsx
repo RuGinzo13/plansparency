@@ -74,10 +74,12 @@ interface PlansparencyAppProps {
   initialPlanData?: Record<string, unknown> | null;
   initialMessages?: Array<{ role: string; content: string }>;
   initialStage?: string;
+  // Upload flow on the start screen. Off for participants; on only for the advisor preview page.
+  allowUpload?: boolean;
 }
 
 // ── Main App ──
-function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advisorFirmName, planId, advisorSlug, initialPdfBase64 = null, initialPlanData = null, initialMessages = [], initialStage = STAGE.CHOOSER }: PlansparencyAppProps = {}) {
+function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advisorFirmName, planId, advisorSlug, initialPdfBase64 = null, initialPlanData = null, initialMessages = [], initialStage = STAGE.CHOOSER, allowUpload = false }: PlansparencyAppProps = {}) {
   const [lang, setLang] = useState("en");
   const [stage, setStage] = useState(initialStage);
   const [docType, setDocType] = useState(null); // "spd" or "statement"
@@ -467,7 +469,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       </div></div></div></div>;
 
   // ── Start screens (chooser + landing) ──
-  if (stage === "chooser" || stage === "landing") return <Landing t={t} lang={lang} setLang={setLang} stage={stage} setStage={setStage} docType={docType} setDocType={setDocType} stagedFiles={stagedFiles} setStagedFiles={setStagedFiles} fileInputRef={fileInputRef} stageFile={stageFile} handleDrop={handleDrop} dragOver={dragOver} setDragOver={setDragOver} uploadError={uploadError} proceedToPrivacy={proceedToPrivacy} />;
+  if (stage === "chooser" || stage === "landing") return <Landing allowUpload={allowUpload} t={t} lang={lang} setLang={setLang} stage={stage} setStage={setStage} docType={docType} setDocType={setDocType} stagedFiles={stagedFiles} setStagedFiles={setStagedFiles} fileInputRef={fileInputRef} stageFile={stageFile} handleDrop={handleDrop} dragOver={dragOver} setDragOver={setDragOver} uploadError={uploadError} proceedToPrivacy={proceedToPrivacy} />;
 
   // ── Cleared ──
   if (stage === "cleared") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
