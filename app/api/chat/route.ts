@@ -67,16 +67,45 @@ export async function POST(req: NextRequest): Promise<Response> {
             source: { type: 'base64' as const, media_type: 'application/pdf' as const, data: pdfBase64! },
           }];
 
+      // Cache everything up to and including the last document block.
+      const cachedDocs = documentBlocks.map((b, j) =>
+        j === documentBlocks.length - 1 ? { ...b, cache_control: { type: 'ephemeral' as const } } : b
+      );
+
       return {
         role: 'user' as const,
         content: [
-          ...documentBlocks,
+          ...cachedDocs,
           { type: 'text' as const, text: m.content },
-        ],
+        ] as any[],
       };
     }
-    return { role: m.role as 'user' | 'assistant', content: m.content };
+    return { role: m.role as 'user' | 'assistant', content: m.content as any };
   });
+
+  // Rolling history cache: mark the end of the second-to-last message so the
+  // conversation so far is reused on the next question.
+  if (anthropicMessages.length >= 3) {
+    const idx = anthropicMessages.length - 2;
+    const prev = anthropicMessages[idx];
+    const blocks: any[] = typeof prev.content === 'string'
+      ? [{ type: 'text', text: prev.content }]
+      : [...prev.content];
+    // Skip when this message already carries the document marker (one marker per block).
+    const last = blocks[blocks.length - 1];
+    if (last && !last.cache_control) {
+      blocks[blocks.length - 1] = { ...last, cache_control: { type: 'ephemeral' } };
+      anthropicMessages[idx] = { ...prev, content: blocks };
+    }
+  }
+
+  // System prompt as blocks: the fixed instructions are cached; the per-plan
+  // account line (if any) comes after the marker so it never breaks the cache.
+  const acct = accountLine(planData);
+  const systemBlocks: any[] = [
+    { type: 'text', text: fixedInstructions(lang), cache_control: { type: 'ephemeral' } },
+    ...(acct ? [{ type: 'text', text: acct }] : []),
+  ];
 
   // ── 5. Call Anthropic with streaming ─────────────────────────────────────────
   // Streaming keeps the connection alive as tokens arrive, bypassing the
@@ -95,7 +124,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         model: ANTHROPIC_MODEL,
         max_tokens: 4000,
         stream: true,
-        system: buildSystemPrompt(lang, planData),
+        system: systemBlocks,
         messages: anthropicMessages,
       }),
     });
@@ -174,13 +203,17 @@ export async function POST(req: NextRequest): Promise<Response> {
 
 // ── System prompt ──────────────────────────────────────────────────────────────
 
-function buildSystemPrompt(lang: string, planData: any): string {
+// The per-plan line. Kept out of fixedInstructions() so the cached text is
+// identical for every request in the same language.
+function accountLine(planData: any): string {
   const acctUrl = planData?.recordkeeperUrl || '';
   const acctName = planData?.recordkeeperName || "your plan's recordkeeper";
-  const acctBlock = acctUrl
-    ? `\nACCOUNT MANAGEMENT QUESTIONS: For ANY question about changing contributions, changing investments, taking a loan, taking a withdrawal, taking a distribution, processing a rollover, or any other account management action, tell the participant they can do this by logging into their account. Provide this link: ${acctUrl} and tell them to log in at ${acctName}. Frame it helpfully. ALWAYS include the URL.`
+  return acctUrl
+    ? `ACCOUNT MANAGEMENT QUESTIONS: For ANY question about changing contributions, changing investments, taking a loan, taking a withdrawal, taking a distribution, processing a rollover, or any other account management action, tell the participant they can do this by logging into their account. Provide this link: ${acctUrl} and tell them to log in at ${acctName}. Frame it helpfully. ALWAYS include the URL.`
     : '';
+}
 
+function fixedInstructions(lang: string): string {
   const shared = `CRITICAL GUARDRAILS:
 1. EDUCATION only, never ADVICE. 2. Never say "you should" — say "your plan allows..."
 3. Redirect advice-seeking to education. 4. Never provide tax advice. 5. Never recommend investments.
@@ -188,7 +221,6 @@ function buildSystemPrompt(lang: string, planData: any): string {
 10. Never repeat PII from the document.
 
 The document may be a Summary Plan Description (SPD) OR an Enrollment Booklet. Both contain plan provisions.
-${acctBlock}
 
 ANSWERING QUESTIONS: The participant's plan document has already been uploaded and is in the conversation. ALWAYS answer questions based on the actual plan document content. Look thoroughly through the document before concluding information isn't available.
 
