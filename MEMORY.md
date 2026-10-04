@@ -543,3 +543,27 @@ The addressable sections of the app — superseded by the updated Component Map 
 **What was rejected:** bypassPermissions (no safety check at all on Ross's own Mac; deny list would be the only guard); Manual and accept-edits (both need clicks).
 **Known trade-off:** Auto depends on Anthropic's safety service; Sept 28 and Sept 30 outages would pause a run. Nothing breaks, it just waits.
 
+---
+
+## October 3, 2026 — Product Structure: Participant Side and Advisor Side (for the record)
+**What Ross confirmed:** Two front doors.
+1. **Participants/employees:** (a) upload their own plan document, (b) upload a statement to be read and explained, (c) open the plan their advisor set up, through a plan-specific invite link the advisor sends out.
+2. **Advisors:** upload a plan document once; Plansparency fills in all the plan info; the advisor shares that plan with employees.
+**What already exists in code (Oct 3):** `/try` = participant self-serve (a, b). `/advisor` = advisor upload → saved to Supabase → share link `/p/{plan_id}` (c). The share link was TABLED Sept 28 because `/p/` sends the full PDF to the browser.
+**Open questions Cowork raised (not decided):** advisor reviews/corrects extracted plan info before sharing; one link per plan vs one per employee; how a participant on an invite link chats about the plan without the PDF going to their browser (server-side extracted text); whether an invite-link participant can also add their own statement; how all of this fits the privacy rule and the compliance gate.
+
+---
+
+## October 3, 2026 — Advisor Review Step, One Link Per Plan, No Plan PDFs Kept
+**What was decided (Ross):**
+1. After an advisor uploads a plan, a clear pop-up tells them to check every extracted detail for accuracy before the plan can be shared. They review and correct on a review screen; sharing is blocked until they confirm.
+2. One invite link per plan (not per employee). Access control for hires/terminations: still open (see OPEN-ITEMS #31).
+3. **Employees never get a plan PDF (SPD, enrollment booklet, etc.) from Plansparency.** They get those from the recordkeeper. No storage or download of plan documents on the site. Employees can (a) upload PDFs they have themselves (session only, as today) and (b) read the plan info extracted from the advisor's upload.
+4. Invite-link employees can add their own statement to see plan rules and their own numbers together (education, not advice).
+**Consequence for the current build:** `/api/save-plan` stores the advisor's PDF in the Supabase `plan-documents` bucket and `/p/{plan_id}` sends it to the browser. Both must change: keep only the extracted, advisor-reviewed plan info; delete the PDF after extraction; delete PDFs already in the bucket (irreversible, its own flagged phase).
+
+---
+
+## October 3, 2026 — Advisor Authorization Added to High-Priority Security
+**Concern (Ross):** an advisor could upload a plan they don't serve and pose as its advisor to employees they cold-call. Nothing in the current build prevents it. Recorded in OPEN-ITEMS high-priority security section with 8 proposed layers; the key one is plan-sponsor approval of the advisor before any link goes live, verified independently by Plansparency. Not yet decided.
+
