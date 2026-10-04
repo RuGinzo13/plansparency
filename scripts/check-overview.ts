@@ -30,7 +30,8 @@ for (const [name, pd] of Object.entries(samples)) {
 
 const empty = getOverview(samples.allNull, 'en', { hasFunds: false });
 check(empty.headlines.length === 1 && empty.headlines[0].key === 'limit', 'allNull: only the limit headline');
-check(empty.glance.length === 0, 'allNull: glance empty');
+check(empty.glance.length === 1 && empty.glance[0].stockId === 'elig' && empty.glance[0].value === 'Ask HR', 'allNull: glance has only the eligibility row');
+check(empty.topics.you.some((c) => c.id === 'elig' && !c.fact), 'allNull: When can I start? card without a fact pill');
 check(empty.vesting === null, 'allNull: vesting null');
 const nothing = getOverview(null, 'en', { hasFunds: false });
 check(nothing.headlines.length === 1 && nothing.glance.length === 0 && nothing.vesting === null, 'null plan: no crash, limit only');

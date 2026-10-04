@@ -37,6 +37,15 @@ check(!!getStockAnswer('limit', samples.catchUpOff, 'en')?.text.includes('at eve
 check(!!getStockAnswer('limit', samples.rothOff, 'en')?.text.includes("doesn't offer Roth"), 'no-Roth catch-up wording');
 check(getStockAnswer('loans', samples.loansHardshipOff, 'en')?.text.includes("doesn't offer loans") === true, 'loans off wording');
 
+// A plan that says "immediately vested" must never be told it follows a schedule.
+{
+  const imm = samples.immediateMatch;
+  const m = getStockAnswer('match', imm, 'en')?.text ?? '';
+  const v = getStockAnswer('vesting', imm, 'en')?.text ?? '';
+  check(m.length > 0 && !m.includes('follows a vesting schedule'), 'immediate plan: match answer must not say it follows a schedule');
+  check(v.includes('100% yours right away') && !v.includes('What that means'), 'immediate plan: vesting answer says right away, no generic paragraph');
+}
+
 // parseVesting: must read these exactly, and refuse to guess the rest.
 const vestCases: [string, any][] = [
   ['100% immediately vested', { kind: 'immediate' }],

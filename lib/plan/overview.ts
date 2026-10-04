@@ -148,10 +148,13 @@ export function getOverview(
     } else if (ld === false && (psLd === false || (psLd == null && pd.profitSharing?.available !== true))) {
       glance.push({ label: L('Last-day-of-year rule', 'Regla del último día'), value: no, stockId: 'match' });
     }
-    if (has(pd.contribEligibility?.requirement)) {
-      glance.push({ label: L('When you can save', 'Cuándo puedes ahorrar'), value: pd.contribEligibility.requirement!.trim(), stockId: 'elig' });
-      if (hasMatch) glance.push({ label: L('When the match starts', 'Cuándo empieza el match'), value: sameTiming ? L('Same time', 'Al mismo tiempo') : L('Later', 'Después'), stockId: 'elig' });
-    }
+    // Eligibility is always shown, even when the plan reader couldn't find it.
+    glance.push({
+      label: L('When you can save', 'Cuándo puedes ahorrar'),
+      value: has(pd.contribEligibility?.requirement) ? pd.contribEligibility.requirement!.trim() : L('Ask HR', 'Pregunta a Recursos Humanos'),
+      stockId: 'elig',
+    });
+    if (hasMatch) glance.push({ label: L('When the match starts', 'Cuándo empieza el match'), value: sameTiming ? L('Same time', 'Al mismo tiempo') : L('Later', 'Después'), stockId: 'elig' });
     const roth = pd.hasRoth ?? pd.rothAvailable;
     if (bool(roth)) glance.push({ label: L('Roth option', 'Opción Roth'), value: roth ? yes : no, stockId: 'roth' });
     if (bool(pd.planAllowsCatchUp)) glance.push({ label: L('Catch-up (age 50+)', 'Catch-up (50+ años)'), value: pd.planAllowsCatchUp ? yes : no, stockId: 'limit' });
@@ -193,7 +196,7 @@ export function getOverview(
         stockId: 'roth',
       });
     }
-    if (has(pd.contribEligibility?.requirement) || has(pd.contribEligibility?.entryDates)) {
+    {
       const req = pd.contribEligibility?.requirement;
       you.push({
         id: 'elig',
@@ -202,7 +205,9 @@ export function getOverview(
         tone: 'neutral',
         body: has(pd.contribEligibility?.entryDates)
           ? L(`Entry dates: ${noDot(pd.contribEligibility.entryDates!)}.`, `Fechas de entrada: ${noDot(pd.contribEligibility.entryDates!)}.`)
-          : L("Your exact start date can depend on set entry dates. HR or your plan's website can confirm it.", 'Tu fecha exacta de inicio puede depender de fechas de entrada fijas. Recursos Humanos o el sitio web de tu plan lo pueden confirmar.'),
+          : !has(req)
+            ? L("Your plan document didn't say. HR or your plan's website can tell you.", 'El documento de tu plan no lo dice. Recursos Humanos o el sitio web de tu plan te lo pueden decir.')
+            : L("Your exact start date can depend on set entry dates. HR or your plan's website can confirm it.", 'Tu fecha exacta de inicio puede depender de fechas de entrada fijas. Recursos Humanos o el sitio web de tu plan lo pueden confirmar.'),
         stockId: 'elig',
         anchor: 'when-can-you-start',
       });

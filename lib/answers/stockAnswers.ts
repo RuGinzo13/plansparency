@@ -6,7 +6,7 @@
 // so nothing here is typed in by hand twice.
 
 import type { PlanData } from '../plan/plandata';
-import { has, FULL_MATCH_PCT, STANDARD_FORMULA, tierText, facts, vestingParts } from '../plan/planFacts';
+import { has, FULL_MATCH_PCT, STANDARD_FORMULA, tierText, facts, vestingParts, parseVesting } from '../plan/planFacts';
 import { getTerm } from '../glossary';
 import { IRS_LIMITS } from '../plan/irs-limits';
 import { getLimitYear } from '../plan/irs';
@@ -93,7 +93,11 @@ function matchAnswer(pd: PlanData): StockAnswer | null {
     out.push(para('It\'s yours right away.', 'Safe harbor money is 100% yours from day one.'));
   }
   if (f.disc) {
-    out.push(para('The extra match follows a vesting schedule.', 'Tap "When is the match mine to keep?" to see when it\'s fully yours.'));
+    if (parseVesting(pd.vestingSchedule)?.kind === 'immediate') {
+      out.push(para('It\'s yours right away.', 'Your plan says this match is 100% yours as soon as it\'s paid in.'));
+    } else {
+      out.push(para('The extra match follows a vesting schedule.', 'Tap "When is the match mine to keep?" to see when it\'s fully yours.'));
+    }
     if (pd.lastDayProvision === true) {
       out.push(para('Be here at year end.', 'You may need to be working here on the last day of the plan year to get the match for that year.'));
     }
@@ -115,7 +119,9 @@ function vestingAnswer(pd: PlanData): StockAnswer | null {
   if (!v) return null;
   const out: string[] = [para('Your own savings are always 100% yours.', '')];
   if (v.f.safeHarbor) out.push(para('Your safe harbor money is 100% yours right away.', ''));
-  if (v.schedule) {
+  if (v.schedule && parseVesting(v.schedule)?.kind === 'immediate') {
+    out.push(para(`${v.label} is 100% yours right away.`, `Your plan says: "${v.schedule}".`));
+  } else if (v.schedule) {
     out.push(para(`${v.label} vesting schedule:`, `"${v.schedule}".`));
     out.push(para('What that means:', getTerm('vestingSchedule', 'en').def));
     out.push(para('If you leave early,', 'you keep your own savings plus whatever part is already yours. The rest goes back to the plan.'));

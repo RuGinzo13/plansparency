@@ -31,6 +31,7 @@ export const samples: Record<string, PlanData> = {
   discretionaryLastDay: mk({ noMatch: false, matchTiers: [{ pct: 50, upTo: 6 }], lastDayProvision: true, matchEligibility: { requirement: '1 year of service', entryDates: '', immediateMatch: false } }),
   discretionaryTwoTiers: mk({ noMatch: false, matchTiers: [{ pct: 100, upTo: 3 }, { pct: 50, upTo: 2 }] }),
   noMatch: mk({}),
+  immediateMatch: mk({ noMatch: false, matchTiers: [{ pct: 100, upTo: 4 }], vestingSchedule: '100% immediately vested for both employee deferrals and employer match' }),
   profitSharingOn: mk({ profitSharing: { available: true, type: 'discretionary', formula: '', lastDayApplies: true } }),
   safeHarborPlusMatchPlusPS: mk({ noMatch: false, matchTiers: [{ pct: 25, upTo: 4 }], safeHarbor: { type: 'nonelective', formula: '3% of your pay', vestingImmediate: true }, profitSharing: { available: true, type: 'discretionary', formula: '', lastDayApplies: false } }),
   rothOff: mk({ hasRoth: false, rothAvailable: false }),
