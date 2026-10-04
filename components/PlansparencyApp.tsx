@@ -37,6 +37,7 @@ import { Landing } from '@/components/plansparency/Landing';
 import { STOCK_QUESTIONS, STOCK_QUESTION_LABELS_ES, getStockAnswer } from '@/lib/answers/stockAnswers';
 import { getOverview } from '@/lib/plan/overview';
 import { PlanGlance } from '@/components/plansparency/PlanGlance';
+import { useStickyPanel } from '@/components/plansparency/useStickyPanel';
 import { StockAnswerCard } from '@/components/plansparency/StockAnswerCard';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
@@ -102,6 +103,9 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [sessionEndReason, setSessionEndReason] = useState<'idle' | 'expired' | null>(null);
   const chatEndRef = useRef(null);
   const lastUserRef = useRef(null);
+  const askScrollRef = useRef(null);
+  const askHeaderRef = useRef(null);
+  const askLayoutRef = useRef(null);
   const [pickedChip, setPickedChip] = useState(null); // id (or label) of the last tapped quick-question button
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -112,6 +116,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const lastActivityRef = useRef(Date.now());
 
   const t = i18n[lang];
+  const sticky = useStickyPanel(askScrollRef, askHeaderRef, askLayoutRef, `${stage}-${activeTab}`);
 
   const bumpActivity = () => { lastActivityRef.current = Date.now(); };
 
@@ -531,14 +536,16 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     const canAsk = !!input.trim() && !loading;
     const overview = getOverview(planData, lang, { hasFunds: false });
     const chatPanel = (
-      <div style={{ flex: 1, overflowY: "auto" }}>
-        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 20px 40px", display: "flex", flexWrap: "wrap", flexDirection: "row-reverse", gap: 28, alignItems: "flex-start" }}>
+      <div ref={askScrollRef} style={{ flex: 1, overflowY: "auto" }}>
+        <style>{`@media (max-width: 700px) { .plan-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }`}</style>
+        <div ref={askHeaderRef} style={{ position: "sticky", top: 0, zIndex: 5, background: C.bg, borderBottom: `1px solid ${C.borderLight}` }}>
+          <div style={{ maxWidth: 1180, margin: "0 auto", padding: "16px 20px 12px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: C.textMuted }}>{t.askHeader}</div>
+            <h1 className="plan-name" style={{ margin: 0, fontFamily: F.display, fontSize: "clamp(24px, 4.5vw, 36px)", fontWeight: 700, lineHeight: 1.05, color: C.text }}>{planData?.planName || fileName || "Your Plan"}</h1>
+          </div>
+        </div>
+        <div ref={askLayoutRef} style={{ maxWidth: 1180, margin: "0 auto", padding: "20px 20px 40px", display: "flex", flexWrap: "wrap", flexDirection: "row-reverse", gap: 28, alignItems: "flex-start" }}>
           <main style={{ flex: "999 1 520px", minWidth: 0, display: "flex", flexDirection: "column", gap: 18 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: C.textMuted }}>{t.askHeader}</div>
-              <h1 style={{ margin: 0, fontFamily: F.display, fontSize: "clamp(26px, 6vw, 36px)", fontWeight: 700, lineHeight: 1.05, color: C.text }}>{planData?.planName || fileName || "Your Plan"}</h1>
-            </div>
-
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {chipList.map(q => {
                 const on = pickedChip === (q.id ?? q.label);
@@ -560,11 +567,11 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
             {visibleMessages.map((msg, i) => (
               msg.stock ? (
-                <div key={i} style={{ animation: "fadeIn .3s" }}>
+                <div key={i} style={{ animation: "fadeIn .3s", scrollMarginTop: sticky.headerH + 12 }}>
                   <StockAnswerCard text={msg.content} link={msg.link} stockId={msg.stockId} review={planData?.review} onOpenCalculator={() => setActiveTab("calculator")} />
                 </div>
               ) : (
-                <div key={i} ref={i === lastUserIdx ? lastUserRef : undefined} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
+                <div key={i} ref={i === lastUserIdx ? lastUserRef : undefined} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s", scrollMarginTop: sticky.headerH + 12 }}>
                   {msg.role === "user" ? (
                     <div style={{ maxWidth: "80%", background: C.text, color: C.surface, fontSize: 15, fontWeight: 600, padding: "12px 16px", borderRadius: "16px 16px 4px 16px", border: "none", lineHeight: 1.5 }}>{msg.content}</div>
                   ) : (
@@ -610,7 +617,9 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           </main>
 
           {overview.glance.length > 0 && (
-            <PlanGlance rows={overview.glance} review={planData?.review} recordkeeperName={planData?.recordkeeperName} recordkeeperUrl={planData?.recordkeeperUrl} pickedId={pickedChip} onPick={openStock} lang={lang} />
+            <div style={{ flex: "1 1 300px", maxWidth: 380, minWidth: 0, ...(sticky.twoCol ? { position: "sticky", top: sticky.top, height: sticky.height, display: "flex", alignItems: "center" } : {}) }}>
+              <PlanGlance rows={overview.glance} review={planData?.review} recordkeeperName={planData?.recordkeeperName} recordkeeperUrl={planData?.recordkeeperUrl} pickedId={pickedChip} onPick={openStock} lang={lang} />
+            </div>
           )}
         </div>
       </div>

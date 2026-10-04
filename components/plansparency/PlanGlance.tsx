@@ -24,7 +24,7 @@ export function PlanGlance({ rows, review, recordkeeperName, recordkeeperUrl, pi
   const title = es ? 'Tu plan de un vistazo' : 'Your plan at a glance';
 
   return (
-    <aside aria-label={title} style={{ flex: '1 1 300px', maxWidth: 380, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10, padding: 20, border: `1px solid ${C.border}`, borderRadius: 16, background: C.surfaceAlt }}>
+    <aside aria-label={title} style={{ width: '100%', boxSizing: 'border-box', maxHeight: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, padding: 20, border: `1px solid ${C.border}`, borderRadius: 16, background: C.surfaceAlt }}>
       <h2 style={{ margin: 0, fontFamily: F.display, fontSize: 24, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{title}</h2>
       <span style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 100, background: reviewer ? C.greenSoft : C.accentSoft, color: reviewer ? C.green : C.accentText }}>
         {reviewer

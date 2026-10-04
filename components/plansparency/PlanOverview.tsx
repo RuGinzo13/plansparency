@@ -47,11 +47,11 @@ export function PlanOverview({ planData, lang, review, topic, setTopic, onOpenSt
 
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
-      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 20px 48px', display: 'flex', flexDirection: 'column', gap: 32 }}>
-        {/* Hero */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <style>{`@media (max-width: 700px) { .plan-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }`}</style>
+      <div style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bg, borderBottom: `1px solid ${C.borderLight}` }}>
+        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '16px 20px 12px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ ...label12, color: C.textMuted }}>{L('Your plan', 'Tu plan')}</div>
-          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 700, lineHeight: 1.05, color: C.text }}>
+          <h1 className="plan-name" style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(24px, 4.5vw, 36px)', fontWeight: 700, lineHeight: 1.05, color: C.text }}>
             {planData?.planName || L('Your 401(k) Plan', 'Tu Plan 401(k)')}
           </h1>
           <span style={{ alignSelf: 'flex-start', fontSize: 13, fontWeight: 600, padding: '5px 12px', borderRadius: 100, background: reviewer ? C.greenSoft : C.accentSoft, color: reviewer ? C.green : C.accentText }}>
@@ -60,7 +60,8 @@ export function PlanOverview({ planData, lang, review, topic, setTopic, onOpenSt
               : L('Read from the document you uploaded', 'Leído del documento que subiste')}
           </span>
         </div>
-
+      </div>
+      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '20px 20px 48px', display: 'flex', flexDirection: 'column', gap: 32 }}>
         {/* Headline cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14 }}>
           {o.headlines.map((h) => {
@@ -140,7 +141,7 @@ export function PlanOverview({ planData, lang, review, topic, setTopic, onOpenSt
         {cards.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14 }}>
             {cards.map((c) => (
-              <article key={c.id} id={c.anchor} style={{ padding: 20, borderRadius: 16, background: C.surface, border: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <article key={c.id} id={c.anchor} style={{ scrollMarginTop: c.anchor ? 120 : undefined, padding: 20, borderRadius: 16, background: C.surface, border: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <h3 style={{ margin: 0, fontFamily: F.display, fontSize: 24, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{c.title}</h3>
                 {c.fact && (
                   <span style={{ alignSelf: 'flex-start', fontSize: 14, fontWeight: 700, padding: '6px 12px', borderRadius: 100, background: c.tone === 'good' ? C.greenSoft : C.accentSoft, color: c.tone === 'good' ? C.green : C.accentText }}>{c.fact}</span>
