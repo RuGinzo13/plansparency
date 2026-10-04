@@ -9,7 +9,7 @@
 //   components/plansparency/nav.tsx     TabBar, PlanGuideTabBar, AppHeader
 //   components/plansparency/KeyTermsPanel.tsx
 //   components/plansparency/InvestmentsPanel.tsx   FundRow, DisclosureCallout, CATEGORY_ORDER, RISK_MAP, FUND_DISCLAIMER, InvestmentsPanel
-//   components/plansparency/PlanDashboard.tsx
+//   components/plansparency/PlanOverview.tsx, PlanGlance.tsx, StockAnswerCard.tsx
 //   components/plansparency/CalcPanel.tsx
 //   components/plansparency/StatementDashboard.tsx  SuggestionBox, StatementDashboard
 // SectionIcon, PageBackground, TrustRow, and MiniBar were deleted as unused.
@@ -30,7 +30,7 @@ import { Md, Modal, LangToggle, Logo, Shield } from '@/components/plansparency/u
 import { TabBar, PlanGuideTabBar, AppHeader } from '@/components/plansparency/nav';
 import { KeyTermsPanel } from '@/components/plansparency/KeyTermsPanel';
 import { InvestmentsPanel } from '@/components/plansparency/InvestmentsPanel';
-import { PlanDashboard } from '@/components/plansparency/PlanDashboard';
+import { PlanOverview } from '@/components/plansparency/PlanOverview';
 import { CalcPanel } from '@/components/plansparency/CalcPanel';
 import { StatementDashboard } from '@/components/plansparency/StatementDashboard';
 import { Landing } from '@/components/plansparency/Landing';
@@ -89,11 +89,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [activeTab, setActiveTab] = useState("dashboard");
   const [planData, setPlanData] = useState(initialPlanData);
   const [planGuideTab, setPlanGuideTab] = useState<"guide" | "investments">("guide");
-  // Lifted out of PlanDashboard so openEligibility() can expand the section
-  // that holds "When Can You Start?" from outside the dashboard.
-  const [dashboardCollapsedSections, setDashboardCollapsedSections] = useState<Record<string, boolean>>({
-    yourMoney: true, companyMoney: true, whileEmployed: true, afterEmployment: true,
-  });
+  // Which topic is open on the Your plan tab (openEligibility() switches it to "you").
+  const [topic, setTopic] = useState<'you' | 'company' | 'while' | 'leave'>("company");
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0); // 0-100 during upload phase
@@ -308,7 +305,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const openEligibility = () => {
     setActiveTab("dashboard");
     setPlanGuideTab("guide");
-    setDashboardCollapsedSections(prev => ({ ...prev, yourMoney: false }));
+    setTopic("you");
     setTimeout(() => {
       document.getElementById("when-can-you-start")?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 60);
@@ -649,7 +646,11 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
               hasFunds={(planData?.fundsData || []).length > 0}
             />
             {planGuideTab === "guide" && (
-              <PlanDashboard t={t} planData={planData} lang={lang} onSectionClick={(prompt) => sendMessage(prompt)} onChat={() => setActiveTab("chat")} onUploadAnother={startFreshUpload} collapsedSections={dashboardCollapsedSections} setCollapsedSections={setDashboardCollapsedSections} />
+              <PlanOverview
+                planData={planData} lang={lang} review={planData?.review} topic={topic} setTopic={setTopic}
+                onOpenStock={openStock} onOpenCalculator={() => setActiveTab("calculator")} onOpenInvestments={() => setPlanGuideTab("investments")}
+                hasFunds={(planData?.fundsData || []).length > 0} fundsCount={(planData?.fundsData || []).length} footer={t.footerDisclaimer}
+              />
             )}
             {planGuideTab === "investments" && (
               <InvestmentsPanel fundsData={planData?.fundsData || []} lang={lang} />
