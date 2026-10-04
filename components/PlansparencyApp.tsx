@@ -102,6 +102,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [streamingText, setStreamingText] = useState('');
   const [sessionEndReason, setSessionEndReason] = useState<'idle' | 'expired' | null>(null);
   const chatEndRef = useRef(null);
+  const lastUserRef = useRef(null);
+  const [pickedChip, setPickedChip] = useState(null); // label of the last tapped quick-question button
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const pendingFilesRef = useRef<File[]>([]);
@@ -114,7 +116,12 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   const bumpActivity = () => { lastActivityRef.current = Date.now(); };
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
+  useEffect(() => {
+    // After a stock answer, show the question at the top so a long answer is read from its start.
+    const last = messages[messages.length - 1];
+    if (last?.stock && lastUserRef.current) lastUserRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    else chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
   useEffect(() => { if (stage === "chat" && !loading) inputRef.current?.focus(); }, [stage, loading]);
 
   // Best-effort file cleanup on tab/browser close — sendBeacon works during unload.
@@ -174,7 +181,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const clearSession = () => {
     endSessionFiles(fileIdsRef.current);
     setSessionEndReason(null);
-    setFileName(""); setMessages([]); setInput(""); setLoading(false);
+    setFileName(""); setMessages([]); setPickedChip(null); setInput(""); setLoading(false);
     setShowClearConfirm(false); setPlanData(null); setStmtData(null);
     setActiveTab("dashboard"); setPlanGuideTab("guide"); setDocType(null); setStreamingText(''); setUploadError("");
     pendingFilesRef.current = [];
@@ -209,7 +216,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (!files?.length) return;
     bumpActivity();
     if (resetState) {
-      setMessages([]); setPlanData(null); setStmtData(null);
+      setMessages([]); setPickedChip(null); setPlanData(null); setStmtData(null);
     }
     const primaryFile = files[0];
     setUploadError(""); setFileName(primaryFile.name);
@@ -289,7 +296,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // addDocRef is used for in-session supplemental uploads (APP/stmtDashboard stages) — bypasses privacy screen.
   const startFreshUpload = () => {
     endSessionFiles(fileIdsRef.current);
-    setMessages([]); setPlanData(null); setStmtData(null);
+    setMessages([]); setPickedChip(null); setPlanData(null); setStmtData(null);
     setFileName(""); setInput(""); setLoading(false);
     setStreamingText(''); setStagedFiles([]); pendingFilesRef.current = []; fileIdsRef.current = [];
     setDocType(null); setStage(STAGE.CHOOSER);
@@ -366,6 +373,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   const sendMessage = async (text, source = 'typed') => {
     if (!text.trim() || loading) return;
+    if (source === 'typed') setPickedChip(null);
     bumpActivity();
     const um = { role: "user", content: text.trim() }; const nm = [...messages, um]; setMessages(nm); setInput(""); setLoading(true); setStreamingText('');
     if (stage === STAGE.APP) setActiveTab("chat");
@@ -407,6 +415,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const chipList = stockChipsOn ? STOCK_QUESTIONS : t.quickAsks.map(q => ({ id: null, label: q }));
   const onChip = (chip) => {
     if (loading) return;
+    setPickedChip(chip.label);
     const answer = chip.id ? getStockAnswer(chip.id, planData, "en") : null;
     if (!answer) { sendMessage(chip.label, "button"); return; }
     bumpActivity();
@@ -508,58 +517,82 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Dashboard (TOC) ──
   // ── SPD App (dashboard + calculator + key terms + chat) ──
   if (stage === STAGE.APP) {
+    const visibleMessages = messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir")));
+    let lastUserIdx = -1;
+    visibleMessages.forEach((m, i) => { if (m.role === "user") lastUserIdx = i; });
+    const aiBubbleStyle = { padding: 20, borderRadius: "4px 16px 16px 16px", background: C.surface, border: `1px solid ${C.border}`, fontSize: 15, lineHeight: 1.6 };
+    const canAsk = !!input.trim() && !loading;
     const chatPanel = (
       <>
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
-          {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
-            msg.stock ? (
-              <div key={i} style={{ animation: "fadeIn .3s" }}>
-                <StockAnswerCard text={msg.content} link={msg.link} stockId={msg.stockId} review={planData?.review} onOpenCalculator={() => setActiveTab("calculator")} />
-              </div>
-            ) : (
-            <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
-              <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? "rgba(212,168,83,.1)" : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
-                {msg.role === "assistant" ? <Md text={msg.content} /> : msg.content}
-              </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0" }}>
+          <div style={{ width: "100%", maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: C.textMuted }}>{t.askHeader}</div>
+              <h1 style={{ margin: 0, fontFamily: F.display, fontSize: "clamp(26px, 6vw, 36px)", fontWeight: 700, lineHeight: 1.05, color: C.text }}>{planData?.planName || fileName || "Your Plan"}</h1>
             </div>
-            )
-          ))}
-          {loading && (
-            <div style={{ display: "flex" }}>
-              {streamingText ? (
-                <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: "16px 16px 16px 4px", background: C.aiBubble, border: `1px solid ${C.border}`, fontSize: 14, lineHeight: 1.6 }}>
-                  <Md text={streamingText} />
-                  <span style={{ display: "inline-block", width: 2, height: "1em", background: C.accent, verticalAlign: "text-bottom", marginLeft: 2, animation: "blink 1s step-end infinite" }} />
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {chipList.map(q => {
+                const on = pickedChip === q.label;
+                return (
+                  <button key={q.label} aria-pressed={on} disabled={loading} onClick={() => onChip(q)}
+                    style={{ minHeight: 44, padding: "8px 14px", borderRadius: 100, fontFamily: "inherit", fontSize: 14, fontWeight: 600, textAlign: "left", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1,
+                      background: on ? C.text : C.accentSoft, color: on ? C.surface : C.accentText, border: `1px solid ${on ? C.text : C.accentBorder}` }}
+                  >{q.label}</button>
+                );
+              })}
+            </div>
+
+            {visibleMessages.map((msg, i) => (
+              msg.stock ? (
+                <div key={i} style={{ animation: "fadeIn .3s" }}>
+                  <StockAnswerCard text={msg.content} link={msg.link} stockId={msg.stockId} review={planData?.review} onOpenCalculator={() => setActiveTab("calculator")} />
                 </div>
               ) : (
-                <div style={{ padding: "12px 15px", borderRadius: "16px 16px 16px 4px", background: C.aiBubble, border: `1px solid ${C.border}`, display: "flex", gap: 6 }}>
-                  {[0, 1, 2].map(i => <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent, opacity: .5, animation: `bounce 1.2s ease-in-out ${i * .15}s infinite` }} />)}
+                <div key={i} ref={i === lastUserIdx ? lastUserRef : undefined} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
+                  {msg.role === "user" ? (
+                    <div style={{ maxWidth: "80%", background: C.text, color: C.surface, fontSize: 15, fontWeight: 600, padding: "12px 16px", borderRadius: "16px 16px 4px 16px", border: "none", lineHeight: 1.5 }}>{msg.content}</div>
+                  ) : (
+                    <div style={{ maxWidth: "85%", ...aiBubbleStyle }}><Md text={msg.content} /></div>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
-          {showChips && <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", padding: "4px 0 8px" }}>
-            {chipList.map(q => <button key={q.label} onClick={() => onChip(q)}
-              style={{ padding: "7px 13px", borderRadius: 100, fontSize: 12, background: C.accentDim, color: C.accent, border: `1px solid rgba(212,168,83,.18)`, cursor: "pointer", fontFamily: F.body, transition: "all .15s", whiteSpace: "nowrap" }}
-              onMouseEnter={e => e.currentTarget.style.background = C.accentGlow} onMouseLeave={e => e.currentTarget.style.background = C.accentDim}
-            >{q.label}</button>)}</div>}
-          <div ref={chatEndRef} />
+              )
+            ))}
+            {loading && (
+              <div style={{ display: "flex" }}>
+                {streamingText ? (
+                  <div style={{ maxWidth: "85%", ...aiBubbleStyle }}>
+                    <Md text={streamingText} />
+                    <span style={{ display: "inline-block", width: 2, height: "1em", background: C.accent, verticalAlign: "text-bottom", marginLeft: 2, animation: "blink 1s step-end infinite" }} />
+                  </div>
+                ) : (
+                  <div style={{ ...aiBubbleStyle, display: "flex", gap: 6 }}>
+                    {[0, 1, 2].map(i => <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: C.accent, opacity: .5, animation: `bounce 1.2s ease-in-out ${i * .15}s infinite` }} />)}
+                  </div>
+                )}
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
         </div>
 
         <div style={{ padding: "10px 16px 12px", borderTop: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", background: C.bg, borderRadius: 14, padding: "4px 4px 4px 14px", border: `1px solid ${C.border}` }}>
-            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.inputPlaceholder} rows={1}
-              style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 14, fontFamily: F.body, resize: "none", padding: "9px 0", lineHeight: 1.5, maxHeight: 100, minHeight: 18 }}
-              onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }} />
-            <button onClick={() => sendMessage(input)} disabled={!input.trim() || loading}
-              style={{ width: 38, height: 38, borderRadius: 10, border: "none", background: input.trim() && !loading ? `linear-gradient(135deg,${C.accent},#B8863A)` : C.border, cursor: input.trim() && !loading ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s", flexShrink: 0 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !loading ? "#0F1621" : C.textDim} strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
-            </button>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-            <span style={{ fontSize: 10, color: C.textDim }}>{t.footerDisclaimer}</span>
-            <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, padding: "3px 10px", fontSize: 10, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = ".7"}>{t.clearSession}</button>
+          <div style={{ width: "100%", maxWidth: 760, margin: "0 auto" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "4px 4px 4px 14px", border: `1px solid ${C.inputBorder}`, borderRadius: 14, background: C.aiBubble }}>
+              <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.askFollowUp} rows={1}
+                style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 15, fontFamily: F.body, resize: "none", padding: "10px 0", boxSizing: "border-box", lineHeight: 1.5, maxHeight: 100, minHeight: 44 }}
+                onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }} />
+              <button onClick={() => sendMessage(input)} disabled={!canAsk}
+                style={{ minHeight: 40, padding: "0 16px", border: "none", borderRadius: 10, fontFamily: F.body, fontSize: 14, fontWeight: 700, flexShrink: 0, cursor: canAsk ? "pointer" : "default",
+                  background: canAsk ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.border, color: canAsk ? C.onPrimary : C.textDim }}>
+                {t.askButton}
+              </button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+              <span style={{ fontSize: 10, color: C.textDim }}>{t.footerDisclaimer}</span>
+              <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, padding: "3px 10px", fontSize: 10, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = ".7"}>{t.clearSession}</button>
+            </div>
           </div>
         </div>
       </>
