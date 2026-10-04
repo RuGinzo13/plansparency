@@ -329,3 +329,14 @@ One new entry: the keep-alive that was supposed to stop Supabase pausing never w
 ## Oct 4, 2026: Cowork git status left .git/index.lock (Cowork)
 - **What happened:** `git status` from the Cowork shell could not remove its own lock file (deletes were off), which would have blocked Claude Code commits.
 - **Fix:** deleted the empty lock with permission. From now on Cowork runs only `git --no-optional-locks status` / `git log` (read-only, no lock).
+
+
+## Oct 4, 2026: PHASE-10 quick-question buttons can never appear for plan documents (Cowork + CC)
+- **What happened:** Ross opened the live site and saw none of the 8 stock-answer buttons. Cowork had logged PHASE-10 as done.
+- **Cause:** `showChips` in `PlansparencyApp.tsx` requires `stage === "chat"`, but plan documents run in `stage === "app"` (Chat is a tab). Only statements reach `stage "chat"`, and stock buttons are off for statements. The gate dates back to the first Next.js build, so plan-document chat had no quick buttons at all; PHASE-10 Step 4 edited the button list without checking that it rendered.
+- **Where Cowork went wrong:** marked the feature done from commits + `check-answers.ts` (265 passing checks on answer text) without tracing the render condition. Passing logic tests are not proof a screen shows anything.
+- **Fix:** `PHASE PROMPTS/PHASE-11-show-quick-buttons.md` (one-line change). Lesson: every UI phase gets a "trace the render path" check, and "done" waits for Ross's click-through.
+
+
+## Session Summary, October 3–4, 2026
+Three new failures, all logged above with fixes: (1) PHASE-07 claimed done items it hadn't fully done (chip size, advisor FIRST_MSG), fixed in PHASE-08; (2) revenue report v1 costed invite-link sessions as if the PDF was sent every question, corrected after reading the code; (3) Cowork `git status` left `.git/index.lock`, deleted, Cowork now uses read-only git only.

@@ -1,5 +1,5 @@
 # Plansparency — CONTEXT.md (Single Source of Truth)
-*Last updated: September 27, 2026 — Founder: Ross Ginsberg*
+*Last updated: October 4, 2026 — Founder: Ross Ginsberg*
 
 ---
 
@@ -16,14 +16,13 @@ Full rules live in CLAUDE.md. Key rules for every session:
 
 ---
 
-## Verified State — September 27, 2026 (read from repo + Vercel, not from memory)
-- **Repo `main` = `origin/main` = production.** Last commit `71f9357` (June 11, 2026). Vercel production deployment for `71f9357` is READY. No code has changed in ~3.5 months.
-- **Uncommitted in repo:** the .md files only (CLAUDE, CONTEXT, MEMORY, ERRORS, plus new OPEN-ITEMS.md and `PHASE PROMPTS/`). Needs a docs commit (`PHASE PROMPTS/PHASE-01-stabilize.md` Step 1).
-- **Branch `dashboard-redesign`** (local + remote) is fully merged into `main`. Stale; safe to delete.
-- **Doc drift found and corrected today:** May 24 code-review Findings #1 (partially), #3 and #5 were fixed in commit `273ef03` (May 26, 2026) but docs still listed them open. Finding #4 is still open. See ERRORS.md.
-- **New issues found in code today:** IRS limits hardcoded to 2025 values (calculator is out of date for 2026); upload drop zone text says "4.5 MB max per doc" while the code allows 25 MB. See OPEN-ITEMS.md.
-- **Supabase (Sept 28):** found PAUSED; keep-alive had been failing daily (queried nonexistent `plans.id`). Restored by Cowork. Fixed in `8d53a79` (cron verified 200). Originally planned in `PHASE PROMPTS/PHASE-01-stabilize.md` Step 2.
-- **Tool-identity evidence:** production commit `71f9357` carries the trailer `Co-Authored-By: Claude Sonnet 4.6`. That trailer is what Claude Code writes, which points toward the June 11 agent being Claude Code after all (not proof; Ross to confirm in VS Code).
+## Verified State — October 4, 2026 (read from repo + Vercel, not from memory)
+- **Repo `main` = `origin/main` = production.** Last commit `27e6f7e` (PHASE-10 docs). All PHASE-10 deployments READY in Vercel.
+- **Phases done:** 01 to 10. Latest: PHASE-07 calculator redesign (Sept 30), PHASE-08 calculator follow-ups (Oct 3), PHASE-09 landing + advisor review step (Oct 4), PHASE-10 prompt caching + token logging + stock answers (Oct 4).
+- **Not yet tested by Ross:** PHASE-09 and PHASE-10 click-through (see OPEN-ITEMS "START HERE"). No `chat_usage` / `stock_answer` log lines in Vercel yet.
+- **Uncommitted:** Cowork doc edits from the Oct 4 /close only.
+- **Invite links (`/p/...`) stay off** until the 🔴 security section in OPEN-ITEMS closes. Plan-code box on the landing page is built but hidden (`PLAN_CODES_ENABLED = false`).
+- **Cowork git rule (Oct 4):** Cowork runs only read-only git (`git --no-optional-locks status`, `git log`). A plain `git status` from Cowork once left `.git/index.lock` behind.
 
 ---
 
@@ -131,6 +130,8 @@ Begins on PDF upload + initial AI summary. Continues through all follow-up quest
 | Typical 4-question session | ~$0.195 | Standard use case |
 | Power user (8–10 questions) | ~$0.45–$0.60 | Covered by session limits |
 
+**⚠️ Oct 4 update (estimates, to be replaced by PHASE-10 logs):** invite-link session ~$0.16 today, ~$0.08 with caching (close to the $0.195 above). Free self-upload session ~$1.03 (whole PDF re-read each question), ~$0.40 with caching: this is the real cost risk. Stock answers (button taps) cost $0. Full report: `Reports/Plansparency-Revenue-Model-Oct-2026.pdf` (revised). See OPEN-ITEMS #37.
+
 ### ⚠️ API Margin Risk
 Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 30% adoption = 1,350 sessions ≈ $270 API cost) can exceed Pro revenue. Session limits + overage billing must be live before any large advisor onboards. Open enrollment (Oct–Dec) spikes 3–5x.
 
@@ -208,6 +209,11 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | ✅ Done | Demo-phase advisor gate | `middleware.ts` Basic Auth on `/advisor` + `/api/save-plan`, fail-closed (June 11, 2026, commit `71f9357`). Full Clerk login remains pre-launch |
 | ✅ Done | Investments tab | Built + polished June 4 2026. ⚠️ ERISA review still required before public launch |
 | ✅ Done | Code-quality cleanup (6 phases) | Behavior-neutral. PlansparencyApp.tsx keeps documented `@ts-nocheck` |
+| ✅ Done | Calculator redesign (PHASE-07/08) | Age + salary first, 2026 limits incl. catch-up / super catch-up / Roth catch-up rule, one glossary (`lib/glossary.ts`), IRS limits in `lib/plan/irs-limits.ts` |
+| ✅ Done | Landing page (PHASE-09) | One-screen start at `/` (`components/plansparency/Landing.tsx`), `/try` redirects, advisor page restyled, plan-code box hidden |
+| ✅ Done | Advisor review step (PHASE-09) | Accuracy pop-up + 12-row review screen; saves `review` inside planData |
+| ✅ Done | Prompt caching + token logging (PHASE-10) | `app/api/chat/route.ts`; log line `chat_usage` (numbers only) |
+| ✅ Done (wording DRAFT) | Stock answers (PHASE-10) | 8 English buttons answered from planData with no AI call (`lib/answers/stockAnswers.ts`); Spanish buttons still go to the AI; taps logged via `/api/track` (`stock_answer`) |
 | ⚠️ Partial | Upload: Vercel platform payload cap | 5.9 MB confirmed working in production (June 11). >5.9 MB untested; client limit 25 MB. Test a 15–20 MB scanned booklet when available |
 | ⚠️ Partial | Upload: server timeout vs client timeout | `/api/ingest` maxDuration raised 60 → 120 (commit `273ef03`, May 26). Client timeout is still 180s and there is still no "Failed to fetch" → friendly message mapping |
 | ✅ Done | Upload: AbortSignal.any fallback | Fixed in `273ef03` (May 26): caller abort is forwarded into the local controller when `AbortSignal.any` is missing |

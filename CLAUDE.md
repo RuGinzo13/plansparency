@@ -163,7 +163,7 @@ If a new file is ever proposed, ask: "Does this replace one of the existing file
 
 When Ross types /close in Cowork:
 
-1. Re-read the repo (`git log`, `git status`, changed files) so nothing is recorded from memory alone.
+1. Re-read the repo (`git log`, `git --no-optional-locks status`, changed files) so nothing is recorded from memory alone. Cowork uses read-only git only; a plain `git status` from Cowork can leave `.git/index.lock` behind and block Claude Code commits (Oct 4, 2026).
 2. Edit the files in place in the repo: CONTEXT.md (merge facts), MEMORY.md (session summary + decision entries), ERRORS.md (session summary + any new failures), OPEN-ITEMS.md (check off, add, re-rank).
 3. Mirror the same five files to the claude.ai project docs so project chats see current state.
 4. If .md files changed, the next prompt file (or a small docs-commit step in the next phase file) commits them. Cowork does not run git commits itself.

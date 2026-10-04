@@ -578,3 +578,11 @@ The addressable sections of the app — superseded by the updated Component Map 
 - Button taps only. Typed questions always go to the AI. No guess-matching of typed text in v1.
 - Ross alone approves stock answer wording (not firm compliance).
 - Built from advisor-reviewed fields; a missing field sends that tap to the AI, never a blank.
+
+
+## Session Summary, October 3–4, 2026
+**Worked on:** calculator follow-ups, landing pages (participant + advisor), invite-link security concerns, revenue model re-run, prompt caching, stock answers.
+**Completed:** PHASE-08, PHASE-09 and PHASE-10 written, run in Auto mode and verified against repo + Vercel (`27e6f7e` latest). Revised revenue report (v1 overstated paid-tier cost, corrected same day). Stock answers interactive preview ("Stock answers, button taps" board on the Landing Redesign canvas).
+**In progress:** Ross click-through of PHASE-09/10; stock answer wording waiting for Ross's final approval (DRAFT); real cost numbers waiting on `chat_usage` logs.
+**Decisions made:** phases always run in Auto mode; one link per plan; employees never get plan PDFs; advisor review required before sharing; invite links off until the 🔴 security section closes (Form 5500 check rejected); stock answers for button taps only, Ross approves wording; Spanish buttons stay on the AI until Spanish wording exists.
+**Next session:** OPEN-ITEMS "START HERE". First Ross's click-through, then Cowork reads Vercel logs (`chat_usage`, `stock_answer`) and updates #37 + the revenue report. Then the 🔴 security decisions (#31, #33, #34) and #38 (invite chat only sees the saved summary, and its instructions wrongly say the document is in the conversation).
