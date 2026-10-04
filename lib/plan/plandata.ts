@@ -57,6 +57,10 @@ export interface PlanData {
   investmentOptions?: string;
   distributionInfo?: any;
   fundsData: any[];
+  // Only when the document names the advisor (never guessed)
+  advisorName?: string;
+  advisorFirm?: string;
+  advisorEmail?: string;
 }
 
 // Extract the hidden <!--PLANDATA:{…}--> block from a Claude reply.
@@ -193,5 +197,9 @@ export function normalizePlanData(raw: any): PlanData | null {
     distributionInfo: raw.distributionInfo ?? undefined,
     // funds — must be an array
     fundsData: Array.isArray(raw.fundsData) ? raw.fundsData : [],
+    // advisor named in the document
+    advisorName: typeof raw.advisorName === 'string' && raw.advisorName.trim() ? raw.advisorName.trim() : undefined,
+    advisorFirm: typeof raw.advisorFirm === 'string' && raw.advisorFirm.trim() ? raw.advisorFirm.trim() : undefined,
+    advisorEmail: typeof raw.advisorEmail === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.advisorEmail.trim()) ? raw.advisorEmail.trim() : undefined,
   };
 }

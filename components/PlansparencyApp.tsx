@@ -318,8 +318,76 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     }, 60);
   };
 
-  // Supplemental upload: user already in APP/stmtDashboard — skip privacy, append fileId, ask Claude to review new doc
+  // Added document on the plan screens (APP stage): the AI reads it for the fund list (and the
+  // recordkeeper if it says so) and the funds fill Investments. No chat message is shown.
+  const [fundsSource, setFundsSource] = useState("");
+  const [fundsError, setFundsError] = useState(false);
   const supplementalUpload = useCallback(async (file: File) => {
+    if (!file) return;
+    bumpActivity();
+    setUploadError("");
+    setFundsError(false);
+    setFileName(file.name);
+    setUploadProgress(0);
+    setUploadPhase('uploading');
+    setUploadDocIndex(0);
+    setUploadDocCount(1);
+    setStage(STAGE.UPLOADING);
+    if (abortRef.current) abortRef.current.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    try {
+      const fid = await uploadFile(file, (pct) => setUploadProgress(pct), ctrl.signal);
+      const updatedIds = [...fileIdsRef.current, fid];
+      fileIdsRef.current = updatedIds;
+      setUploadPhase('analyzing');
+      // One source for the fund format: the same instructions the first read uses.
+      const first = i18n.en.firstMessage;
+      const fundsRules = first.slice(first.indexOf('- fundsData:'));
+      const followUp = { role: "user" as const, summary: true, content:
+        `I've added another document (${file.name}). Read it and respond with ONLY a hidden data block on its own line, with no summary and no other text, in exactly this format. This is the one case where a follow-up reply must include the PLANDATA block:\n<!--PLANDATA:{"recordkeeperName":"","recordkeeperUrl":"","fundsData":[]}-->\nInclude recordkeeperName and recordkeeperUrl only if this document gives them, otherwise leave them as empty strings. Fill fundsData using these rules:\n${fundsRules}` };
+      const updatedMsgs = [...messages, followUp];
+      const raw = await callClaude(updatedMsgs, null, lang, planData, () => {}, ctrl.signal, updatedIds, 'button');
+      const found = normalizePlanData(parsePlanData(raw));
+      const funds = found?.fundsData ?? [];
+      if (funds.length > 0) {
+        setPlanData(prev => ({
+          ...(prev || {}),
+          fundsData: funds,
+          recordkeeperName: (prev && prev.recordkeeperName) || found?.recordkeeperName,
+          recordkeeperUrl: (prev && prev.recordkeeperUrl) || found?.recordkeeperUrl,
+        }));
+        setFundsSource(file.name);
+        // Keep the request in history (role/content only) so later answers know the funds.
+        setMessages([...updatedMsgs, { role: "assistant", summary: true, content: `Funds found in ${file.name}: ${funds.map((f) => f.name).filter(Boolean).join(", ")}.` }]);
+      } else {
+        setFundsError(true);
+      }
+      setActiveTab("dashboard");
+      setPlanGuideTab("investments");
+      setStage(STAGE.APP);
+      abortRef.current = null;
+    } catch (e: any) {
+      if (e.name === "AbortError") return;
+      console.error('[supplementalUpload] failed:', e);
+      let supUserMsg: string = t.errorRead;
+      const supStatus = e.status;
+      if (supStatus === 429) supUserMsg = t.errRateLimit;
+      else if (supStatus === 504) supUserMsg = t.errTimeout;
+      else if (supStatus === 413) supUserMsg = t.errUploadTooLarge;
+      else if (!supStatus && (e instanceof TypeError || /Failed to fetch|Load failed|NetworkError/i.test(e.message || ""))) supUserMsg = t.errUploadNetwork;
+      setUploadError(supUserMsg);
+      setFundsError(true);
+      setActiveTab("dashboard");
+      setPlanGuideTab("investments");
+      setStage(STAGE.APP);
+      abortRef.current = null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, lang, planData, t]);
+
+  // Supplemental upload: user already in APP/stmtDashboard — skip privacy, append fileId, ask Claude to review new doc
+  const supplementalUploadStatement = useCallback(async (file: File) => {
     if (!file) return;
     bumpActivity();
     setUploadError("");
@@ -664,7 +732,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
               />
             )}
             {planGuideTab === "investments" && (
-              <InvestmentsPanel fundsData={planData?.fundsData || []} lang={lang} />
+              <InvestmentsPanel fundsData={planData?.fundsData || []} lang={lang} onAddDocument={() => addDocRef.current?.click()} fundsSource={fundsSource} fundsError={fundsError} />
             )}
           </>
         )}
@@ -697,7 +765,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   // ── Statement Dashboard ──
   if (stage === "stmtDashboard") return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
-        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUpload(e.target.files[0]); e.target.value = ""; }} />
+        <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUploadStatement(e.target.files[0]); e.target.value = ""; }} />
 
     <AppHeader accentColor={C.green} title={stmtData?.planName || fileName || "Your Statement"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
 

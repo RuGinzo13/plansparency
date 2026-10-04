@@ -19,7 +19,7 @@ export const i18n = {
     landOrDrop: " or drop it here",
     landRemoveFile: "Remove file",
     landAddAnother: "+ Add another document",
-    landAddAnotherSub: "Fee disclosure or investment guide",
+    landAddAnotherSub: "Fee disclosure or enrollment booklet",
     landExplainPlan: "Explain my plan →",
     landExplainStmt: "Explain my statement →",
     landStartOver: "Start over",
@@ -52,7 +52,7 @@ export const i18n = {
     firstMessage: `I just uploaded my 401(k) plan document. Please read through it and give me a brief welcome summary of my plan — plan name, employer contribution types (distinguish safe harbor from discretionary match and profit sharing), vesting schedule, and one standout feature. Mention Roth and catch-up availability.
 
 IMPORTANT — include at the very end of your response a hidden data block on its own line in this EXACT format:
-<!--PLANDATA:{"matchTiers":[{"pct":100,"upTo":4}],"hasRoth":true,"hasPreTax":true,"planAllowsCatchUp":true,"noMatch":false,"recordkeeperUrl":"https://www.example.com","recordkeeperName":"Example","lastDayProvision":false,"planName":"Example 401(k) Plan","ein":"","planNumber":"","contribEligibility":{"requirement":"Age 21 and 1 year of service","entryDates":"First day of the month following eligibility","autoEnroll":false,"autoEnrollPct":0},"matchEligibility":{"requirement":"1 year of service","entryDates":"Same as contribution eligibility","immediateMatch":false},"vestingSchedule":"6-year graded: 20% per year","loanAvailable":true,"rothAvailable":true,"hardshipAvailable":true,"investmentOptions":"Self-directed with target-date funds available","distributionInfo":{"inServiceAge":59.5,"rmdAge":73,"rolloversIn":true,"separationOptions":"Lump sum, installments, or rollover to IRA/other plan"},"safeHarbor":{"type":"none","formula":"","vestingImmediate":true},"profitSharing":{"available":false,"type":"discretionary","formula":"","lastDayApplies":false},"fundsData":[]}-->
+<!--PLANDATA:{"matchTiers":[{"pct":100,"upTo":4}],"hasRoth":true,"hasPreTax":true,"planAllowsCatchUp":true,"noMatch":false,"recordkeeperUrl":"https://www.example.com","recordkeeperName":"Example","lastDayProvision":false,"planName":"Example 401(k) Plan","ein":"","planNumber":"","contribEligibility":{"requirement":"Age 21 and 1 year of service","entryDates":"First day of the month following eligibility","autoEnroll":false,"autoEnrollPct":0},"matchEligibility":{"requirement":"1 year of service","entryDates":"Same as contribution eligibility","immediateMatch":false},"vestingSchedule":"6-year graded: 20% per year","loanAvailable":true,"rothAvailable":true,"hardshipAvailable":true,"investmentOptions":"Self-directed with target-date funds available","distributionInfo":{"inServiceAge":59.5,"rmdAge":73,"rolloversIn":true,"separationOptions":"Lump sum, installments, or rollover to IRA/other plan"},"safeHarbor":{"type":"none","formula":"","vestingImmediate":true},"profitSharing":{"available":false,"type":"discretionary","formula":"","lastDayApplies":false},"advisorName":null,"advisorFirm":null,"advisorEmail":null,"fundsData":[]}-->
 
 Fill in based on the actual plan document:
 - matchTiers: array of DISCRETIONARY match tiers ONLY with "pct" (match %) and "upTo" (% of pay). Do NOT include safe harbor match here.
@@ -83,6 +83,7 @@ Fill in based on the actual plan document:
   * type: "discretionary" if employer decides each year, "fixed" if it's a set formula
   * formula: description of the profit sharing formula if specified, or "Discretionary — employer decides annually"
   * lastDayApplies: does the last-day-of-year provision apply to profit sharing?
+- advisorName, advisorFirm, advisorEmail: ONLY if the document names the plan's financial advisor or advisory firm; otherwise null. Never guess.
 - fundsData: array of fund objects. ONLY populate if the document contains an explicit fund lineup or investment option table. If no fund list exists, return "fundsData": []. For each fund found:
   * name: fund name exactly as printed
   * category: must be one of: "Cash & Stable Value", "Bonds", "Large Cap", "Mid Cap", "Small Cap", "International", "Specialty", "Asset Allocation", "Target Date"
@@ -302,7 +303,7 @@ Fill EVERY field from the actual statement:
     landOrDrop: " o suéltalo aquí",
     landRemoveFile: "Quitar archivo",
     landAddAnother: "+ Agregar otro documento",
-    landAddAnotherSub: "Divulgación de comisiones o guía de inversiones",
+    landAddAnotherSub: "Divulgación de comisiones o folleto de inscripción",
     landExplainPlan: "Explicar mi plan →",
     landExplainStmt: "Explicar mi estado de cuenta →",
     landStartOver: "Empezar de nuevo",
@@ -335,8 +336,9 @@ Fill EVERY field from the actual statement:
     firstMessage: `Acabo de subir mi documento de plan 401(k). Dame un resumen de bienvenida — nombre del plan, tipos de contribución del empleador (distingue safe harbor de match discrecional y profit sharing), calendario de vesting, y una característica destacada. Menciona disponibilidad de Roth y catch-up. Responde en español.
 
 IMPORTANTE — al final incluye en una línea:
-<!--PLANDATA:{"matchTiers":[{"pct":100,"upTo":4}],"hasRoth":true,"hasPreTax":true,"planAllowsCatchUp":true,"noMatch":false,"recordkeeperUrl":"https://www.example.com","recordkeeperName":"Example","lastDayProvision":false,"planName":"Plan 401(k) Ejemplo","ein":"","planNumber":"","contribEligibility":{"requirement":"21 años y 1 año de servicio","entryDates":"Primer día del mes siguiente","autoEnroll":false,"autoEnrollPct":0},"matchEligibility":{"requirement":"1 año de servicio","entryDates":"Igual que elegibilidad de contribución","immediateMatch":false},"vestingSchedule":"6 años gradual: 20% por año","loanAvailable":true,"rothAvailable":true,"hardshipAvailable":true,"investmentOptions":"Auto-dirigido con fondos de fecha objetivo","distributionInfo":{"inServiceAge":59.5,"rmdAge":73,"rolloversIn":true,"separationOptions":"Suma global, cuotas, o transferencia a IRA/otro plan"},"safeHarbor":{"type":"none","formula":"","vestingImmediate":true},"profitSharing":{"available":false,"type":"discretionary","formula":"","lastDayApplies":false},"fundsData":[]}-->
+<!--PLANDATA:{"matchTiers":[{"pct":100,"upTo":4}],"hasRoth":true,"hasPreTax":true,"planAllowsCatchUp":true,"noMatch":false,"recordkeeperUrl":"https://www.example.com","recordkeeperName":"Example","lastDayProvision":false,"planName":"Plan 401(k) Ejemplo","ein":"","planNumber":"","contribEligibility":{"requirement":"21 años y 1 año de servicio","entryDates":"Primer día del mes siguiente","autoEnroll":false,"autoEnrollPct":0},"matchEligibility":{"requirement":"1 año de servicio","entryDates":"Igual que elegibilidad de contribución","immediateMatch":false},"vestingSchedule":"6 años gradual: 20% por año","loanAvailable":true,"rothAvailable":true,"hardshipAvailable":true,"investmentOptions":"Auto-dirigido con fondos de fecha objetivo","distributionInfo":{"inServiceAge":59.5,"rmdAge":73,"rolloversIn":true,"separationOptions":"Suma global, cuotas, o transferencia a IRA/otro plan"},"safeHarbor":{"type":"none","formula":"","vestingImmediate":true},"profitSharing":{"available":false,"type":"discretionary","formula":"","lastDayApplies":false},"advisorName":null,"advisorFirm":null,"advisorEmail":null,"fundsData":[]}-->
 Llena según el plan real. matchTiers = solo match DISCRECIONAL. safeHarbor y profitSharing son campos separados. hasPreTax: ¿el plan permite aportaciones antes de impuestos (tradicional)? true/false, null si el documento no lo dice.
+- advisorName, advisorFirm, advisorEmail: SOLO si el documento nombra al asesor financiero o a la firma asesora del plan; si no, null. Nunca adivines.
 - fundsData: array de objetos de fondos. SOLO completa si el documento contiene una lista explícita de fondos o tabla de opciones de inversión. Si no hay lista de fondos, devuelve "fundsData": []. Para cada fondo:
   * name: nombre exacto del fondo tal como aparece en el documento
   * category: debe ser uno de: "Cash & Stable Value", "Bonds", "Large Cap", "Mid Cap", "Small Cap", "International", "Specialty", "Asset Allocation", "Target Date"

@@ -115,7 +115,7 @@ function DisclosureCallout({ lang = "en" }) {
   );
 }
 
-export function InvestmentsPanel({ fundsData, lang }) {
+export function InvestmentsPanel({ fundsData, lang, onAddDocument, fundsSource = "", fundsError = false }) {
   const [sortBy, setSortBy] = useState("category");
   const es = lang === "es";
   const hasExpenseRatios = fundsData.some(f => f.expenseRatio !== null && f.expenseRatio !== undefined);
@@ -126,29 +126,34 @@ export function InvestmentsPanel({ fundsData, lang }) {
   const avgEr = erValues.length ? erValues.reduce((s, r) => s + r, 0) / erValues.length : null;
 
   if (fundsData.length === 0) {
+    const L = (en, esText) => (es ? esText : en);
+    const options = [
+      { title: L("Upload your enrollment booklet", "Sube tu folleto de inscripción"), sub: L("See every fund your plan offers.", "Ve todos los fondos que ofrece tu plan.") },
+      { title: L("Upload a recent statement", "Sube un estado de cuenta reciente"), sub: L("See the funds you own today.", "Ve los fondos que tienes hoy.") },
+    ];
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <DisclosureCallout lang={lang} />
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
-          <div style={{ textAlign: "center", maxWidth: 360 }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: 16, background: C.accentDim,
-              border: `1px solid ${C.accent}22`, display: "flex", alignItems: "center",
-              justifyContent: "center", margin: "0 auto 16px",
-            }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-              </svg>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          <div style={{ padding: 28, border: `1px dashed ${C.inputBorder}`, borderRadius: 16, background: C.surface, maxWidth: 760, margin: "28px auto", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 16 }}>
+            <h3 style={{ margin: 0, fontFamily: F.display, fontSize: 28, fontWeight: 700, color: C.text }}>{L("See your investment options", "Ve tus opciones de inversión")}</h3>
+            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5, color: C.text }}>{L("Your plan document doesn't list the funds. Add one of these and we'll show them here:", "El documento de tu plan no lista los fondos. Agrega uno de estos y los mostraremos aquí:")}</p>
+            {fundsError && (
+              <p role="alert" style={{ margin: 0, fontSize: 15, fontWeight: 600, color: C.danger }}>{L("We couldn't find a fund list in that document. Try your enrollment booklet.", "No encontramos una lista de fondos en ese documento. Prueba con tu folleto de inscripción.")}</p>
+            )}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+              {options.map((o) => (
+                <button key={o.title} type="button" onClick={onAddDocument} style={{ padding: 18, border: `2px solid ${C.border}`, borderRadius: 14, background: C.aiBubble, cursor: "pointer", textAlign: "left", fontFamily: F.body, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: C.text }}>{o.title}</span>
+                  <span style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.45 }}>{o.sub}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: C.accentText }}>{L("Choose a PDF →", "Elegir un PDF →")}</span>
+                </button>
+              ))}
             </div>
-            <h3 style={{ fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.text, margin: "0 0 10px" }}>
-              Fund lineup not found in this document
-            </h3>
-            <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6, margin: 0 }}>
-              Upload your enrollment booklet, investment guide, or 404(a)(5) fee disclosure to load your fund lineup.
-            </p>
+            <div style={{ fontSize: 13, color: C.textMuted }}>{L("Plansparency doesn't save your document.", "Plansparency no guarda tu documento.")}</div>
           </div>
         </div>
-        <div style={{ padding: "10px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, fontSize: 10, color: C.textDim, lineHeight: 1.6, flexShrink: 0 }}>
+        <div style={{ padding: "10px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, fontSize: 11, color: C.textDim, lineHeight: 1.6, flexShrink: 0 }}>
           {FUND_DISCLAIMER}
         </div>
       </div>
@@ -211,6 +216,9 @@ export function InvestmentsPanel({ fundsData, lang }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <DisclosureCallout lang={lang} />
+      {fundsSource && (
+        <div style={{ padding: "8px 16px 0", fontSize: 13, color: C.textMuted }}>{es ? `Fondos encontrados en ${fundsSource}` : `Funds found in ${fundsSource}`}</div>
+      )}
 
       {/* Summary stats */}
       <div style={{ display: "flex", gap: 8, padding: "12px 16px 4px", flexShrink: 0 }}>
