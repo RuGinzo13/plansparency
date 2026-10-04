@@ -29,7 +29,7 @@ const ChatIcon = ({ color }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
 );
 
-export function Landing({ t, lang, setLang, stage, setStage, docType, setDocType, stagedFiles, setStagedFiles, fileInputRef, stageFile, handleDrop, dragOver, setDragOver, uploadError, proceedToPrivacy }) {
+export function Landing({ allowUpload = false, t, lang, setLang, stage, setStage, docType, setDocType, stagedFiles, setStagedFiles, fileInputRef, stageFile, handleDrop, dragOver, setDragOver, uploadError, proceedToPrivacy }) {
   const rootRef = useRef(null);
   const [wide, setWide] = useState(false);
   const [dragCard, setDragCard] = useState(null); // 'spd' | 'statement' | null
@@ -84,7 +84,7 @@ export function Landing({ t, lang, setLang, stage, setStage, docType, setDocType
         {t.landHero1}<br />
         <span style={{ fontStyle: "italic", color: C.accentText }}>{t.landHero2}</span>
       </h1>
-      <p style={{ fontSize: wide ? 18 : 16, color: C.textMuted, lineHeight: 1.6, margin: 0, maxWidth: 520 }}>{t.landSubtitle}</p>
+      <p style={{ fontSize: wide ? 18 : 16, color: C.textMuted, lineHeight: 1.6, margin: 0, maxWidth: 520 }}>{allowUpload ? t.landSubtitle : t.landSubCode}</p>
     </div>
   );
 
@@ -171,21 +171,25 @@ export function Landing({ t, lang, setLang, stage, setStage, docType, setDocType
     </div>
   );
 
-  const CodeBox = PLAN_CODES_ENABLED && (
+  // Participants (no upload) always see the plan-code card; it stays switched off until codes open.
+  const codesOn = PLAN_CODES_ENABLED;
+  const CodeBox = (PLAN_CODES_ENABLED || !allowUpload) && (
     <div style={{ marginTop: 24, padding: 18, borderRadius: 14, background: C.surfaceAlt }}>
       <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>{t.landCodeLabel}</div>
-      <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.45, marginBottom: 12 }}>{t.landCodeHelp}</div>
+      <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.45, marginBottom: 12 }}>{codesOn ? t.landCodeHelp : t.landCodeSoon}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input
-          value={planCode} onChange={(e) => setPlanCode(e.target.value)} placeholder={t.landCodePlaceholder} aria-label={t.landCodeLabel}
-          style={{ flex: 1, minWidth: 140, height: 48, background: C.aiBubble, border: `1px solid ${C.inputBorder}`, borderRadius: 8, padding: "0 12px", fontSize: 16, fontFamily: F.body, color: C.text, boxSizing: "border-box" }}
+          value={planCode} onChange={(e) => setPlanCode(e.target.value)} placeholder={t.landCodePlaceholder} aria-label={t.landCodeLabel} disabled={!codesOn}
+          style={{ opacity: codesOn ? 1 : 0.6, cursor: codesOn ? "text" : "not-allowed", flex: 1, minWidth: 140, height: 48, background: C.aiBubble, border: `1px solid ${C.inputBorder}`, borderRadius: 8, padding: "0 12px", fontSize: 16, fontFamily: F.body, color: C.text, boxSizing: "border-box" }}
         />
-        <button type="button" style={{ ...btnBase, height: 48, padding: "0 20px", fontSize: 14, background: C.text, color: C.surface }}>{t.landCodeButton}</button>
+        <button type="button" disabled={!codesOn} style={{ ...btnBase, height: 48, padding: "0 20px", fontSize: 14, background: C.text, color: C.surface, opacity: codesOn ? 1 : 0.6, cursor: codesOn ? "pointer" : "not-allowed" }}>{t.landCodeButton}</button>
       </div>
-      <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, minHeight: 44, fontSize: 13, color: C.textMuted, cursor: "pointer" }}>
-        <input type="checkbox" checked={rememberPlan} onChange={(e) => setRememberPlan(e.target.checked)} style={{ width: 18, height: 18 }} />
-        {t.landCodeRemember}
-      </label>
+      {codesOn && (
+        <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, minHeight: 44, fontSize: 13, color: C.textMuted, cursor: "pointer" }}>
+          <input type="checkbox" checked={rememberPlan} onChange={(e) => setRememberPlan(e.target.checked)} style={{ width: 18, height: 18 }} />
+          {t.landCodeRemember}
+        </label>
+      )}
     </div>
   );
 
@@ -229,22 +233,22 @@ export function Landing({ t, lang, setLang, stage, setStage, docType, setDocType
   const Left = (
     <div>
       {Hero}
-      {Cards}
-      {uploadError && <p role="alert" style={{ fontSize: 14, color: C.danger, margin: "14px 0 0", fontWeight: 600 }}>{uploadError}</p>}
-      {Staged}
-      {CodeBox}
+      {allowUpload && Cards}
+      {allowUpload && uploadError && <p role="alert" style={{ fontSize: 14, color: C.danger, margin: "14px 0 0", fontWeight: 600 }}>{uploadError}</p>}
+      {allowUpload && Staged}
+      {allowUpload ? CodeBox : <div style={{ marginTop: -4 }}>{CodeBox}</div>}
     </div>
   );
   const Right = (
     <div>
       {Example}
-      {Steps}
+      {allowUpload && Steps}
     </div>
   );
 
   return (
     <div ref={rootRef} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body }}>
-      <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); e.target.value = ""; }} />
+      {allowUpload && <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); e.target.value = ""; }} />}
       <div style={{ maxWidth: 1120, margin: "0 auto", padding: wide ? "28px 32px 40px" : "16px 16px 32px", boxSizing: "border-box" }}>
         {Header}
         {wide ? (
