@@ -6,6 +6,7 @@
 // so nothing here is typed in by hand twice.
 
 import type { PlanData } from '../plan/plandata';
+import { has, FULL_MATCH_PCT, STANDARD_FORMULA, tierText, facts, vestingParts } from '../plan/planFacts';
 import { getTerm } from '../glossary';
 import { IRS_LIMITS } from '../plan/irs-limits';
 import { getLimitYear } from '../plan/irs';
@@ -30,35 +31,10 @@ export const STOCK_QUESTIONS: { id: StockId; label: string }[] = [
   { id: 'limit', label: `How much can I save in ${getLimitYear().year}?` },
 ];
 
-const has = (s: unknown): s is string => typeof s === 'string' && s.trim().length > 0;
 const para = (lead: string, rest: string) => `**${lead}** ${rest}`.trim();
 const join = (paras: string[]) => paras.join('\n\n');
 
-// Percent of pay where each safe harbor match stops growing (same numbers the calculator screen uses).
-const FULL_MATCH_PCT: Record<string, number> = { basic_match: 5, enhanced_match: 4 };
-const STANDARD_FORMULA: Record<string, string> = {
-  basic_match: '100% of the first 3% of your pay you save, plus 50% of the next 2%',
-  nonelective: '3% of your pay',
-};
 const EXAMPLE_SALARY = 50000;
-
-function tierText(planData: PlanData): string {
-  return planData.matchTiers
-    .map((t) => `${t.pct}% of what you save, up to ${t.upTo}% of your pay`)
-    .join(', then ');
-}
-
-// What each kind of employer money looks like for this plan.
-function facts(pd: PlanData) {
-  const type = pd.safeHarbor?.type ?? 'none';
-  const tiers = Array.isArray(pd.matchTiers) ? pd.matchTiers : [];
-  const shMatch = type === 'basic_match' || type === 'enhanced_match' || type === 'qaca';
-  const nonelective = type === 'nonelective';
-  const safeHarbor = shMatch || nonelective;
-  const disc = tiers.length > 0 && pd.noMatch !== true;
-  const profit = pd.profitSharing?.available === true;
-  return { type, tiers, shMatch, nonelective, safeHarbor, disc, profit };
-}
 
 // ── 1. Match ──
 function matchAnswer(pd: PlanData): StockAnswer | null {
@@ -119,17 +95,6 @@ function matchAnswer(pd: PlanData): StockAnswer | null {
     out.push(para('There\'s also profit sharing.', `It's a separate amount your employer may add each year, whether or not you save.${lastDay}`));
   }
   return { text: join(out), link: 'calculator' };
-}
-
-// Shared by answers 2 and 7: needs the vesting schedule when vesting applies.
-function vestingParts(pd: PlanData): { f: ReturnType<typeof facts>; schedule: string | null; label: string } | null {
-  const f = facts(pd);
-  if (f.type === 'qaca') return null;
-  if (typeof pd.safeHarbor?.type !== 'string') return null;
-  const needsSchedule = f.disc || f.profit;
-  if (needsSchedule && !has(pd.vestingSchedule)) return null;
-  const label = f.disc && f.profit ? 'Your match and profit sharing' : f.profit ? 'Your profit sharing money' : 'Your match';
-  return { f, schedule: needsSchedule ? (pd.vestingSchedule as string).trim() : null, label };
 }
 
 // ── 2. Vesting ──
