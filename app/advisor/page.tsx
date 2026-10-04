@@ -10,6 +10,141 @@ const fileToBase64 = (f: File): Promise<string> => new Promise((res, rej) => { c
 
 type StoredPlan = { plan_id: string; share_url: string; employer_name: string; uploaded_at: string };
 
+// ── Review step: the items an advisor must check before a plan is saved ──────
+type FieldSpec = { path: string[]; kind: 'text' | 'select' | 'tri' | 'triInvert' | 'tiers'; label: string; options?: [string, string][]; mirror?: string[] };
+type ReviewRow = { key: string; label: string; fields: FieldSpec[] };
+
+const SAFE_HARBOR_OPTIONS: [string, string][] = [['none', 'None'], ['nonelective', 'Nonelective (3% of pay)'], ['basic_match', 'Basic match'], ['enhanced_match', 'Enhanced match'], ['qaca', 'QACA']];
+
+const REVIEW_ROWS: ReviewRow[] = [
+  { key: 'safeHarbor', label: 'Guaranteed employer money', fields: [
+    { path: ['safeHarbor', 'type'], kind: 'select', label: 'Type', options: SAFE_HARBOR_OPTIONS },
+    { path: ['safeHarbor', 'formula'], kind: 'text', label: 'How it works' },
+  ] },
+  { key: 'match', label: 'Extra (discretionary) match', fields: [
+    { path: ['noMatch'], kind: 'triInvert', label: 'Does the plan have an extra employer match?' },
+    { path: ['matchTiers'], kind: 'tiers', label: 'Match tiers' },
+  ] },
+  { key: 'lastDay', label: 'Must work on the last day of the year for extra employer money', fields: [
+    { path: ['lastDayProvision'], kind: 'tri', label: 'Last-day rule' },
+  ] },
+  { key: 'profitSharing', label: 'Profit sharing', fields: [
+    { path: ['profitSharing', 'available'], kind: 'tri', label: 'Offered' },
+    { path: ['profitSharing', 'formula'], kind: 'text', label: 'How it works' },
+  ] },
+  { key: 'vesting', label: 'Vesting', fields: [
+    { path: ['vestingSchedule'], kind: 'text', label: 'Vesting schedule' },
+  ] },
+  { key: 'join', label: 'Who can join', fields: [
+    { path: ['contribEligibility', 'requirement'], kind: 'text', label: 'Requirement' },
+    { path: ['contribEligibility', 'entryDates'], kind: 'text', label: 'Entry dates' },
+  ] },
+  { key: 'matchStarts', label: 'When employer money starts', fields: [
+    { path: ['matchEligibility', 'requirement'], kind: 'text', label: 'Requirement' },
+    { path: ['matchEligibility', 'entryDates'], kind: 'text', label: 'Entry dates' },
+    { path: ['matchEligibility', 'immediateMatch'], kind: 'tri', label: 'Starts right away' },
+  ] },
+  { key: 'preTax', label: 'Before-tax (Traditional)', fields: [{ path: ['hasPreTax'], kind: 'tri', label: 'Offered' }] },
+  { key: 'roth', label: 'Roth', fields: [{ path: ['hasRoth'], kind: 'tri', label: 'Offered', mirror: ['rothAvailable'] }] },
+  { key: 'catchUp', label: 'Catch-up allowed', fields: [{ path: ['planAllowsCatchUp'], kind: 'tri', label: 'Allowed' }] },
+  { key: 'loans', label: 'Loans', fields: [{ path: ['loanAvailable'], kind: 'tri', label: 'Offered' }] },
+  { key: 'hardship', label: 'Hardship withdrawals', fields: [{ path: ['hardshipAvailable'], kind: 'tri', label: 'Offered' }] },
+];
+
+const getAt = (o: any, path: string[]) => path.reduce((a, k) => (a == null ? undefined : a[k]), o);
+const setAt = (o: any, path: string[], value: any) => {
+  const copy = JSON.parse(JSON.stringify(o));
+  let cur = copy;
+  for (let i = 0; i < path.length - 1; i++) { if (cur[path[i]] == null || typeof cur[path[i]] !== 'object') cur[path[i]] = {}; cur = cur[path[i]]; }
+  cur[path[path.length - 1]] = value;
+  return copy;
+};
+
+const triLabel = (v: any) => (v === true ? 'Yes' : v === false ? 'No' : 'Not stated');
+const controlStyle = { width: '100%', minHeight: 44, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, boxSizing: 'border-box' } as const;
+
+function ReviewField({ field, draft, editing, onChange }: { field: FieldSpec; draft: any; editing: boolean; onChange: (path: string[], value: any, mirror?: string[]) => void }) {
+  const value = getAt(draft, field.path);
+  const caption = <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>{field.label}</div>;
+  const wrap = (children: React.ReactNode) => <div style={{ marginBottom: 10 }}>{caption}{children}</div>;
+  const readStyle = { fontSize: 15, lineHeight: 1.5, color: C.text } as const;
+
+  if (field.kind === 'text') {
+    return wrap(editing
+      ? <input value={typeof value === 'string' ? value : ''} onChange={e => onChange(field.path, e.target.value)} aria-label={field.label} style={controlStyle} />
+      : <div style={readStyle}>{typeof value === 'string' && value ? value : 'Not stated'}</div>);
+  }
+  if (field.kind === 'select') {
+    const opts = field.options || [];
+    return wrap(editing
+      ? <select value={typeof value === 'string' ? value : 'none'} onChange={e => onChange(field.path, e.target.value)} aria-label={field.label} style={controlStyle}>{opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+      : <div style={readStyle}>{opts.find(([v]) => v === value)?.[1] ?? 'Not stated'}</div>);
+  }
+  if (field.kind === 'tri' || field.kind === 'triInvert') {
+    // triInvert: the data field says "no match" but the question is asked as "has a match".
+    const invert = field.kind === 'triInvert';
+    const shown = value === true || value === false ? (invert ? !value : value) : null;
+    const set = (v: boolean | null) => onChange(field.path, v === null ? null : invert ? !v : v, field.mirror);
+    return wrap(editing
+      ? (
+        <div role="group" aria-label={field.label} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {([[true, 'Yes'], [false, 'No'], [null, 'Not stated']] as [boolean | null, string][]).map(([v, l]) => (
+            <button key={l} aria-pressed={shown === v} onClick={() => set(v)} style={{ ...btnBase, minHeight: 44, padding: '0 16px', fontSize: 14, borderRadius: 8, background: shown === v ? C.accentSoft : C.aiBubble, border: shown === v ? `2px solid ${C.accent}` : `1px solid ${C.inputBorder}`, color: shown === v ? C.accentText : C.text }}>{l}</button>
+          ))}
+        </div>
+      )
+      : <div style={readStyle}>{triLabel(shown)}</div>);
+  }
+  // tiers
+  const tiers: { pct: number; upTo: number }[] = Array.isArray(value) ? value : [];
+  const num = (v: string) => (v === '' ? 0 : Math.max(0, Number(v)) || 0);
+  return wrap(editing
+    ? (
+      <div>
+        {tiers.map((t, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            <input type="number" min={0} value={t.pct} aria-label={`Tier ${i + 1} match percent`} onChange={e => onChange(field.path, tiers.map((x, j) => (j === i ? { ...x, pct: num(e.target.value) } : x)))} style={{ ...controlStyle, width: 90 }} />
+            <span style={{ fontSize: 14 }}>% match on the first</span>
+            <input type="number" min={0} value={t.upTo} aria-label={`Tier ${i + 1} percent of pay`} onChange={e => onChange(field.path, tiers.map((x, j) => (j === i ? { ...x, upTo: num(e.target.value) } : x)))} style={{ ...controlStyle, width: 90 }} />
+            <span style={{ fontSize: 14 }}>% of pay</span>
+            <button onClick={() => onChange(field.path, tiers.filter((_, j) => j !== i))} aria-label={`Remove tier ${i + 1}`} style={{ ...btnBase, minHeight: 44, minWidth: 44, background: 'transparent', color: C.danger, border: `1px solid ${C.border}`, borderRadius: 8 }}>×</button>
+          </div>
+        ))}
+        <button onClick={() => onChange(field.path, [...tiers, { pct: 0, upTo: 0 }])} style={{ ...btnBase, minHeight: 44, padding: '0 16px', fontSize: 14, background: 'transparent', color: C.text, border: `1px dashed ${C.inputBorder}`, borderRadius: 8 }}>+ Add a tier</button>
+      </div>
+    )
+    : <div style={readStyle}>{tiers.length ? tiers.map((t, i) => <div key={i}>{t.pct}% match on the first {t.upTo}% of pay</div>) : 'None listed'}</div>);
+}
+
+function AccuracyDialog({ onClose }: { onClose: () => void }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { btnRef.current?.focus(); }, []);
+  return (
+    <>
+      <div style={{ position: 'fixed', inset: 0, background: C.text, opacity: 0.6, zIndex: 999 }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div
+          role="dialog" aria-modal="true" aria-labelledby="accuracy-title"
+          onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); btnRef.current?.focus(); } }}
+          style={{ background: C.surface, borderRadius: 20, maxWidth: 480, width: '100%', padding: '28px 24px', boxSizing: 'border-box' }}
+        >
+          <div style={{ width: 48, height: 48, borderRadius: 14, background: C.warningDim, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.warning} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+          </div>
+          <h2 id="accuracy-title" style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: '0 0 10px' }}>Check every detail before you share</h2>
+          <p style={{ fontSize: 15, lineHeight: 1.55, color: C.textMuted, margin: '0 0 12px' }}>We read plan documents with AI, and it can get things wrong. Employees will see exactly what you approve, under your name.</p>
+          <ul style={{ fontSize: 15, lineHeight: 1.55, color: C.text, margin: '0 0 20px', paddingLeft: 20 }}>
+            <li>Compare each item to the plan document.</li>
+            <li>Fix anything that's wrong or missing.</li>
+            <li>The plan can't be saved or shared until every item is checked.</li>
+          </ul>
+          <button ref={btnRef} onClick={onClose} style={{ ...btnBase, width: '100%', height: 52, fontSize: 16, background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary }}>I'll review every item</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function AdvisorPage() {
   const [plans, setPlans] = useState<StoredPlan[]>([]);
   const [status, setStatus] = useState('');
@@ -20,6 +155,23 @@ export default function AdvisorPage() {
   const [hasToken, setHasToken] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const [review, setReview] = useState<{ file: File; fileId: string; initialSummary: string } | null>(null);
+  const [draft, setDraft] = useState<any>(null);
+  const [checked, setChecked] = useState<string[]>([]);
+  const [edited, setEdited] = useState<string[]>([]);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [reviewerName, setReviewerName] = useState('');
+  const [attest, setAttest] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
+  const reviewFileIdRef = useRef<string | null>(null);
+  reviewFileIdRef.current = review ? review.fileId : null;
+
+  // If the tab closes mid-review, still delete the uploaded file.
+  useEffect(() => {
+    const onHide = () => { if (reviewFileIdRef.current) endSessionFiles([reviewFileIdRef.current], { beacon: true }); };
+    window.addEventListener('pagehide', onHide);
+    return () => window.removeEventListener('pagehide', onHide);
+  }, []);
   const [wide, setWide] = useState(false);
 
   useEffect(() => {
@@ -68,8 +220,38 @@ export default function AdvisorPage() {
       if (!planData) { setError('Could not extract plan data. Try a different copy of the document.'); setStatus(''); return; }
       const initialSummary = stripPlanData(raw);
 
-      // Step 3 — convert to base64 for Supabase storage, then save plan
-      setStatus('Saving plan…');
+      // Stop here: the advisor must review every item before anything is saved.
+      setStatus('');
+      setDraft(JSON.parse(JSON.stringify(planData)));
+      setReview({ file, fileId, initialSummary });
+      setChecked([]);
+      setEdited([]);
+      setEditingKey(null);
+      setReviewerName('');
+      setAttest(false);
+      setShowWarning(true);
+    } catch (e: any) {
+      setError(e.message || 'Something went wrong. Please try again.');
+      setStatus('');
+    }
+  };
+
+  // Approve: save the EDITED plan data exactly as before, plus who checked it and when.
+  const approveAndSave = async () => {
+    if (!review || !draft) return;
+    const { file, fileId, initialSummary } = review;
+    const planData = {
+      ...draft,
+      review: {
+        reviewerName: reviewerName.trim(),
+        reviewedAt: new Date().toISOString(),
+        editedFields: REVIEW_ROWS.filter(r => edited.includes(r.key)).map(r => r.label),
+      },
+    };
+    setError('');
+    setStatus('Saving plan…');
+    try {
+      // Convert to base64 for Supabase storage, then save plan
       const pdfBase64 = await fileToBase64(file);
       try {
         const saveRes = await fetch('/api/save-plan', {
@@ -80,7 +262,7 @@ export default function AdvisorPage() {
         if (!saveRes.ok) { const d = await saveRes.json().catch(() => ({})); throw new Error(d.detail || d.error || `Save error ${saveRes.status}`); }
         const { plan_id, advisor_token, share_url } = await saveRes.json();
 
-        // Step 3 — persist locally
+        // Persist locally
         localStorage.setItem('plansparency_advisor_token', advisor_token);
         const newPlan: StoredPlan = { plan_id, share_url, employer_name: employerName || planData.planName || planData.employerName || 'Unnamed Plan', uploaded_at: new Date().toISOString() };
         const updated = [...plans, newPlan];
@@ -97,7 +279,18 @@ export default function AdvisorPage() {
     } catch (e: any) {
       setError(e.message || 'Something went wrong. Please try again.');
       setStatus('');
+    } finally {
+      setReview(null);
+      setDraft(null);
     }
+  };
+
+  // Cancel: throw away the extraction and delete the uploaded file.
+  const cancelReview = () => {
+    if (review) endSessionFiles([review.fileId]);
+    setReview(null);
+    setDraft(null);
+    setShowWarning(false);
   };
 
   const copy = (url: string, id: string) => { navigator.clipboard.writeText(url); setCopiedId(id); setTimeout(() => setCopiedId(''), 2000); };
@@ -117,6 +310,71 @@ export default function AdvisorPage() {
     </div>
   );
   const display = F.display;
+
+  // ── Review screen — nothing is saved until every item is checked ───────────
+  if (review && draft && !status) {
+    const allChecked = checked.length === REVIEW_ROWS.length;
+    const canApprove = allChecked && reviewerName.trim().length > 0 && attest;
+    const update = (path: string[], value: any, rowKey: string, mirror?: string[]) => {
+      let next = setAt(draft, path, value);
+      if (mirror) for (const m of mirror) next = setAt(next, [m], value);
+      setDraft(next);
+      setChecked(c => c.filter(k => k !== rowKey));
+      setEdited(e => (e.includes(rowKey) ? e : [...e, rowKey]));
+    };
+    const beginEdit = (key: string) => { setEditingKey(key); setChecked(c => c.filter(k => k !== key)); };
+    const markChecked = (key: string) => { setEditingKey(null); setChecked(c => (c.includes(key) ? c : [...c, key])); };
+    return shell(
+      <div style={{ maxWidth: 760 }}>
+        {showWarning && <AccuracyDialog onClose={() => setShowWarning(false)} />}
+        <h1 style={{ fontFamily: F.display, fontSize: wide ? 40 : 30, fontWeight: 600, margin: '0 0 12px' }}>{draft.planName || employerName || 'Plan review'}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, padding: '5px 12px', borderRadius: 100, background: allChecked ? C.greenSoft : C.accentSoft, color: allChecked ? C.green : C.accentText }}>{checked.length} of {REVIEW_ROWS.length} checked</span>
+        </div>
+        <div style={{ background: C.warningDim, color: C.text, borderRadius: 12, padding: '12px 16px', fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
+          We read plan documents with AI, and it can get things wrong. Employees will see exactly what you approve, under your name.
+        </div>
+        {REVIEW_ROWS.map(row => {
+          const isChecked = checked.includes(row.key);
+          const isEditing = editingKey === row.key;
+          return (
+            <div key={row.key} style={{ background: isChecked ? C.greenSoft : C.surface, border: `1px solid ${isChecked ? C.green : C.border}`, borderRadius: 14, padding: 18, marginBottom: 12 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{row.label}</div>
+              {row.fields.map(f => (
+                <ReviewField key={f.path.join('.') + f.kind} field={f} draft={draft} editing={isEditing} onChange={(path, v, mirror) => update(path, v, row.key, mirror)} />
+              ))}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+                {!isEditing && (
+                  <button onClick={() => beginEdit(row.key)} style={{ ...btnBase, minHeight: 44, padding: '0 18px', fontSize: 14, background: 'transparent', color: C.text, border: `1px solid ${C.inputBorder}` }}>Edit</button>
+                )}
+                <button
+                  onClick={() => markChecked(row.key)}
+                  aria-pressed={isChecked}
+                  style={{ ...btnBase, minHeight: 44, padding: '0 18px', fontSize: 14, background: isChecked ? C.green : C.accentSoft, color: isChecked ? C.surface : C.accentText, border: `1px solid ${isChecked ? C.green : C.accent}` }}
+                >{isChecked ? '✓ Checked' : isEditing ? 'Done, mark checked' : 'Mark checked'}</button>
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, marginTop: 20 }}>
+          <label htmlFor="reviewer-name" style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>Your name</label>
+          <input id="reviewer-name" value={reviewerName} onChange={e => setReviewerName(e.target.value)} required style={{ width: '100%', height: 48, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, boxSizing: 'border-box', marginBottom: 12 }} />
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, fontSize: 14, lineHeight: 1.5, cursor: 'pointer' }}>
+            <input type="checkbox" checked={attest} onChange={e => setAttest(e.target.checked)} style={{ width: 18, height: 18, marginTop: 3, flexShrink: 0 }} />
+            I checked every item against the plan document and they're accurate. My name and today's date will be recorded.
+          </label>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16 }}>
+            <button onClick={cancelReview} style={{ ...btnBase, minHeight: 52, padding: '0 24px', fontSize: 15, background: 'transparent', color: C.textMuted, border: `1px solid ${C.border}` }}>Cancel</button>
+            <button
+              onClick={approveAndSave}
+              disabled={!canApprove}
+              style={{ ...btnBase, flex: 1, minWidth: 200, height: 52, fontSize: 16, cursor: canApprove ? 'pointer' : 'not-allowed', background: canApprove ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.surfaceAlt, color: canApprove ? C.onPrimary : C.textDim }}
+            >Approve and save</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── STATE B — plans exist ──────────────────────────────────────────────────
   if (hasToken) return shell(
