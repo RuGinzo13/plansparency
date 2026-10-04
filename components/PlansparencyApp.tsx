@@ -35,6 +35,7 @@ import { CalcPanel } from '@/components/plansparency/CalcPanel';
 import { StatementDashboard } from '@/components/plansparency/StatementDashboard';
 import { Landing } from '@/components/plansparency/Landing';
 import { STOCK_QUESTIONS, getStockAnswer } from '@/lib/answers/stockAnswers';
+import { StockAnswerCard } from '@/components/plansparency/StockAnswerCard';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
 
@@ -412,25 +413,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setMessages(prev => [...prev, { role: "user", content: chip.label }, { role: "assistant", content: answer.text, stock: true, stockId: chip.id, link: answer.link }]);
     fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "stock_answer", id: chip.id }) }).catch(() => {});
   };
-  const stockExtras = (msg) => {
-    if (!msg.stock) return null;
-    const reviewer = planData?.review?.reviewerName;
-    const when = planData?.review?.reviewedAt ? new Date(planData.review.reviewedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "";
-    return <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.borderLight}` }}>
-      <span style={{ display: "inline-block", fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: reviewer ? C.greenSoft : C.accentSoft, color: reviewer ? C.green : C.accentText }}>
-        {reviewer ? "From your plan's reviewed details" : "From your plan document"}
-      </span>
-      {msg.link === "calculator" && <div style={{ marginTop: 8 }}>
-        <button onClick={() => setActiveTab("calculator")} style={{ ...btnBase, minHeight: 44, padding: "0 16px", fontSize: 13, background: C.accentSoft, color: C.accentText, border: `1px solid ${C.accent}` }}>
-          {msg.stockId === "match" ? "See it with your pay in the calculator" : "Open the calculator"}
-        </button>
-      </div>}
-      <div style={{ fontSize: 12, color: C.textDim, marginTop: 8, lineHeight: 1.4 }}>
-        {reviewer ? `Plan details reviewed by ${reviewer}${when ? ` on ${when}` : ""}. Education only, not advice.` : "Based on the plan document you uploaded. Education only, not advice."}
-      </div>
-    </div>;
-  };
-
   const handleKeyDown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } };
   const handleDrop = e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files?.[0]) stageFile(e.dataTransfer.files[0]); };
   const lastMsg = messages[messages.length - 1];
@@ -530,11 +512,17 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       <>
         <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
           {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
+            msg.stock ? (
+              <div key={i} style={{ animation: "fadeIn .3s" }}>
+                <StockAnswerCard text={msg.content} link={msg.link} stockId={msg.stockId} review={planData?.review} onOpenCalculator={() => setActiveTab("calculator")} />
+              </div>
+            ) : (
             <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
               <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? "rgba(212,168,83,.1)" : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
-                {msg.role === "assistant" ? <><Md text={msg.content} />{stockExtras(msg)}</> : msg.content}
+                {msg.role === "assistant" ? <Md text={msg.content} /> : msg.content}
               </div>
             </div>
+            )
           ))}
           {loading && (
             <div style={{ display: "flex" }}>
@@ -677,7 +665,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
         <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
           <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? "rgba(212,168,83,.1)" : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
-            {msg.role === "assistant" ? <><Md text={msg.content} />{stockExtras(msg)}</> : msg.content}
+            {msg.role === "assistant" ? <Md text={msg.content} /> : msg.content}
           </div>
         </div>
       ))}
