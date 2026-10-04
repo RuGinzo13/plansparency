@@ -34,9 +34,8 @@ import { PlanOverview } from '@/components/plansparency/PlanOverview';
 import { CalcPanel } from '@/components/plansparency/CalcPanel';
 import { StatementDashboard } from '@/components/plansparency/StatementDashboard';
 import { Landing } from '@/components/plansparency/Landing';
-import { STOCK_QUESTIONS, STOCK_QUESTION_LABELS_ES, getStockAnswer } from '@/lib/answers/stockAnswers';
-import { getOverviewLegacy as getOverview } from '@/lib/plan/overview';
-import { PlanGlance } from '@/components/plansparency/PlanGlance';
+import { STOCK_QUESTIONS, STOCK_QUESTION_LABELS_ES, getStockAnswer, questionLabel } from '@/lib/answers/stockAnswers';
+import { getOverview } from '@/lib/plan/overview';
 import { useStickyPanel } from '@/components/plansparency/useStickyPanel';
 import { StockAnswerCard } from '@/components/plansparency/StockAnswerCard';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
@@ -92,8 +91,15 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [activeTab, setActiveTab] = useState("dashboard");
   const [planData, setPlanData] = useState(initialPlanData);
   const [planGuideTab, setPlanGuideTab] = useState<"guide" | "investments">("guide");
-  // Which topic is open on the Your plan tab (openEligibility() switches it to "you").
-  const [topic, setTopic] = useState<'you' | 'company' | 'while' | 'leave'>("company");
+  // Your plan tab: which topic is selected, which card is open, and the AI answers for cards
+  // that have no written answer (cached per card and language for the session).
+  const [topic, setTopic] = useState<'you' | 'employer' | 'access' | 'leave'>("employer");
+  const [openCardId, setOpenCardId] = useState<string | null>("safeHarbor");
+  const [cardAI, setCardAI] = useState<Record<string, { status: 'waiting' | 'loading' | 'done' | 'error'; text: string }>>({});
+  const cardBusyRef = useRef(false);
+  const planScrollRef = useRef(null);
+  const planHeaderRef = useRef(null);
+  const planLayoutRef = useRef(null);
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0); // 0-100 during upload phase
@@ -119,6 +125,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   const t = i18n[lang];
   const sticky = useStickyPanel(askScrollRef, askHeaderRef, askLayoutRef, `${stage}-${activeTab}`);
+  const planSticky = useStickyPanel(planScrollRef, planHeaderRef, planLayoutRef, `${stage}-${activeTab}-${planGuideTab}`);
 
   const bumpActivity = () => { lastActivityRef.current = Date.now(); };
 
@@ -309,14 +316,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   };
 
   // Jumps to the Plan Guide's "When Can You Start?" tile from anywhere (e.g. the calculator).
-  const openEligibility = () => {
-    setActiveTab("dashboard");
-    setPlanGuideTab("guide");
-    setTopic("you");
-    setTimeout(() => {
-      document.getElementById("when-can-you-start")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 60);
-  };
+  const openEligibility = () => openCard("elig");
 
   // Added document on the plan screens (APP stage): the AI reads it for the fund list (and the
   // recordkeeper if it says so) and the funds fill Investments. No chat message is shown.
@@ -385,6 +385,60 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, lang, planData, t]);
+
+  // ── Your plan cards ──
+  const cardKey = (id) => `${id}:${lang}`;
+  const topicOfCard = (id) => {
+    const topics = getOverview(planData, lang).topics;
+    return (Object.keys(topics).find((k) => topics[k].some((c) => c.id === id)) || "employer");
+  };
+  const scrollToCard = (id) => setTimeout(() => document.getElementById(`card-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  function openCard(id) {
+    setActiveTab("dashboard");
+    setPlanGuideTab("guide");
+    setTopic(topicOfCard(id));
+    setOpenCardId(id);
+    scrollToCard(id);
+  }
+  const selectTopic = (k) => {
+    setTopic(k);
+    setOpenCardId(getOverview(planData, lang).topics[k][0]?.id ?? null);
+  };
+  const pickRow = (k, id) => { setTopic(k); setOpenCardId(id); scrollToCard(id); };
+  const retryCard = (id) => setCardAI(prev => { const next = { ...prev }; delete next[cardKey(id)]; return next; });
+
+  // No written answer for a card: the AI answers the card's question from the plan document.
+  const startCardAI = async (id) => {
+    const key = cardKey(id);
+    cardBusyRef.current = true;
+    setCardAI(prev => ({ ...prev, [key]: { status: 'loading', text: '' } }));
+    const q = questionLabel(id, lang);
+    const msgs = [...messages, { role: "user", content: q }];
+    try {
+      bumpActivity();
+      const raw = await callClaude(msgs, null, lang, planData, chunk => setCardAI(prev => ({ ...prev, [key]: { status: 'loading', text: (prev[key]?.text || '') + chunk } })), undefined, fileIdsRef.current, 'button');
+      const final = stripPlanData(raw);
+      setCardAI(prev => ({ ...prev, [key]: { status: 'done', text: final } }));
+      setMessages(prev => [...prev, { role: "user", content: q, summary: true }, { role: "assistant", content: final, summary: true }]);
+    } catch (e) {
+      if ((e as any).status === 410 || e.message === 'session_expired') { clearSession(); setSessionEndReason('expired'); }
+      setCardAI(prev => ({ ...prev, [key]: { status: 'error', text: '' } }));
+    } finally {
+      cardBusyRef.current = false;
+    }
+  };
+  useEffect(() => {
+    if (stage !== STAGE.APP || activeTab !== "dashboard" || planGuideTab !== "guide" || !openCardId || !planData) return;
+    if (getStockAnswer(openCardId, planData, lang)) return;
+    const st = cardAI[cardKey(openCardId)];
+    if (st && st.status !== 'waiting') return;
+    if (cardBusyRef.current) {
+      if (!st) setCardAI(prev => ({ ...prev, [cardKey(openCardId)]: { status: 'waiting', text: '' } }));
+      return;
+    }
+    startCardAI(openCardId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openCardId, cardAI, lang, planData, stage, activeTab, planGuideTab]);
 
   // Supplemental upload: user already in APP/stmtDashboard — skip privacy, append fileId, ask Claude to review new doc
   const supplementalUploadStatement = useCallback(async (file: File) => {
@@ -604,7 +658,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     visibleMessages.forEach((m, i) => { if (m.role === "user") lastUserIdx = i; });
     const aiBubbleStyle = { padding: 20, borderRadius: "4px 16px 16px 16px", background: C.surface, border: `1px solid ${C.border}`, fontSize: 15, lineHeight: 1.6 };
     const canAsk = !!input.trim() && !loading;
-    const overview = getOverview(planData, lang, { hasFunds: false });
     const chatPanel = (
       <div ref={askScrollRef} style={{ flex: 1, overflowY: "auto" }}>
         <style>{`@media (max-width: 700px) { .plan-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }`}</style>
@@ -686,11 +739,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
             </section>
           </main>
 
-          {overview.glance.length > 0 && (
-            <div style={{ flex: "1 1 300px", maxWidth: 380, minWidth: 0, ...(sticky.twoCol ? { position: "sticky", top: sticky.top, height: sticky.height, display: "flex", alignItems: "center" } : {}) }}>
-              <PlanGlance rows={overview.glance} review={planData?.review} recordkeeperName={planData?.recordkeeperName} recordkeeperUrl={planData?.recordkeeperUrl} pickedId={pickedChip} onPick={openStock} lang={lang} />
-            </div>
-          )}
         </div>
       </div>
     );
@@ -726,9 +774,11 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
             />
             {planGuideTab === "guide" && (
               <PlanOverview
-                planData={planData} lang={lang} review={planData?.review} topic={topic} setTopic={setTopic}
-                onOpenStock={openStock} onOpenCalculator={() => setActiveTab("calculator")} onOpenInvestments={() => setPlanGuideTab("investments")}
-                hasFunds={(planData?.fundsData || []).length > 0} fundsCount={(planData?.fundsData || []).length} footer={t.footerDisclaimer}
+                planData={planData} lang={lang} review={planData?.review} topic={topic}
+                onSelectTopic={selectTopic} openCardId={openCardId} onToggleCard={(id) => setOpenCardId(prev => prev === id ? null : id)} onPickRow={pickRow}
+                getWritten={(id) => getStockAnswer(id, planData, lang)} getAI={(id) => cardAI[cardKey(id)] || null} onRetry={retryCard}
+                onOpenCalculator={() => setActiveTab("calculator")} errorText={t.errorReply} footer={t.footerDisclaimer}
+                scrollRef={planScrollRef} headerRef={planHeaderRef} layoutRef={planLayoutRef} sticky={planSticky}
               />
             )}
             {planGuideTab === "investments" && (

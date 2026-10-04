@@ -172,9 +172,9 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
 
   return (
     <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bg, borderBottom: `1px solid ${C.borderLight}` }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 5, background: C.accentSoft, borderBottom: `2px solid ${C.accentBorder}`, boxShadow: '0 8px 20px rgba(30,20,8,.07)' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 20px 12px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(24px, 4.5vw, 36px)', lineHeight: 1.05, fontWeight: 700, color: C.text }}>{t.keyTermsTitle}</h1>
+          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(20px, 3vw, 26px)', lineHeight: 1.1, fontWeight: 700, color: C.text }}>{t.keyTermsTitle}</h1>
           <div style={{ fontSize: 14, color: C.textMuted }}>{t.keyTermsSubtitle}</div>
         </div>
       </div>
