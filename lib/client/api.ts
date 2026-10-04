@@ -92,7 +92,8 @@ export async function callClaude(
   planData: any,
   onChunk: (chunk: string) => void,
   signal?: AbortSignal,
-  fileIds?: string | string[] | null
+  fileIds?: string | string[] | null,
+  source: 'button' | 'typed' = 'typed'
 ): Promise<string> {
   const ids: string[] = Array.isArray(fileIds) ? fileIds : (fileIds ? [fileIds] : []);
   const response = await fetch('/api/chat', {
@@ -104,6 +105,7 @@ export async function callClaude(
       fileIds: ids.length > 0 ? ids : undefined,
       lang,
       planData,
+      source,
     }),
     signal,
   });

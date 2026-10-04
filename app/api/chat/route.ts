@@ -36,6 +36,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     pdf?: string;        // base64-encoded PDF (legacy fallback)
     fileId?: string;     // single file_id (legacy — prefer fileIds)
     fileIds?: string[];  // multiple Files API file_ids (preferred)
+    source?: 'button' | 'typed'; // for the usage log only
   };
 
   // ── Reject oversized bodies before parsing ────────────────────────────────
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   try { body = await req.json(); }
   catch { return jsonError('Invalid request body', 400); }
 
-  const { messages, lang = 'en', planData, pdf, fileId, fileIds } = body;
+  const { messages, lang = 'en', planData, pdf, fileId, fileIds, source } = body;
   if (!messages?.length) return jsonError('Missing messages', 400);
 
   // ── 3. PDF source — fileIds array takes priority, then legacy fileId, then base64 ──
@@ -203,6 +204,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           event: 'chat_usage',
           model: ANTHROPIC_MODEL,
           turn: messages.length,
+          source: source === 'button' ? 'button' : 'typed',
           docs: pdfFileIds.length > 0 ? pdfFileIds.length : (pdfBase64 ? 1 : 0),
           ...usage,
         }));

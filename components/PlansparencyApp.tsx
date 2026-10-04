@@ -34,6 +34,7 @@ import { PlanDashboard } from '@/components/plansparency/PlanDashboard';
 import { CalcPanel } from '@/components/plansparency/CalcPanel';
 import { StatementDashboard } from '@/components/plansparency/StatementDashboard';
 import { Landing } from '@/components/plansparency/Landing';
+import { STOCK_QUESTIONS, getStockAnswer } from '@/lib/answers/stockAnswers';
 // Upload path: browser POSTs FormData directly to /api/ingest (Node.js route)
 
 
@@ -362,7 +363,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, lang, planData, t]);
 
-  const sendMessage = async text => {
+  const sendMessage = async (text, source = 'typed') => {
     if (!text.trim() || loading) return;
     bumpActivity();
     const um = { role: "user", content: text.trim() }; const nm = [...messages, um]; setMessages(nm); setInput(""); setLoading(true); setStreamingText('');
@@ -371,7 +372,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
-      const raw = await callClaude(nm, null, lang, planData, chunk => setStreamingText(prev => prev + chunk), abortRef.current.signal, fileIdsRef.current);
+      const raw = await callClaude(nm, null, lang, planData, chunk => setStreamingText(prev => prev + chunk), abortRef.current.signal, fileIdsRef.current, source);
       setStreamingText('');
       const cleaned = docType === "statement" ? stripStmtData(raw) : stripPlanData(raw);
       setMessages([...nm, { role: "assistant", content: cleaned }]);
@@ -396,6 +397,38 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       abortRef.current = null;
     }
     setLoading(false);
+  };
+
+  // ── Quick-question chips ──
+  // English with plan details: instant stock answers (no AI call) when every
+  // detail the answer needs is there; otherwise the tap goes to the AI as before.
+  const stockChipsOn = lang === "en" && !!planData && docType !== "statement";
+  const chipList = stockChipsOn ? STOCK_QUESTIONS : t.quickAsks.map(q => ({ id: null, label: q }));
+  const onChip = (chip) => {
+    if (loading) return;
+    const answer = chip.id ? getStockAnswer(chip.id, planData, "en") : null;
+    if (!answer) { sendMessage(chip.label, "button"); return; }
+    bumpActivity();
+    setMessages(prev => [...prev, { role: "user", content: chip.label }, { role: "assistant", content: answer.text, stock: true, stockId: chip.id, link: answer.link }]);
+    fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "stock_answer", id: chip.id }) }).catch(() => {});
+  };
+  const stockExtras = (msg) => {
+    if (!msg.stock) return null;
+    const reviewer = planData?.review?.reviewerName;
+    const when = planData?.review?.reviewedAt ? new Date(planData.review.reviewedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "";
+    return <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.borderLight}` }}>
+      <span style={{ display: "inline-block", fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: reviewer ? C.greenSoft : C.accentSoft, color: reviewer ? C.green : C.accentText }}>
+        {reviewer ? "From your plan's reviewed details" : "From your plan document"}
+      </span>
+      {msg.link === "calculator" && <div style={{ marginTop: 8 }}>
+        <button onClick={() => setActiveTab("calculator")} style={{ ...btnBase, minHeight: 44, padding: "0 16px", fontSize: 13, background: C.accentSoft, color: C.accentText, border: `1px solid ${C.accent}` }}>
+          {msg.stockId === "match" ? "See it with your pay in the calculator" : "Open the calculator"}
+        </button>
+      </div>}
+      <div style={{ fontSize: 12, color: C.textDim, marginTop: 8, lineHeight: 1.4 }}>
+        {reviewer ? `Plan details reviewed by ${reviewer}${when ? ` on ${when}` : ""}. Education only, not advice.` : "Based on the plan document you uploaded. Education only, not advice."}
+      </div>
+    </div>;
   };
 
   const handleKeyDown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } };
@@ -499,7 +532,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
             <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
               <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? "rgba(212,168,83,.1)" : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
-                {msg.role === "assistant" ? <Md text={msg.content} /> : msg.content}
+                {msg.role === "assistant" ? <><Md text={msg.content} />{stockExtras(msg)}</> : msg.content}
               </div>
             </div>
           ))}
@@ -518,10 +551,10 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
             </div>
           )}
           {showChips && <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", padding: "4px 0 8px" }}>
-            {t.quickAsks.map(q => <button key={q} onClick={() => sendMessage(q)}
+            {chipList.map(q => <button key={q.label} onClick={() => onChip(q)}
               style={{ padding: "7px 13px", borderRadius: 100, fontSize: 12, background: C.accentDim, color: C.accent, border: `1px solid rgba(212,168,83,.18)`, cursor: "pointer", fontFamily: F.body, transition: "all .15s", whiteSpace: "nowrap" }}
               onMouseEnter={e => e.currentTarget.style.background = C.accentGlow} onMouseLeave={e => e.currentTarget.style.background = C.accentDim}
-            >{q}</button>)}</div>}
+            >{q.label}</button>)}</div>}
           <div ref={chatEndRef} />
         </div>
 
@@ -644,7 +677,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
         <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
           <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? "rgba(212,168,83,.1)" : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
-            {msg.role === "assistant" ? <Md text={msg.content} /> : msg.content}
+            {msg.role === "assistant" ? <><Md text={msg.content} />{stockExtras(msg)}</> : msg.content}
           </div>
         </div>
       ))}
@@ -663,10 +696,10 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         </div>
       )}
       {showChips && <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", padding: "4px 0 8px" }}>
-        {t.quickAsks.map(q => <button key={q} onClick={() => sendMessage(q)}
+        {chipList.map(q => <button key={q.label} onClick={() => onChip(q)}
           style={{ padding: "7px 13px", borderRadius: 100, fontSize: 12, background: C.accentDim, color: C.accent, border: `1px solid rgba(212,168,83,.18)`, cursor: "pointer", fontFamily: F.body, transition: "all .15s", whiteSpace: "nowrap" }}
           onMouseEnter={e => e.currentTarget.style.background = C.accentGlow} onMouseLeave={e => e.currentTarget.style.background = C.accentDim}
-        >{q}</button>)}</div>}
+        >{q.label}</button>)}</div>}
       <div ref={chatEndRef} />
     </div>
 
