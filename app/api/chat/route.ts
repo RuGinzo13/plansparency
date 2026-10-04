@@ -157,6 +157,8 @@ export async function POST(req: NextRequest): Promise<Response> {
       if (!reader) { controller.close(); return; }
       const decoder = new TextDecoder();
       let buffer = '';
+      // Token counts only (open item #37). Never log text, file ids, names or IPs.
+      const usage = { input: 0, cacheWrite: 0, cacheRead: 0, output: 0 };
 
       try {
         while (true) {
@@ -175,6 +177,16 @@ export async function POST(req: NextRequest): Promise<Response> {
             let parsed: any;
             try { parsed = JSON.parse(data); } catch { continue; }
 
+            if (parsed.type === 'message_start' && parsed.message?.usage) {
+              const u = parsed.message.usage;
+              usage.input = Number(u.input_tokens) || 0;
+              usage.cacheWrite = Number(u.cache_creation_input_tokens) || 0;
+              usage.cacheRead = Number(u.cache_read_input_tokens) || 0;
+            }
+            if (parsed.type === 'message_delta' && parsed.usage) {
+              usage.output = Number(parsed.usage.output_tokens) || 0;
+            }
+
             if (
               parsed.type === 'content_block_delta' &&
               parsed.delta?.type === 'text_delta' &&
@@ -187,6 +199,13 @@ export async function POST(req: NextRequest): Promise<Response> {
       } catch {
         // Stream ended unexpectedly — close without propagating
       } finally {
+        console.log(JSON.stringify({
+          event: 'chat_usage',
+          model: ANTHROPIC_MODEL,
+          turn: messages.length,
+          docs: pdfFileIds.length > 0 ? pdfFileIds.length : (pdfBase64 ? 1 : 0),
+          ...usage,
+        }));
         controller.close();
       }
     },
