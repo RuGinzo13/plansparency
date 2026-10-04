@@ -108,7 +108,7 @@ Moved to **OPEN-ITEMS.md** (Sept 27, 2026). That file is the only to-do list. Do
 
 ### Core Strategy
 - **Revenue path**: B2B SaaS via advisor channel — NOT consumer/B2C
-- **Version A**: Free public tool — proves demand, drives Version B sales. Advisors are the audience.
+- ~~**Version A**: Free public tool~~ **RETIRED Oct 4, 2026 (Ross): advisor-only.** Participants reach a plan only through an advisor who subscribed and set it up (plan code / invite link). Self-upload exists only at `/advisor/preview` for previewing. See OPEN-ITEMS #50.
 - **Version B**: White-label advisor dashboard — primary MRR engine
 
 ### Pricing (Version B)
