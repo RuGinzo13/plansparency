@@ -1,4 +1,5 @@
-import PlansparencyApp from '@/components/PlansparencyApp';
+import { redirect } from 'next/navigation';
+
 export default function TryPage() {
-  return <PlansparencyApp mode="version-a" />;
+  redirect('/');
 }
