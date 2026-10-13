@@ -166,11 +166,11 @@ export function AppHeader({ accentColor, title, onBack, backLabel, lang, setLang
           <Logo small />
         )}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: C.green, background: C.greenDim, padding: "3px 8px", borderRadius: 100, border: "1px solid rgba(92,184,138,.15)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: C.green, background: C.greenDim, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.greenLine}` }}>
             <Shield color={C.green} sz={10} />{t.securityBadge}
           </div>
           <LangToggle lang={lang} setLang={setLang} disabled={loading} />
-          <div style={{ fontSize: 10, color: C.warning, background: "rgba(212,168,67,.08)", padding: "3px 8px", borderRadius: 100, border: "1px solid rgba(212,168,67,.18)", whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: 10, color: C.warning, background: C.accentTint, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.accentLine}`, whiteSpace: "nowrap" }}>
             {t.disclaimer}
           </div>
         </div>

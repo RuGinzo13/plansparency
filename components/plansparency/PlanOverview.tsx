@@ -101,7 +101,7 @@ export function PlanOverview(p: PlanOverviewProps) {
       <style>{`@media (max-width: 700px) { .plan-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }`}</style>
 
       {/* Top bar */}
-      <div ref={p.headerRef} style={{ position: 'sticky', top: 0, zIndex: 5, background: C.accentSoft, borderBottom: `2px solid ${C.accentBorder}`, boxShadow: '0 8px 20px rgba(30,20,8,.07)' }}>
+      <div ref={p.headerRef} style={{ position: 'sticky', top: 0, zIndex: 5, background: C.accentSoft, borderBottom: `2px solid ${C.accentBorder}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 20px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px 32px' }}>
           <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ ...label12, color: C.textMuted }}>{L('Your plan', 'Tu plan')}</div>
@@ -137,7 +137,7 @@ export function PlanOverview(p: PlanOverviewProps) {
               const sel = topic === tp.key;
               return (
                 <button key={tp.key} role="tab" aria-selected={sel} onClick={() => p.onSelectTopic(tp.key)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 60, padding: '8px 12px', borderRadius: 14, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', background: sel ? C.surface : C.surfaceAlt, border: sel ? `2px solid ${C.accent}` : '2px solid transparent', boxShadow: sel ? '0 6px 18px rgba(30,20,8,.06)' : 'none' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 60, padding: '8px 12px', borderRadius: 14, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', background: sel ? C.surface : C.surfaceAlt, border: sel ? `2px solid ${C.accent}` : '2px solid transparent', boxShadow: sel ? `0 6px 18px ${C.shadow}` : 'none' }}>
                   <span style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, background: sel ? C.text : C.surface, color: sel ? C.surface : C.accentText, border: sel ? 'none' : `1px solid ${C.accent}` }}>{i + 1}</span>
                   <span style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{tp.title}</span>

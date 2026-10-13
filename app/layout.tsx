@@ -1,5 +1,6 @@
 import { ClerkProvider } from '@clerk/nextjs';
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google';
+import { C } from '@/components/plansparency/theme';
 
 export const metadata = { title: 'Plansparency', description: 'Your 401(k), crystal clear.' };
 
@@ -22,7 +23,7 @@ const dmSans = DM_Sans({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const inner = (
     <html lang="en" className={`${cormorantGaramond.variable} ${dmSans.variable}`}>
-      <body style={{ background: '#F4EFE6', margin: 0 }}>
+      <body style={{ background: C.bg, margin: 0 }}>
         {children}
       </body>
     </html>

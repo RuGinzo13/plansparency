@@ -76,7 +76,7 @@ function DisclosureCallout({ lang = "en" }) {
     <div style={{
       margin: "12px 16px 4px",
       borderLeft: `4px solid ${C.accent}`,
-      background: "rgba(184,134,11,.06)",
+      background: C.accentTint,
       borderRadius: "0 10px 10px 0",
       flexShrink: 0,
       overflow: "hidden",

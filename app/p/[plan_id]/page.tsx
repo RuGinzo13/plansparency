@@ -1,6 +1,7 @@
 // Server component — no 'use client'
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import PlansparencyApp from '@/components/PlansparencyApp';
+import { C } from '@/components/plansparency/theme';
 
 // ── Dynamic metadata — static export cannot reference async data ──────────────
 export async function generateMetadata({ params }: { params: Promise<{ plan_id: string }> }) {
@@ -21,7 +22,7 @@ function PlanNotFound({ note }: { note?: string }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0F1621',
+      background: C.bar,
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -29,9 +30,9 @@ function PlanNotFound({ note }: { note?: string }) {
       padding: 40,
       fontFamily: "var(--font-body), 'Segoe UI', system-ui, sans-serif",
     }}>
-      <p style={{ fontSize: 16, color: '#F4EFE6', textAlign: 'center', maxWidth: 420, lineHeight: 1.6, margin: 0 }}>
+      <p style={{ fontSize: 16, color: C.barText, textAlign: 'center', maxWidth: 420, lineHeight: 1.6, margin: 0 }}>
         Plan not found. Ask your plan advisor for the correct link.
-        {note && <><br /><span style={{ color: '#9A8878', fontSize: 13 }}>{note}</span></>}
+        {note && <><br /><span style={{ color: C.barMuted, fontSize: 13 }}>{note}</span></>}
       </p>
     </div>
   );

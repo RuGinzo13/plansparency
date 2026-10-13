@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { fmtDollars, fmtShortAmt, fmtPctVal } from '@/lib/format';
-import { C, F } from './theme';
+import { C, F, CHART } from './theme';
 import { Shield, DonutChart } from './ui';
 
 function SuggestionBox({ t }) {
@@ -37,7 +37,7 @@ function SuggestionBox({ t }) {
         onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: "rgba(212,168,83,.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: C.accentTint, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
           <span style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{t.suggestionTitle}</span>
@@ -60,7 +60,7 @@ function SuggestionBox({ t }) {
           )}
 
           {justSubmitted && (
-            <div style={{ padding: "10px 14px", background: C.greenDim, borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 8, border: `1px solid rgba(92,184,138,.2)` }}>
+            <div style={{ padding: "10px 14px", background: C.greenDim, borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.greenLine}` }}>
               <Shield color={C.green} sz={14} />
               <span style={{ fontSize: 13, color: C.green, fontWeight: 600 }}>{t.suggestionThanks}</span>
             </div>
@@ -79,8 +79,8 @@ function SuggestionBox({ t }) {
           <button onClick={handleSubmit} disabled={!topic.trim() || !details.trim()} style={{
             width: "100%", padding: "11px", border: "none", borderRadius: 10, fontFamily: F.body, fontWeight: 600,
             fontSize: 13, cursor: topic.trim() && details.trim() ? "pointer" : "default",
-            background: topic.trim() && details.trim() ? `linear-gradient(135deg,${C.accent},#B8863A)` : C.border,
-            color: topic.trim() && details.trim() ? "#0F1621" : C.textDim, transition: "all .15s",
+            background: topic.trim() && details.trim() ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.border,
+            color: topic.trim() && details.trim() ? C.onPrimary : C.textDim, transition: "all .15s",
           }}>{suggestions.length > 0 ? t.suggestionAdd : t.suggestionSubmit}</button>
         </div>
       )}
@@ -126,10 +126,10 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
   const startBal = viewMode === "ytd" ? num(sd.ytdBeginBalance || sd.beginBalance) : num(sd.beginBalance);
   const balanceChange = num(sd.endBalance) - startBal;
   const allocSegments = [
-    { label: lang === "es" ? "Acciones" : "Stocks", value: num(alloc.stocks), color: "#5CB88A" },
-    { label: lang === "es" ? "Bonos" : "Bonds", value: num(alloc.bonds), color: "#D4A853" },
-    { label: "Multi-Asset", value: num(alloc.multiAsset), color: "#94A0B2" },
-    { label: lang === "es" ? "Otro" : "Other", value: num(alloc.other), color: "#536178" },
+    { label: lang === "es" ? "Acciones" : "Stocks", value: num(alloc.stocks), color: CHART.stocks },
+    { label: lang === "es" ? "Bonos" : "Bonds", value: num(alloc.bonds), color: CHART.bonds },
+    { label: "Multi-Asset", value: num(alloc.multiAsset), color: CHART.multiAsset },
+    { label: lang === "es" ? "Otro" : "Other", value: num(alloc.other), color: CHART.other },
   ];
   const periodLabel = sd.statementPeriod ? `${sd.statementPeriod.start} to ${sd.statementPeriod.end}` : "";
   const ytdLabel = sd.calendarYTD ? `${sd.calendarYTD.start} to ${sd.calendarYTD.end}` : (lang === "es" ? "Año Calendario" : "Calendar Year-to-Date");
@@ -172,10 +172,10 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
 
       {/* Quick stats, tappable */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
-        {[[lang === "es" ? "Entró" : "In", num(mi.total), C.green, C.greenDim, "rgba(92,184,138,.15)", "moneyIn"],
-          [lang === "es" ? "Salió" : "Out", num(mo.total), num(mo.total) ? C.danger : C.green, num(mo.total) ? C.dangerDim : C.greenDim, num(mo.total) ? "rgba(212,106,90,.15)" : "rgba(92,184,138,.15)", "moneyOut"],
-          [lang === "es" ? "Crecimiento" : "Growth", gainLoss, gainLoss >= 0 ? C.green : C.danger, gainLoss >= 0 ? C.greenDim : C.dangerDim, gainLoss >= 0 ? "rgba(92,184,138,.15)" : "rgba(212,106,90,.15)", "growth"],
-          [lang === "es" ? "Costos" : "Fees", feeTotal, C.accent, "rgba(212,168,83,.08)", "rgba(212,168,83,.15)", "fees"],
+        {[[lang === "es" ? "Entró" : "In", num(mi.total), C.green, C.greenDim, C.greenLine, "moneyIn"],
+          [lang === "es" ? "Salió" : "Out", num(mo.total), num(mo.total) ? C.danger : C.green, num(mo.total) ? C.dangerDim : C.greenDim, num(mo.total) ? C.dangerLine : C.greenLine, "moneyOut"],
+          [lang === "es" ? "Crecimiento" : "Growth", gainLoss, gainLoss >= 0 ? C.green : C.danger, gainLoss >= 0 ? C.greenDim : C.dangerDim, gainLoss >= 0 ? C.greenLine : C.dangerLine, "growth"],
+          [lang === "es" ? "Costos" : "Fees", feeTotal, C.accent, C.accentTint, C.accentLine, "fees"],
         ].map(([label, val, color, bg, bdr, cardId], i) => (
           <div key={i} onClick={() => toggle(cardId)} style={{ padding: "10px 8px", borderRadius: 10, background: bg, border: `1px solid ${bdr}`, textAlign: "center", cursor: "pointer", transition: "transform .15s" }}
             onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"} onMouseLeave={e => e.currentTarget.style.transform = "none"}>
@@ -189,13 +189,13 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
         {card("moneyIn", <>{cardHeader("moneyIn", "💰", t.stmtMoneyIn, <span style={{ fontSize: 14, fontWeight: 700, color: C.green }}>{fmtDollars(mi.total)}</span>)}
           {expandedCards.moneyIn && <div style={{ padding: "0 16px 16px" }}>{dateLabel()}
             {dataRow(lang === "es" ? "Diferimiento Salarial (Pre-Tax)" : "Salary Deferral (Pre-Tax)", mi.employeeSalaryDeferral, C.green, lang === "es" ? "Tu dinero, antes de impuestos." : "Your money, before taxes. You pay taxes when you withdraw.")}
-            {dataRow("Roth", mi.employeeRoth, "#6BB8D4", lang === "es" ? "Tu dinero, después de impuestos. Sale libre de impuestos." : "Your money, after taxes. Grows and comes out tax-free.")}
-            {dataRow(lang === "es" ? "Match del Empleador" : "Employer Match", mi.employerMatch, "#7A9EC9", lang === "es" ? "Discrecional, sujeto a vesting." : "Discretionary, subject to vesting.")}
-            {dataRow("Safe Harbor", mi.employerSafeHarbor, "#5CB88A", lang === "es" ? "Garantizado. 100% tuyo inmediatamente." : "Guaranteed. 100% yours immediately.")}
-            {dataRow("Profit Sharing", mi.employerProfitSharing, "#D4A853", lang === "es" ? "Discrecional, el empleador decide anualmente." : "Discretionary, employer decides annually.")}
-            {dataRow(lang === "es" ? "Otro del Empleador" : "Other Employer", mi.employerOther, "#94A0B2", null)}
-            {dataRow("Rollover", mi.rolloverIn, "#8B7EC9", lang === "es" ? "De otro plan o IRA." : "From another plan or IRA.")}
-            {dataRow(lang === "es" ? "Pago de Préstamo" : "Loan Repayment", mi.loanRepayment, "#94A0B2", null)}
+            {dataRow("Roth", mi.employeeRoth, CHART.roth, lang === "es" ? "Tu dinero, después de impuestos. Sale libre de impuestos." : "Your money, after taxes. Grows and comes out tax-free.")}
+            {dataRow(lang === "es" ? "Match del Empleador" : "Employer Match", mi.employerMatch, CHART.match, lang === "es" ? "Discrecional, sujeto a vesting." : "Discretionary, subject to vesting.")}
+            {dataRow("Safe Harbor", mi.employerSafeHarbor, CHART.safeHarbor, lang === "es" ? "Garantizado. 100% tuyo inmediatamente." : "Guaranteed. 100% yours immediately.")}
+            {dataRow("Profit Sharing", mi.employerProfitSharing, CHART.profit, lang === "es" ? "Discrecional, el empleador decide anualmente." : "Discretionary, employer decides annually.")}
+            {dataRow(lang === "es" ? "Otro del Empleador" : "Other Employer", mi.employerOther, CHART.neutral, null)}
+            {dataRow("Rollover", mi.rolloverIn, CHART.rollover, lang === "es" ? "De otro plan o IRA." : "From another plan or IRA.")}
+            {dataRow(lang === "es" ? "Pago de Préstamo" : "Loan Repayment", mi.loanRepayment, CHART.neutral, null)}
             <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 4, paddingTop: 10, display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Total</span><span style={{ fontSize: 15, fontWeight: 700, color: C.green }}>{fmtDollars(mi.total)}</span></div>
           </div>}</>)}
 
@@ -204,14 +204,14 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
           {expandedCards.moneyOut && <div style={{ padding: "0 16px 16px" }}>{dateLabel()}
             {num(mo.total) > 0 ? <>{dataRow(lang === "es" ? "Retiros" : "Withdrawals", mo.withdrawals, C.danger, lang === "es" ? "Dinero sacado de tu cuenta." : "Money taken out of your account.")}
               {dataRow(lang === "es" ? "Distribuciones" : "Distributions", mo.distributions, C.danger, lang === "es" ? "Pagos formales del plan." : "Formal plan payouts.")}
-              {dataRow(lang === "es" ? "Rollovers (salidas)" : "Rollovers Out", mo.rollovers, "#D4A853", lang === "es" ? "Transferido a otro plan o IRA." : "Transferred to another plan or IRA.")}
-              {dataRow(lang === "es" ? "Préstamos Tomados" : "Loans Taken", mo.loans, "#94A0B2", lang === "es" ? "Préstamo de tu saldo." : "Loan from your balance. Must be repaid.")}
+              {dataRow(lang === "es" ? "Rollovers (salidas)" : "Rollovers Out", mo.rollovers, CHART.rolloverOut, lang === "es" ? "Transferido a otro plan o IRA." : "Transferred to another plan or IRA.")}
+              {dataRow(lang === "es" ? "Préstamos Tomados" : "Loans Taken", mo.loans, CHART.neutral, lang === "es" ? "Préstamo de tu saldo." : "Loan from your balance. Must be repaid.")}
               <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 4, paddingTop: 10, display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Total</span><span style={{ fontSize: 15, fontWeight: 700, color: C.danger }}>{fmtDollars(mo.total)}</span></div>
             </> : <div style={{ padding: "8px 0", fontSize: 13, color: C.green, fontWeight: 600 }}>✓ {lang === "es" ? "No salió dinero de tu cuenta" : "No money left your account"}</div>}
           </div>}</>)}
 
         {/* Fees */}
-        {card("fees", <>{cardHeader("fees", "📋", t.stmtFees, <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 14, fontWeight: 700, color: C.accent }}>{fmtDollars(feeTotal)}</span>{feePctOfAssets > 0 && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(212,168,83,.1)", color: C.accent, fontWeight: 600 }}>{feePctOfAssets.toFixed(3)}%</span>}</div>)}
+        {card("fees", <>{cardHeader("fees", "📋", t.stmtFees, <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 14, fontWeight: 700, color: C.accent }}>{fmtDollars(feeTotal)}</span>{feePctOfAssets > 0 && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: C.accentTint, color: C.accent, fontWeight: 600 }}>{feePctOfAssets.toFixed(3)}%</span>}</div>)}
           {expandedCards.fees && <div style={{ padding: "0 16px 16px" }}>{dateLabel()}
             {effectiveFeeItems.length > 0 ? effectiveFeeItems.map((item, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < effectiveFeeItems.length - 1 ? `1px solid ${C.border}` : "none" }}>
@@ -219,7 +219,7 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
             )) : <div style={{ fontSize: 12, color: C.textMuted, padding: "8px 0" }}>{feeTotal > 0 ? `Total: ${fmtDollars(feeTotal)}` : (lang === "es" ? "Sin costos reportados" : "No fees reported")}</div>}
             {feeTotal > 0 && <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 8, paddingTop: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}><span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Total</span><span style={{ fontSize: 15, fontWeight: 700, color: C.accent }}>{fmtDollars(feeTotal)}</span></div>
-              <div style={{ padding: "12px", borderRadius: 10, background: "rgba(212,168,83,.06)", border: "1px solid rgba(212,168,83,.12)", marginBottom: 8 }}>
+              <div style={{ padding: "12px", borderRadius: 10, background: C.accentTint, border: `1px solid ${C.accentLine}`, marginBottom: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                   <span style={{ fontSize: 11, color: C.textMuted }}>{viewMode === "ytd" ? (lang === "es" ? "% anual de tu saldo" : "Annual % of balance") : (lang === "es" ? "% de tu saldo (período)" : "% of balance (period)")}</span>
                   <span style={{ fontSize: 16, fontWeight: 700, color: C.accent }}>{feePctOfAssets.toFixed(3)}%</span></div>
@@ -227,7 +227,7 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
                   <span style={{ fontSize: 11, color: C.textMuted }}>{lang === "es" ? "Estimado anualizado" : "Annualized estimate"}</span>
                   <span style={{ fontSize: 14, fontWeight: 700, color: C.accent }}>~{annualizedFeePct.toFixed(3)}%</span></div>}
                 <div style={{ height: 8, background: C.surfaceAlt, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
-                  <div style={{ height: "100%", width: `${Math.min((viewMode === "ytd" ? feePctOfAssets : annualizedFeePct) * 20, 100)}%`, background: `linear-gradient(90deg, ${C.accent}, #B8863A)`, borderRadius: 4 }} /></div>
+                  <div style={{ height: "100%", width: `${Math.min((viewMode === "ytd" ? feePctOfAssets : annualizedFeePct) * 20, 100)}%`, background: `linear-gradient(90deg, ${C.accent}, ${C.primaryEnd})`, borderRadius: 4 }} /></div>
                 <div style={{ fontSize: 10, color: C.textDim, lineHeight: 1.5 }}>{lang === "es" ? `Por cada $10,000, ~$${((viewMode === "ytd" ? feePctOfAssets : annualizedFeePct) * 100).toFixed(2)}/año va a costos.` : `For every $10,000, ~$${((viewMode === "ytd" ? feePctOfAssets : annualizedFeePct) * 100).toFixed(2)}/year goes to fees.`}</div>
               </div></div>}
             <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.5, padding: "8px 10px", background: C.surfaceAlt, borderRadius: 8 }}>{lang === "es" ? "Una diferencia de 0.5% anual puede significar decenas de miles menos al jubilarte." : "A 0.5% annual fee difference can mean tens of thousands less by retirement."}</div>
@@ -237,7 +237,7 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
         {card("growth", <>{cardHeader("growth", "📈", t.stmtGainLoss, <span style={{ fontSize: 14, fontWeight: 700, color: gainLoss >= 0 ? C.green : C.danger }}>{gainLoss >= 0 ? "+" : ""}{fmtDollars(gainLoss)}</span>)}
           {expandedCards.growth && <div style={{ padding: "0 16px 16px" }}>{dateLabel()}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={{ padding: "14px", borderRadius: 10, background: gainLoss >= 0 ? C.greenDim : C.dangerDim, border: `1px solid ${gainLoss >= 0 ? "rgba(92,184,138,.2)" : "rgba(212,106,90,.2)"}`, textAlign: "center" }}>
+              <div style={{ padding: "14px", borderRadius: 10, background: gainLoss >= 0 ? C.greenDim : C.dangerDim, border: `1px solid ${gainLoss >= 0 ? C.greenLine : C.dangerLine}`, textAlign: "center" }}>
                 <div style={{ fontSize: 9, color: C.textMuted, textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Ganancia/Pérdida" : "Gain/Loss"}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: gainLoss >= 0 ? C.green : C.danger }}>{gainLoss >= 0 ? "+" : ""}{fmtDollars(gainLoss)}</div></div>
               <div style={{ padding: "14px", borderRadius: 10, background: C.surfaceAlt, border: `1px solid ${C.border}`, textAlign: "center" }}>
@@ -268,7 +268,7 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
         <button onClick={onUploadAnother} style={{ padding: "14px 18px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", gap: 10, transition: "all .15s" }} onMouseEnter={e => e.currentTarget.style.borderColor = C.accent} onMouseLeave={e => e.currentTarget.style.borderColor = C.border}><span style={{ fontSize: 18 }}>📄</span><span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{t.stmtUploadAnother}</span></button>
-        <button onClick={onChat} style={{ padding: "14px 18px", background: `linear-gradient(135deg,${C.accent},#B8863A)`, border: "none", borderRadius: 14, cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 18 }}>💬</span><span style={{ fontSize: 13, fontWeight: 700, color: "#0F1621" }}>{t.stmtAskQuestion}</span></button>
+        <button onClick={onChat} style={{ padding: "14px 18px", background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, border: "none", borderRadius: 14, cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 18 }}>💬</span><span style={{ fontSize: 13, fontWeight: 700, color: C.onPrimary }}>{t.stmtAskQuestion}</span></button>
       </div>
       <SuggestionBox t={t} />
       <div style={{ textAlign: "center", marginTop: 16, padding: "10px", fontSize: 10, color: C.textDim, lineHeight: 1.5 }}>{t.stmtDisclaimer}</div>

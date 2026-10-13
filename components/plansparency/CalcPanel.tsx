@@ -39,7 +39,7 @@ function shLabel(sh, lang) {
 const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20 };
 const heading = { fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.text, margin: "0 0 16px" };
 const inputBase = {
-  background: "#FFFFFF", border: `1px solid ${C.inputBorder}`, borderRadius: 8,
+  background: C.field, border: `1px solid ${C.inputBorder}`, borderRadius: 8,
   height: 48, fontSize: 16, padding: "0 12px", width: "100%", boxSizing: "border-box",
   color: C.text, fontFamily: F.body, outline: "none", fontVariantNumeric: "tabular-nums",
 };
@@ -253,7 +253,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
                 onClick={() => setPp(f.value)}
                 style={{
                   minHeight: 44, borderRadius: 8, cursor: "pointer", fontFamily: F.body, fontSize: 13, fontWeight: 600,
-                  background: active ? C.accentSoft : "#FFFFFF",
+                  background: active ? C.accentSoft : C.field,
                   border: active ? `2px solid ${C.accent}` : `1px solid ${C.inputBorder}`,
                   color: active ? C.accentText : C.text,
                   padding: "8px 6px",
@@ -457,7 +457,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
                       onClick={() => setPriorYes(o.v)}
                       style={{
                         minHeight: 44, borderRadius: 8, cursor: "pointer", fontFamily: F.body, fontSize: 13, fontWeight: 600,
-                        background: active ? C.accentSoft : "#FFFFFF",
+                        background: active ? C.accentSoft : C.field,
                         border: active ? `2px solid ${C.accent}` : `1px solid ${C.inputBorder}`,
                         color: active ? C.accentText : C.text,
                         padding: "8px 6px",
@@ -512,13 +512,13 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         <button
           aria-label={t.calc2MinusAria}
           onClick={() => setPct((p) => Math.max(0, p - 1))}
-          style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${C.inputBorder}`, background: "#FFFFFF", cursor: "pointer", fontSize: 20, color: C.text }}
+          style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${C.inputBorder}`, background: C.field, cursor: "pointer", fontSize: 20, color: C.text }}
         >−</button>
         <div style={{ fontFamily: F.display, fontSize: 40, fontWeight: 700, color: C.accentText, minWidth: 90, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>{pct}%</div>
         <button
           aria-label={t.calc2PlusAria}
           onClick={() => setPct((p) => Math.min(30, p + 1))}
-          style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${C.inputBorder}`, background: "#FFFFFF", cursor: "pointer", fontSize: 20, color: C.text }}
+          style={{ width: 44, height: 44, borderRadius: 10, border: `1px solid ${C.inputBorder}`, background: C.field, cursor: "pointer", fontSize: 20, color: C.text }}
         >+</button>
       </div>
       <input
@@ -749,7 +749,7 @@ function Bubble({ text, onClose, closeLabel }) {
     <div style={{
       position: "absolute", top: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)",
       width: 240, maxWidth: "80vw", background: C.text, color: C.surface, borderRadius: 12,
-      padding: "12px 14px", fontSize: 12, lineHeight: 1.5, zIndex: 30, boxShadow: "0 8px 24px rgba(0,0,0,.25)",
+      padding: "12px 14px", fontSize: 12, lineHeight: 1.5, zIndex: 30, boxShadow: `0 8px 24px ${C.shadowStrong}`,
     }}>
       <div style={{
         position: "absolute", top: -6, left: "50%", transform: "translateX(-50%) rotate(45deg)",

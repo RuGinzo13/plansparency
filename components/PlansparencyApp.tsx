@@ -51,7 +51,7 @@ class ErrorBoundary extends React.Component {
           <div style={{ fontSize: 32, marginBottom: 16 }}>⚠️</div>
           <h2 style={{ fontFamily: F.display, fontSize: 22, color: C.text, marginBottom: 12 }}>Something went wrong</h2>
           <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 24, lineHeight: 1.6 }}>{this.state.error.message}</p>
-          <button onClick={() => this.setState({ error: null })} style={{ ...btnBase, padding: "11px 24px", background: `linear-gradient(135deg,${C.accent},#B8863A)`, color: "#0F1621", fontSize: 14 }}>Try again</button>
+          <button onClick={() => this.setState({ error: null })} style={{ ...btnBase, padding: "11px 24px", background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary, fontSize: 14 }}>Try again</button>
         </div>
       </div>
     );
@@ -538,11 +538,11 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Privacy ──
   if (stage === "privacy") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
     <div style={{ maxWidth: 540, width: "100%" }}><div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: "32px 28px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}><div style={{ width: 38, height: 38, borderRadius: 12, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid rgba(212,168,83,.2)` }}><Shield color={C.accent} sz={20} /></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}><div style={{ width: 38, height: 38, borderRadius: 12, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.accentLine}` }}><Shield color={C.accent} sz={20} /></div>
         <h2 style={{ fontFamily: F.display, fontSize: 24, fontWeight: 600, margin: 0 }}>{t.privacyTitle}</h2></div>
       <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 22 }}>{t.privacyIntro}</p>
       {t.privacyPoints.map(([title, body], i) => <div key={i} style={{ marginBottom: 14, paddingLeft: 14, borderLeft: `2px solid ${i === 1 ? C.warning : C.accent}` }}><p style={{ fontSize: 13, fontWeight: 600, color: C.text, margin: "0 0 3px" }}>{title}</p><p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, margin: 0 }}>{body}</p></div>)}
-      <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(212,168,67,.08)", border: `1px solid rgba(212,168,67,.18)`, marginBottom: 8 }}>
+      <div style={{ padding: "12px 14px", borderRadius: 10, background: C.accentTint, border: `1px solid ${C.accentLine}`, marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
           <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>📚</span>
           <div>
@@ -559,7 +559,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       </div>
       <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
         <button onClick={() => { pendingFilesRef.current = []; setStage("landing"); }} style={{ ...btnBase, flex: 1, padding: "12px", fontSize: 14, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>{t.privacyCancel}</button>
-        <button onClick={proceedAfterConsent} style={{ ...btnBase, flex: 1, padding: "12px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},#B8863A)`, color: "#0F1621" }}><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Shield color="#0F1621" sz={14} />{t.privacyAgree}</span></button>
+        <button onClick={proceedAfterConsent} style={{ ...btnBase, flex: 1, padding: "12px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary }}><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Shield color={C.onPrimary} sz={14} />{t.privacyAgree}</span></button>
       </div></div></div></div>;
 
   // ── Start screens (chooser + landing) ──
@@ -572,7 +572,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     <p style={{ color: C.textMuted, fontSize: 14, margin: "0 0 28px", textAlign: "center" }}>
       {sessionEndReason === "idle" ? t.calcSessionEndedIdle : sessionEndReason === "expired" ? t.errSessionExpired : t.clearedBody}
     </p>
-    <button onClick={() => { setSessionEndReason(null); setStage("chooser"); }} style={{ ...btnBase, padding: "12px 28px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},#B8863A)`, color: "#0F1621" }}>{t.clearedButton}</button></div>;
+    <button onClick={() => { setSessionEndReason(null); setStage("chooser"); }} style={{ ...btnBase, padding: "12px 28px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary }}>{t.clearedButton}</button></div>;
 
   // ── Uploading ──
   if (stage === "uploading") {
@@ -580,7 +580,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     const es = lang === "es";
     return (
       <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid rgba(212,168,83,.2)` }}>
+        <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid ${C.accentLine}` }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
         </div>
         <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 6px", textAlign: "center" }}>{t.readingTitle}</h2>
@@ -601,10 +601,10 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           <div style={{ width: "100%", height: 8, background: C.surfaceAlt, borderRadius: 4, overflow: "hidden", border: `1px solid ${C.borderLight}`, position: "relative" }}>
             {uploadPhase === 'uploading' ? (
               /* Determinate fill */
-              <div style={{ height: "100%", width: `${uploadProgress}%`, background: `linear-gradient(90deg,${C.accent},#D4A853)`, borderRadius: 4, transition: "width .3s ease" }} />
+              <div style={{ height: "100%", width: `${uploadProgress}%`, background: `linear-gradient(90deg,${C.accent},${C.primaryEnd})`, borderRadius: 4, transition: "width .3s ease" }} />
             ) : (
               /* Indeterminate shimmer */
-              <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, transparent 0%, ${C.accent} 40%, #D4A853 60%, transparent 100%)`, animation: "shimmer 1.6s ease-in-out infinite" }} />
+              <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, transparent 0%, ${C.accent} 40%, ${C.primaryEnd} 60%, transparent 100%)`, animation: "shimmer 1.6s ease-in-out infinite" }} />
             )}
           </div>
         </div>
@@ -639,7 +639,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 24 }}>{t.clearConfirmBody}</p>
           <div style={{ display: "flex", gap: 12 }}>
             <button onClick={() => setShowClearConfirm(false)} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>{t.clearConfirmNo}</button>
-            <button onClick={clearSession} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: C.danger, color: "#fff" }}>{t.clearConfirmYes}</button>
+            <button onClick={clearSession} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: C.danger, color: C.onDanger }}>{t.clearConfirmYes}</button>
           </div>
         </Modal>}
 
@@ -679,18 +679,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           </div>
         )}
 
-        <style>{`
-          @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-          @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-          @keyframes blink{50%{opacity:0}}
-          *{box-sizing:border-box;margin:0}
-          ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}
-          textarea::placeholder{color:${C.textDim}}
-          input[type=range]{-webkit-appearance:none;appearance:none;background:#C8BFAE;border-radius:6px;outline:none;height:10px}
-          input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},#B8863A);cursor:pointer;border:3px solid #FBF7F0;box-shadow:0 0 10px rgba(212,168,83,.4)}
-          input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},#B8863A);cursor:pointer;border:3px solid #FBF7F0;box-shadow:0 0 10px rgba(212,168,83,.4)}
-          select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237A6B5D' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
-        `}</style>
+        <style>{globalCss()}</style>
       </div>
     );
   }
@@ -715,7 +704,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 24 }}>{t.clearConfirmBody}</p>
       <div style={{ display: "flex", gap: 12 }}>
         <button onClick={() => setShowClearConfirm(false)} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>{t.clearConfirmNo}</button>
-        <button onClick={clearSession} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: C.danger, color: "#fff" }}>{t.clearConfirmYes}</button>
+        <button onClick={clearSession} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: C.danger, color: C.onDanger }}>{t.clearConfirmYes}</button>
       </div></Modal>}
 
     <AppHeader
@@ -730,7 +719,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
       {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
         <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
-          <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? "rgba(212,168,83,.1)" : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
+          <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? C.accentTint : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
             {msg.role === "assistant" ? <Md text={msg.content} /> : msg.content}
           </div>
         </div>
@@ -751,7 +740,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       )}
       {showChips && <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center", padding: "4px 0 8px" }}>
         {t.quickAsks.map(q => <button key={q} onClick={() => sendMessage(q, "button")}
-          style={{ padding: "7px 13px", borderRadius: 100, fontSize: 12, background: C.accentDim, color: C.accent, border: `1px solid rgba(212,168,83,.18)`, cursor: "pointer", fontFamily: F.body, transition: "all .15s", whiteSpace: "nowrap" }}
+          style={{ padding: "7px 13px", borderRadius: 100, fontSize: 12, background: C.accentDim, color: C.accent, border: `1px solid ${C.accentLine}`, cursor: "pointer", fontFamily: F.body, transition: "all .15s", whiteSpace: "nowrap" }}
           onMouseEnter={e => e.currentTarget.style.background = C.accentGlow} onMouseLeave={e => e.currentTarget.style.background = C.accentDim}
         >{q}</button>)}</div>}
       <div ref={chatEndRef} />
@@ -763,8 +752,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 14, fontFamily: F.body, resize: "none", padding: "9px 0", lineHeight: 1.5, maxHeight: 100, minHeight: 18 }}
           onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }} />
         <button onClick={() => sendMessage(input)} disabled={!input.trim() || loading}
-          style={{ width: 38, height: 38, borderRadius: 10, border: "none", background: input.trim() && !loading ? `linear-gradient(135deg,${C.accent},#B8863A)` : C.border, cursor: input.trim() && !loading ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s", flexShrink: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !loading ? "#0F1621" : C.textDim} strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+          style={{ width: 38, height: 38, borderRadius: 10, border: "none", background: input.trim() && !loading ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.border, cursor: input.trim() && !loading ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s", flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !loading ? C.onPrimary : C.textDim} strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
         </button>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
@@ -774,19 +763,24 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       </div>
     </div>
 
-    <style>{`
-      @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-      @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-      @keyframes blink{50%{opacity:0}}
-      *{box-sizing:border-box;margin:0}
-      ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}
-      textarea::placeholder{color:${C.textDim}}
-      input[type=range]{-webkit-appearance:none;appearance:none;background:#C8BFAE;border-radius:6px;outline:none;height:10px}
-      input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},#B8863A);cursor:pointer;border:3px solid #FBF7F0;box-shadow:0 0 10px rgba(212,168,83,.4)}
-      input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},#B8863A);cursor:pointer;border:3px solid #FBF7F0;box-shadow:0 0 10px rgba(212,168,83,.4)}
-      select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237A6B5D' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
-    `}</style>
+    <style>{globalCss()}</style>
   </div>;
+}
+
+// Global CSS shared by the chat and statement screens
+function globalCss() {
+  return `
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+  @keyframes blink{50%{opacity:0}}
+  *{box-sizing:border-box;margin:0}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}
+  textarea::placeholder{color:${C.textDim}}
+  input[type=range]{-webkit-appearance:none;appearance:none;background:${C.track};border-radius:6px;outline:none;height:10px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},${C.primaryEnd});cursor:pointer;border:3px solid ${C.thumbRing};box-shadow:0 0 10px ${C.accentGlow}}
+  input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},${C.primaryEnd});cursor:pointer;border:3px solid ${C.thumbRing};box-shadow:0 0 10px ${C.accentGlow}}
+  select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237A6B5D' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+  `;
 }
 
 export default function PlansparencyApp(props: PlansparencyAppProps) {
