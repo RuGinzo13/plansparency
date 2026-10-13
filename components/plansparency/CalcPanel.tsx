@@ -221,8 +221,9 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     <div style={card}>
       <div style={heading}>{t.calc2StartTitle}</div>
       <div style={{ marginBottom: 16 }}>
-        <label style={label11}>{tpl(t.calc2AgeLabel, { year: limitYear.year })}</label>
+        <label htmlFor="calc-age" style={label11}>{tpl(t.calc2AgeLabel, { year: limitYear.year })}</label>
         <input
+          id="calc-age"
           type="number" min={18} max={100} value={age}
           onChange={(e) => setAge(e.target.value)}
           placeholder="-"
@@ -231,10 +232,11 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         <div style={{ fontSize: 12, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2AgeHelper}</div>
       </div>
       <div style={{ marginBottom: 16 }}>
-        <label style={label11}>{t.calc2SalaryLabel}</label>
+        <label htmlFor="calc-salary" style={label11}>{t.calc2SalaryLabel}</label>
         <div style={{ position: "relative" }}>
           <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, fontSize: 16 }}>$</span>
           <input
+            id="calc-salary"
             type="number" min={0} value={salary}
             onChange={(e) => setSalary(Math.max(0, +e.target.value))}
             style={{ ...inputBase, paddingLeft: 24 }}
@@ -337,9 +339,11 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <div />
           <div style={{ position: "relative" }} {...bubbleProps("traditional")}>
             <button
+              type="button"
+              aria-expanded={!!openBubble("traditional")}
               onClick={() => toggleBubble("traditional")}
               {...focusProps("traditional")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.accentText, textDecoration: "underline dotted", padding: 0 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.accentText, textDecoration: "underline dotted", padding: 0, minHeight: 24, minWidth: 24 }}
             >
               {t.calc2WordTraditional}
             </button>
@@ -350,9 +354,11 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           </div>
           <div style={{ position: "relative" }} {...bubbleProps("roth")}>
             <button
+              type="button"
+              aria-expanded={!!openBubble("roth")}
               onClick={() => toggleBubble("roth")}
               {...focusProps("roth")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.accentText, textDecoration: "underline dotted", padding: 0 }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.accentText, textDecoration: "underline dotted", padding: 0, minHeight: 24, minWidth: 24 }}
             >
               {t.calc2WordRoth}
             </button>
@@ -412,10 +418,11 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{rothBoxBody}</div>
           {!startedChecked && (
             <div style={{ marginTop: 12 }}>
-              <label style={{ fontSize: 12, color: C.text, display: "block", marginBottom: 6, lineHeight: 1.4 }}>{t.calc2Box3Label}</label>
+              <label htmlFor="calc-box3" style={{ fontSize: 12, color: C.text, display: "block", marginBottom: 6, lineHeight: 1.4 }}>{t.calc2Box3Label}</label>
               <div style={{ position: "relative", maxWidth: 220 }}>
                 <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, fontSize: 16 }}>$</span>
                 <input
+                  id="calc-box3"
                   type="number" min={0} value={box3Text} placeholder="-"
                   onChange={(e) => setBox3Text(e.target.value)}
                   style={{ ...inputBase, paddingLeft: 24 }}
@@ -437,8 +444,9 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         </label>
         {startedChecked && (
           <div style={{ marginTop: 12, marginLeft: 28 }}>
-            <label style={label11}>{tpl(t.calc2PaychecksLeftLabel, { year: limitYear.year })}</label>
+            <label htmlFor="calc-paychecks-left" style={label11}>{tpl(t.calc2PaychecksLeftLabel, { year: limitYear.year })}</label>
             <input
+              id="calc-paychecks-left"
               type="number" min={1} max={pp} value={leftText} placeholder={String(pp)}
               onChange={(e) => setLeftText(e.target.value)}
               style={{ ...inputBase, maxWidth: 140 }}
@@ -472,10 +480,11 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
 
             {priorYes && (
               <div style={{ marginTop: 16 }}>
-                <label style={label11}>{tpl(t.calc2PriorAmountLabel, { year: limitYear.year })}</label>
+                <label htmlFor="calc-prior-amount" style={label11}>{tpl(t.calc2PriorAmountLabel, { year: limitYear.year })}</label>
                 <div style={{ position: "relative" }}>
                   <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMuted, fontSize: 16 }}>$</span>
                   <input
+                    id="calc-prior-amount"
                     type="number" min={0} value={priorAmount}
                     onChange={(e) => setPriorAmount(Math.max(0, +e.target.value))}
                     style={{ ...inputBase, paddingLeft: 24 }}
@@ -523,6 +532,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
       </div>
       <input
         type="range" min={0} max={30} step={1} value={pct}
+        aria-label={t.calc2SaveTitle} aria-valuetext={`${pct}%`}
         onChange={(e) => setPct(+e.target.value)}
         style={{ width: "100%", height: 10, cursor: "pointer", accentColor: C.accent }}
       />
@@ -602,7 +612,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         {(hasSH || hasDiscretionaryMatch) && (
           <p style={{ margin: 0 }}>
             {t.calc2NoteWaitPeriod}{" "}
-            <button onClick={onOpenEligibility} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: C.accentText, textDecoration: "underline dotted", fontFamily: F.body, fontSize: 12 }}>
+            <button type="button" onClick={onOpenEligibility} style={{ minHeight: 24, background: "none", border: "none", padding: 0, cursor: "pointer", color: C.accentText, textDecoration: "underline dotted", fontFamily: F.body, fontSize: 12 }}>
               {t.calc2CheckEligibilityLink}
             </button>
           </p>
@@ -673,6 +683,8 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
             <button
               onClick={() => toggleInfoRow(row.key)}
               aria-expanded={open}
+              aria-controls={`calc-info-${row.key}`}
+              type="button"
               style={{
                 width: "100%", minHeight: 52, display: "flex", alignItems: "center", justifyContent: "space-between",
                 background: "none", border: "none", cursor: "pointer", fontFamily: F.body, textAlign: "left", padding: "10px 0", gap: 10,
@@ -681,13 +693,13 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
               <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{row.title}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: row.chip.bg, color: row.chip.fg }}>{row.chip.label}</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </span>
             </button>
             {open && row.body && (
-              <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, paddingBottom: 14 }}>{row.body}</div>
+              <div id={`calc-info-${row.key}`} style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, paddingBottom: 14 }}>{row.body}</div>
             )}
           </div>
         );
@@ -758,9 +770,9 @@ function Bubble({ text, onClose, closeLabel }) {
       <button
         onClick={onClose}
         aria-label={closeLabel}
-        style={{ position: "absolute", top: 6, right: 8, background: "none", border: "none", color: C.surface, cursor: "pointer", fontSize: 14, padding: 4, lineHeight: 1 }}
+        style={{ position: "absolute", top: 2, right: 4, background: "none", border: "none", color: C.surface, cursor: "pointer", fontSize: 14, padding: 4, minWidth: 32, minHeight: 32, lineHeight: 1 }}
       >
-        ✕
+        <span aria-hidden="true">✕</span>
       </button>
       <div style={{ paddingRight: 16 }}>{text}</div>
     </div>

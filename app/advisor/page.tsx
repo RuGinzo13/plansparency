@@ -432,20 +432,19 @@ export default function AdvisorPage() {
     <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 22 }}>
       <label htmlFor="employer-name" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>Plan / employer name (optional)</label>
       <input id="employer-name" value={employerName} onChange={e => setEmployerName(e.target.value)} style={{ width: '100%', height: 48, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, marginBottom: 16, boxSizing: 'border-box' }} />
-      <div
-        role="button" tabIndex={0}
+        <input ref={fileRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
+      <button
+        type="button"
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
         onClick={() => fileRef.current?.click()}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileRef.current?.click(); } }}
-        style={{ border: `2px dashed ${dragOver ? C.accent : C.inputBorder}`, borderRadius: 14, padding: '36px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? C.accentSoft : C.surfaceAlt, transition: 'all .2s', marginBottom: 12 }}
+        style={{ display: 'block', width: '100%', font: 'inherit', color: 'inherit', border: `2px dashed ${dragOver ? C.accent : C.inputBorder}`, borderRadius: 14, padding: '36px 24px', textAlign: 'center', cursor: 'pointer', background: dragOver ? C.accentSoft : C.surfaceAlt, transition: 'all .2s', marginBottom: 12 }}
       >
-        <input ref={fileRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={C.accentText} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginBottom: 10 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-        <p style={{ color: C.text, fontWeight: 600, fontSize: 15, margin: '0 0 4px' }}>Drop PDF here or click to upload</p>
-        <p style={{ color: C.textMuted, fontSize: 13, margin: 0 }}>SPD or plan document, PDF · 25 MB max</p>
-      </div>
+        <span style={{ display: 'block', color: C.text, fontWeight: 600, fontSize: 15, margin: '0 0 4px' }}>Drop PDF here or click to upload</span>
+        <span style={{ display: 'block', color: C.textMuted, fontSize: 13, margin: 0 }}>SPD or plan document, PDF · 25 MB max</span>
+      </button>
       {error && <p role="alert" style={{ color: C.danger, fontSize: 14, margin: '0 0 12px' }}>{error}</p>}
       <button onClick={() => fileRef.current?.click()} style={{ ...btnBase, width: '100%', height: 52, fontSize: 16, background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary }}>Process Plan →</button>
     </div>

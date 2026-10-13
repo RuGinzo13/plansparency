@@ -115,14 +115,14 @@ export function PlanOverview(p: PlanOverviewProps) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <div style={{ ...small11, color: C.barMuted }}>{L('Your advisor', 'Tu asesor')}</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.barText }}>{advisor.firm ? `${advisor.name}, ${advisor.firm}` : advisor.name}</div>
-                {advisor.email && <a href={`mailto:${advisor.email}`} style={{ fontSize: 14, fontWeight: 600, color: C.barLink }}>{advisor.email}</a>}
+                {advisor.email && <a href={`mailto:${advisor.email}`} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 24, fontSize: 14, fontWeight: 600, color: C.barLink }}>{advisor.email}</a>}
               </div>
             )}
             {rkName && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <div style={{ ...small11, color: C.barMuted }}>{L('Recordkeeper', 'Administrador del plan')}</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: C.barText }}>{rkName}</div>
-                {rkUrl && <a href={rkUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, fontWeight: 600, color: C.barLink }}>{L('Log in to your account ↗', 'Entra a tu cuenta ↗')}</a>}
+                {rkUrl && <a href={rkUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 24, fontSize: 14, fontWeight: 600, color: C.barLink }}>{L('Log in to your account ↗', 'Entra a tu cuenta ↗')}</a>}
               </div>
             )}
           </div>
@@ -154,14 +154,14 @@ export function PlanOverview(p: PlanOverviewProps) {
             const written = p.getWritten(c.id);
             return (
               <article key={c.id} id={`card-${c.id}`} style={{ borderRadius: 16, background: C.surface, border: open ? `2px solid ${C.accent}` : `1px solid ${C.border}`, scrollMarginTop: sticky.headerH + 12 }}>
-                <button type="button" aria-expanded={open} onClick={() => p.onToggleCard(c.id)}
+                <button type="button" aria-expanded={open} aria-controls={`card-body-${c.id}`} onClick={() => p.onToggleCard(c.id)}
                   style={{ width: '100%', minHeight: 64, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
                   <span style={{ flex: '1 1 240px', fontFamily: F.display, fontSize: 24, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{c.question}</span>
                   <span style={{ fontSize: 14, fontWeight: 700, padding: '5px 12px', borderRadius: 100, background: c.tone === 'good' ? C.greenSoft : C.accentSoft, color: c.tone === 'good' ? C.green : C.accentText }}>{c.fact}</span>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.accentText} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }}><polyline points="6 9 12 15 18 9" /></svg>
                 </button>
                 {open && (
-                  <div style={{ padding: '0 20px 20px' }}>
+                  <div id={`card-body-${c.id}`} style={{ padding: '0 20px 20px' }}>
                     <AnswerBody
                       written={written} ai={p.getAI(c.id)} lang={lang} stockId={c.id} review={review}
                       recordkeeper={{ name: rkName, url: rkUrl }} advisorEmail={advisor?.email}

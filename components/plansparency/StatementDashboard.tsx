@@ -28,7 +28,7 @@ function SuggestionBox({ t }) {
 
   return (
     <div style={{ marginTop: 8 }}>
-      <button onClick={() => setOpen(!open)} style={{
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="suggestion-panel" style={{
         width: "100%", padding: "14px 18px", background: C.surface, border: `1px solid ${C.border}`,
         borderRadius: 14, cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center",
         justifyContent: "space-between", transition: "all .15s",
@@ -38,16 +38,16 @@ function SuggestionBox({ t }) {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 32, height: 32, borderRadius: 9, background: C.accentTint, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
           <span style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{t.suggestionTitle}</span>
           {suggestions.length > 0 && <span style={{ fontSize: 12, background: C.accentDim, color: C.accent, padding: "2px 8px", borderRadius: 100, fontWeight: 600 }}>{suggestions.length}</span>}
         </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9" /></svg>
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9" /></svg>
       </button>
 
       {open && (
-        <div style={{ marginTop: 8, padding: "18px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, animation: "fadeIn .25s" }}>
+        <div id="suggestion-panel" style={{ marginTop: 8, padding: "18px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, animation: "fadeIn .25s" }}>
           {suggestions.length > 0 && (
             <div style={{ marginBottom: 16 }}>
               {suggestions.map((s, i) => (
@@ -67,16 +67,16 @@ function SuggestionBox({ t }) {
           )}
 
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 12, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", display: "block", marginBottom: 5 }}>{t.suggestionTopic}</label>
-            <input value={topic} onChange={e => setTopic(e.target.value)} placeholder={t.suggestionTopicPlaceholder} style={inputStyle}
+            <label htmlFor="suggestion-topic" style={{ fontSize: 12, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", display: "block", marginBottom: 5 }}>{t.suggestionTopic}</label>
+            <input id="suggestion-topic" value={topic} onChange={e => setTopic(e.target.value)} placeholder={t.suggestionTopicPlaceholder} style={inputStyle}
               onFocus={e => e.target.style.borderColor = C.accent} onBlur={e => e.target.style.borderColor = C.border} />
           </div>
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 12, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", display: "block", marginBottom: 5 }}>{t.suggestionDetails}</label>
-            <textarea value={details} onChange={e => setDetails(e.target.value)} placeholder={t.suggestionDetailsPlaceholder} rows={3} style={inputStyle}
+            <label htmlFor="suggestion-details" style={{ fontSize: 12, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", display: "block", marginBottom: 5 }}>{t.suggestionDetails}</label>
+            <textarea id="suggestion-details" value={details} onChange={e => setDetails(e.target.value)} placeholder={t.suggestionDetailsPlaceholder} rows={3} style={inputStyle}
               onFocus={e => e.target.style.borderColor = C.accent} onBlur={e => e.target.style.borderColor = C.border} />
           </div>
-          <button onClick={handleSubmit} disabled={!topic.trim() || !details.trim()} style={{
+          <button type="button" onClick={handleSubmit} disabled={!topic.trim() || !details.trim()} style={{
             width: "100%", padding: "11px", border: "none", borderRadius: 10, fontFamily: F.body, fontWeight: 600,
             fontSize: 13, cursor: topic.trim() && details.trim() ? "pointer" : "default",
             background: topic.trim() && details.trim() ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.border,
@@ -135,7 +135,7 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
   const ytdLabel = sd.calendarYTD ? `${sd.calendarYTD.start} to ${sd.calendarYTD.end}` : (lang === "es" ? "Año Calendario" : "Calendar Year-to-Date");
 
   const card = (id, children) => (<div style={{ background: C.surface, border: `1px solid ${expandedCards[id] ? C.accent : C.border}`, borderRadius: 14, overflow: "hidden", transition: "border-color .2s" }}>{children}</div>);
-  const cardHeader = (id, icon, title, right) => (<button onClick={() => toggle(id)} style={{ width: "100%", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", justifyContent: "space-between" }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 18 }}>{icon}</span><span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{title}</span></div><div style={{ display: "flex", alignItems: "center", gap: 10 }}>{right}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: expandedCards[id] ? "rotate(180deg)" : "none", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg></div></button>);
+  const cardHeader = (id, icon, title, right) => (<button type="button" onClick={() => toggle(id)} aria-expanded={!!expandedCards[id]} aria-controls={`stmt-card-${id}`} style={{ width: "100%", padding: "14px 16px", background: "none", border: "none", cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", justifyContent: "space-between" }}><div style={{ display: "flex", alignItems: "center", gap: 10 }}><span aria-hidden="true" style={{ fontSize: 18 }}>{icon}</span><span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{title}</span></div><div style={{ display: "flex", alignItems: "center", gap: 10 }}>{right}<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: expandedCards[id] ? "rotate(180deg)" : "none", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg></div></button>);
   const dateLabel = () => (<div style={{ fontSize: 12, color: C.textMuted, marginBottom: 10, padding: "6px 10px", background: C.surfaceAlt, borderRadius: 6, textAlign: "center" }}>{viewMode === "ytd" ? ytdLabel : periodLabel}</div>);
   const dataRow = (label, value, color, definition) => { const v = num(value); if (v === 0) return null; const mx = Math.max(num(mi.total), 1); return (<div style={{ marginBottom: 10 }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}><span style={{ fontSize: 12, color: C.text }}>{label}</span><span style={{ fontSize: 13, fontWeight: 700, color }}>{fmtDollars(v)}</span></div><div style={{ height: 10, background: C.surfaceAlt, borderRadius: 5, overflow: "hidden" }}><div style={{ height: "100%", width: `${Math.min(Math.abs(v) / mx * 100, 100)}%`, background: color, borderRadius: 5, transition: "width .4s ease" }} /></div>{definition && <div style={{ fontSize: 12, color: C.textDim, marginTop: 3, lineHeight: 1.4, paddingLeft: 2 }}>{definition}</div>}</div>); };
 
@@ -144,8 +144,8 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
       <div style={{ textAlign: "center", padding: "14px 0 12px" }}>
         <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, color: C.text, margin: "0 0 10px" }}>{t.stmtDashTitle}</h2>
         <div style={{ display: "inline-flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg }}>
-          <button onClick={() => setViewMode("period")} style={{ padding: "9px 20px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 600, background: viewMode === "period" ? C.accentDim : "transparent", color: viewMode === "period" ? C.accent : C.textMuted, transition: "all .15s" }}>{lang === "es" ? "Este Período" : "This Period"}</button>
-          <button onClick={() => setViewMode("ytd")} style={{ padding: "9px 20px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 600, background: viewMode === "ytd" ? C.greenDim : "transparent", color: viewMode === "ytd" ? C.green : C.textMuted, transition: "all .15s" }}>YTD</button>
+          <button type="button" onClick={() => setViewMode("period")} aria-pressed={viewMode === "period"} style={{ minHeight: 44, padding: "9px 20px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 600, background: viewMode === "period" ? C.accentDim : "transparent", color: viewMode === "period" ? C.accent : C.textMuted, transition: "all .15s" }}>{lang === "es" ? "Este Período" : "This Period"}</button>
+          <button type="button" onClick={() => setViewMode("ytd")} aria-pressed={viewMode === "ytd"} style={{ minHeight: 44, padding: "9px 20px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 600, background: viewMode === "ytd" ? C.greenDim : "transparent", color: viewMode === "ytd" ? C.green : C.textMuted, transition: "all .15s" }}>YTD</button>
         </div>
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6 }}>{viewMode === "ytd" ? ytdLabel : periodLabel}</div>
       </div>
@@ -177,17 +177,17 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
           [lang === "es" ? "Crecimiento" : "Growth", gainLoss, gainLoss >= 0 ? C.green : C.danger, gainLoss >= 0 ? C.greenDim : C.dangerDim, gainLoss >= 0 ? C.greenLine : C.dangerLine, "growth"],
           [lang === "es" ? "Costos" : "Fees", feeTotal, C.accent, C.accentTint, C.accentLine, "fees"],
         ].map(([label, val, color, bg, bdr, cardId], i) => (
-          <div key={i} onClick={() => toggle(cardId)} style={{ padding: "10px 8px", borderRadius: 10, background: bg, border: `1px solid ${bdr}`, textAlign: "center", cursor: "pointer", transition: "transform .15s" }}
+          <button key={i} type="button" onClick={() => toggle(cardId)} aria-expanded={!!expandedCards[cardId]} aria-controls={`stmt-card-${cardId}`} style={{ font: "inherit", width: "100%", minHeight: 44, padding: "10px 8px", borderRadius: 10, background: bg, border: `1px solid ${bdr}`, textAlign: "center", cursor: "pointer", transition: "transform .15s" }}
             onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"} onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-            <div style={{ fontSize: 12, color, textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color }}>{i === 2 ? ((val >= 0 ? "+" : "") + fmtShortAmt(val)) : fmtShortAmt(val)}</div>
-          </div>))}
+            <span style={{ display: "block", fontSize: 12, color, textTransform: "uppercase", marginBottom: 3 }}>{label}</span>
+            <span style={{ display: "block", fontSize: 14, fontWeight: 700, color }}>{i === 2 ? ((val >= 0 ? "+" : "") + fmtShortAmt(val)) : fmtShortAmt(val)}</span>
+          </button>))}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
         {/* Money In */}
         {card("moneyIn", <>{cardHeader("moneyIn", "💰", t.stmtMoneyIn, <span style={{ fontSize: 14, fontWeight: 700, color: C.green }}>{fmtDollars(mi.total)}</span>)}
-          {expandedCards.moneyIn && <div style={{ padding: "0 16px 16px" }}>{dateLabel()}
+          {expandedCards.moneyIn && <div id="stmt-card-moneyIn" style={{ padding: "0 16px 16px" }}>{dateLabel()}
             {dataRow(lang === "es" ? "Diferimiento Salarial (Pre-Tax)" : "Salary Deferral (Pre-Tax)", mi.employeeSalaryDeferral, C.green, lang === "es" ? "Tu dinero, antes de impuestos." : "Your money, before taxes. You pay taxes when you withdraw.")}
             {dataRow("Roth", mi.employeeRoth, CHART.roth, lang === "es" ? "Tu dinero, después de impuestos. Sale libre de impuestos." : "Your money, after taxes. Grows and comes out tax-free.")}
             {dataRow(lang === "es" ? "Match del Empleador" : "Employer Match", mi.employerMatch, CHART.match, lang === "es" ? "Discrecional, sujeto a vesting." : "Discretionary, subject to vesting.")}
@@ -201,18 +201,18 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
 
         {/* Money Out */}
         {card("moneyOut", <>{cardHeader("moneyOut", "📤", t.stmtMoneyOut, <span style={{ fontSize: 14, fontWeight: 700, color: num(mo.total) ? C.danger : C.green }}>{num(mo.total) ? fmtDollars(mo.total) : "$0.00"}</span>)}
-          {expandedCards.moneyOut && <div style={{ padding: "0 16px 16px" }}>{dateLabel()}
+          {expandedCards.moneyOut && <div id="stmt-card-moneyOut" style={{ padding: "0 16px 16px" }}>{dateLabel()}
             {num(mo.total) > 0 ? <>{dataRow(lang === "es" ? "Retiros" : "Withdrawals", mo.withdrawals, C.danger, lang === "es" ? "Dinero sacado de tu cuenta." : "Money taken out of your account.")}
               {dataRow(lang === "es" ? "Distribuciones" : "Distributions", mo.distributions, C.danger, lang === "es" ? "Pagos formales del plan." : "Formal plan payouts.")}
               {dataRow(lang === "es" ? "Rollovers (salidas)" : "Rollovers Out", mo.rollovers, CHART.rolloverOut, lang === "es" ? "Transferido a otro plan o IRA." : "Transferred to another plan or IRA.")}
               {dataRow(lang === "es" ? "Préstamos Tomados" : "Loans Taken", mo.loans, CHART.neutral, lang === "es" ? "Préstamo de tu saldo." : "Loan from your balance. Must be repaid.")}
               <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 4, paddingTop: 10, display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Total</span><span style={{ fontSize: 15, fontWeight: 700, color: C.danger }}>{fmtDollars(mo.total)}</span></div>
-            </> : <div style={{ padding: "8px 0", fontSize: 13, color: C.green, fontWeight: 600 }}>✓ {lang === "es" ? "No salió dinero de tu cuenta" : "No money left your account"}</div>}
+            </> : <div style={{ padding: "8px 0", fontSize: 13, color: C.green, fontWeight: 600 }}><span aria-hidden="true">✓ </span>{lang === "es" ? "No salió dinero de tu cuenta" : "No money left your account"}</div>}
           </div>}</>)}
 
         {/* Fees */}
         {card("fees", <>{cardHeader("fees", "📋", t.stmtFees, <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 14, fontWeight: 700, color: C.accent }}>{fmtDollars(feeTotal)}</span>{feePctOfAssets > 0 && <span style={{ fontSize: 12, padding: "2px 6px", borderRadius: 4, background: C.accentTint, color: C.accent, fontWeight: 600 }}>{feePctOfAssets.toFixed(3)}%</span>}</div>)}
-          {expandedCards.fees && <div style={{ padding: "0 16px 16px" }}>{dateLabel()}
+          {expandedCards.fees && <div id="stmt-card-fees" style={{ padding: "0 16px 16px" }}>{dateLabel()}
             {effectiveFeeItems.length > 0 ? effectiveFeeItems.map((item, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < effectiveFeeItems.length - 1 ? `1px solid ${C.border}` : "none" }}>
                 <span style={{ fontSize: 12, color: C.text }}>{item.name}</span><span style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>{fmtDollars(item.amount)}</span></div>
@@ -235,7 +235,7 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
 
         {/* Growth */}
         {card("growth", <>{cardHeader("growth", "📈", t.stmtGainLoss, <span style={{ fontSize: 14, fontWeight: 700, color: gainLoss >= 0 ? C.green : C.danger }}>{gainLoss >= 0 ? "+" : ""}{fmtDollars(gainLoss)}</span>)}
-          {expandedCards.growth && <div style={{ padding: "0 16px 16px" }}>{dateLabel()}
+          {expandedCards.growth && <div id="stmt-card-growth" style={{ padding: "0 16px 16px" }}>{dateLabel()}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={{ padding: "14px", borderRadius: 10, background: gainLoss >= 0 ? C.greenDim : C.dangerDim, border: `1px solid ${gainLoss >= 0 ? C.greenLine : C.dangerLine}`, textAlign: "center" }}>
                 <div style={{ fontSize: 12, color: C.textMuted, textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Ganancia/Pérdida" : "Gain/Loss"}</div>
@@ -248,7 +248,7 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
 
         {/* Allocation */}
         {allocSegments.some(s => s.value > 0) && card("allocation", <>{cardHeader("allocation", "🎯", t.stmtAllocation, <span style={{ fontSize: 12, color: C.textMuted }}>{allocSegments.filter(s => s.value > 0).map(s => `${s.value}% ${s.label}`).join(" · ")}</span>)}
-          {expandedCards.allocation && <div style={{ padding: "0 16px 16px" }}>
+          {expandedCards.allocation && <div id="stmt-card-allocation" style={{ padding: "0 16px 16px" }}>
             <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
               <DonutChart segments={allocSegments} />
               <div style={{ flex: 1, minWidth: 140 }}>{allocSegments.filter(s => s.value > 0).map((seg, i) => (<div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}><div style={{ width: 14, height: 14, borderRadius: 4, background: seg.color, flexShrink: 0 }} /><span style={{ fontSize: 12, color: C.text, flex: 1 }}>{seg.label}</span><span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{seg.value}%</span></div>))}</div></div>
@@ -257,18 +257,18 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
 
         {/* Investments */}
         {investments.length > 0 && card("investments", <>{cardHeader("investments", "📊", t.stmtInvestments, <span style={{ fontSize: 12, color: C.textMuted }}>{investments.length} {lang === "es" ? "fondos" : "funds"}</span>)}
-          {expandedCards.investments && <div style={{ padding: "0 16px 16px" }}>{investments.map((inv, i) => { const ch = num(inv.endValue) - num(inv.beginValue); return (<div key={i} style={{ padding: "10px 12px", background: C.surfaceAlt, borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 6 }}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span style={{ fontSize: 12, fontWeight: 600, color: C.text, flex: 1, marginRight: 8 }}>{inv.name}</span><span style={{ fontSize: 13, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{fmtDollars(inv.endValue)}</span></div><div style={{ display: "flex", gap: 10, fontSize: 12, color: C.textMuted, flexWrap: "wrap" }}>{inv.category && <span style={{ padding: "1px 5px", background: C.bg, borderRadius: 3 }}>{inv.category}</span>}{num(inv.pctOfAccount) > 0 && <span>{inv.pctOfAccount}%</span>}{num(inv.shares) > 0 && <span>{num(inv.shares).toLocaleString()} {lang === "es" ? "unid." : "shares"}</span>}{num(inv.beginValue) > 0 && <span style={{ color: ch >= 0 ? C.green : C.danger, fontWeight: 600 }}>{ch >= 0 ? "↑" : "↓"} {fmtDollars(Math.abs(ch))}</span>}</div></div>); })}</div>}</>)}
+          {expandedCards.investments && <div id="stmt-card-investments" style={{ padding: "0 16px 16px" }}>{investments.map((inv, i) => { const ch = num(inv.endValue) - num(inv.beginValue); return (<div key={i} style={{ padding: "10px 12px", background: C.surfaceAlt, borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 6 }}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span style={{ fontSize: 12, fontWeight: 600, color: C.text, flex: 1, marginRight: 8 }}>{inv.name}</span><span style={{ fontSize: 13, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{fmtDollars(inv.endValue)}</span></div><div style={{ display: "flex", gap: 10, fontSize: 12, color: C.textMuted, flexWrap: "wrap" }}>{inv.category && <span style={{ padding: "1px 5px", background: C.bg, borderRadius: 3 }}>{inv.category}</span>}{num(inv.pctOfAccount) > 0 && <span>{inv.pctOfAccount}%</span>}{num(inv.shares) > 0 && <span>{num(inv.shares).toLocaleString()} {lang === "es" ? "unid." : "shares"}</span>}{num(inv.beginValue) > 0 && <span style={{ color: ch >= 0 ? C.green : C.danger, fontWeight: 600 }}>{ch >= 0 ? "↑" : "↓"} {fmtDollars(Math.abs(ch))}</span>}</div></div>); })}</div>}</>)}
 
         {/* Sources */}
         {sources.length > 0 && card("sources", <>{cardHeader("sources", "🏦", t.stmtSources, <span style={{ fontSize: 12, color: C.textMuted }}>{sources.length} {lang === "es" ? "fuentes" : "sources"}</span>)}
-          {expandedCards.sources && <div style={{ padding: "0 16px 16px" }}>{sources.map((src, i) => (<div key={i} style={{ padding: "10px 12px", background: C.surfaceAlt, borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 6 }}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{src.name}</span><span style={{ fontSize: 13, fontWeight: 700, color: C.accent }}>{fmtDollars(src.endValue)}</span></div><div style={{ display: "flex", gap: 12, fontSize: 12, color: C.textMuted }}><span>{lang === "es" ? "Investido" : "Vested"}: <strong style={{ color: num(src.vestedPct) === 100 ? C.green : C.accent }}>{src.vestedPct || 100}%</strong></span>{num(src.contributions) > 0 && <span style={{ color: C.green }}>+{fmtDollars(src.contributions)} {viewMode === "ytd" ? "YTD" : (lang === "es" ? "período" : "period")}</span>}</div>{num(src.vestedPct) < 100 && num(src.vestedPct) > 0 && <div style={{ marginTop: 6, height: 6, background: C.bg, borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: `${src.vestedPct}%`, background: C.accent, borderRadius: 3 }} /></div>}</div>))}
+          {expandedCards.sources && <div id="stmt-card-sources" style={{ padding: "0 16px 16px" }}>{sources.map((src, i) => (<div key={i} style={{ padding: "10px 12px", background: C.surfaceAlt, borderRadius: 8, border: `1px solid ${C.border}`, marginBottom: 6 }}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{src.name}</span><span style={{ fontSize: 13, fontWeight: 700, color: C.accent }}>{fmtDollars(src.endValue)}</span></div><div style={{ display: "flex", gap: 12, fontSize: 12, color: C.textMuted }}><span>{lang === "es" ? "Investido" : "Vested"}: <strong style={{ color: num(src.vestedPct) === 100 ? C.green : C.accent }}>{src.vestedPct || 100}%</strong></span>{num(src.contributions) > 0 && <span style={{ color: C.green }}>+{fmtDollars(src.contributions)} {viewMode === "ytd" ? "YTD" : (lang === "es" ? "período" : "period")}</span>}</div>{num(src.vestedPct) < 100 && num(src.vestedPct) > 0 && <div style={{ marginTop: 6, height: 6, background: C.bg, borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: `${src.vestedPct}%`, background: C.accent, borderRadius: 3 }} /></div>}</div>))}
             <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, marginTop: 6, padding: "8px 10px", background: C.surfaceAlt, borderRadius: 8 }}>{lang === "es" ? "Tus contribuciones y Safe Harbor = siempre 100% tuyas. Match y Profit Sharing pueden seguir vesting." : "Your contributions and Safe Harbor = always 100% yours. Match and Profit Sharing may follow a vesting schedule."}</div>
           </div>}</>)}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
-        <button onClick={onUploadAnother} style={{ padding: "14px 18px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", gap: 10, transition: "all .15s" }} onMouseEnter={e => e.currentTarget.style.borderColor = C.accent} onMouseLeave={e => e.currentTarget.style.borderColor = C.border}><span style={{ fontSize: 18 }}>📄</span><span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{t.stmtUploadAnother}</span></button>
-        <button onClick={onChat} style={{ padding: "14px 18px", background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, border: "none", borderRadius: 14, cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 18 }}>💬</span><span style={{ fontSize: 13, fontWeight: 700, color: C.onPrimary }}>{t.stmtAskQuestion}</span></button>
+        <button type="button" onClick={onUploadAnother} style={{ padding: "14px 18px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", gap: 10, transition: "all .15s" }} onMouseEnter={e => e.currentTarget.style.borderColor = C.accent} onMouseLeave={e => e.currentTarget.style.borderColor = C.border}><span aria-hidden="true" style={{ fontSize: 18 }}>📄</span><span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{t.stmtUploadAnother}</span></button>
+        <button type="button" onClick={onChat} style={{ padding: "14px 18px", background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, border: "none", borderRadius: 14, cursor: "pointer", fontFamily: F.body, display: "flex", alignItems: "center", gap: 10 }}><span aria-hidden="true" style={{ fontSize: 18 }}>💬</span><span style={{ fontSize: 13, fontWeight: 700, color: C.onPrimary }}>{t.stmtAskQuestion}</span></button>
       </div>
       <SuggestionBox t={t} />
       <div style={{ textAlign: "center", marginTop: 16, padding: "10px", fontSize: 12, color: C.textDim, lineHeight: 1.5 }}>{t.stmtDisclaimer}</div>

@@ -48,7 +48,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.error) return (
       <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 40, fontFamily: F.body }}>
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: "32px 28px", maxWidth: 480, textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 16 }}>⚠️</div>
+          <div aria-hidden="true" style={{ fontSize: 32, marginBottom: 16 }}>⚠️</div>
           <h2 style={{ fontFamily: F.display, fontSize: 22, color: C.text, marginBottom: 12 }}>Something went wrong</h2>
           <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 24, lineHeight: 1.6 }}>{this.state.error.message}</p>
           <button onClick={() => this.setState({ error: null })} style={{ ...btnBase, padding: "11px 24px", background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary, fontSize: 14 }}>Try again</button>
@@ -545,7 +545,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       {t.privacyPoints.map(([title, body], i) => <div key={i} style={{ marginBottom: 14, paddingLeft: 14, borderLeft: `2px solid ${i === 1 ? C.warning : C.accent}` }}><p style={{ fontSize: 13, fontWeight: 600, color: C.text, margin: "0 0 3px" }}>{title}</p><p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, margin: 0 }}>{body}</p></div>)}
       <div style={{ padding: "12px 14px", borderRadius: 10, background: C.accentTint, border: `1px solid ${C.accentLine}`, marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>📚</span>
+          <span aria-hidden="true" style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>📚</span>
           <div>
             <p style={{ fontSize: 13, fontWeight: 600, color: C.warning, margin: "0 0 4px" }}>
               {t.disclaimer}
@@ -582,7 +582,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     return (
       <main id="main" tabIndex={-1} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
         <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid ${C.accentLine}` }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
         </div>
         <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 6px", textAlign: "center" }}>{t.readingTitle}</h2>
 
@@ -631,12 +631,12 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         <SkipLink lang={lang} />
         <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUpload(e.target.files[0]); e.target.value = ""; }} />
 
-        {showClearConfirm && <Modal>
+        {showClearConfirm && <Modal titleId="clear-confirm-title" onClose={() => setShowClearConfirm(false)}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: C.dangerDim, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
             </div>
-            <h3 style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h3>
+            <h3 id="clear-confirm-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h3>
           </div>
           <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 24 }}>{t.clearConfirmBody}</p>
           <div style={{ display: "flex", gap: 12 }}>
@@ -677,7 +677,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         </main>
         {(
           <div style={{ flexShrink: 0, padding: "8px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: 7 }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textDim} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textDim} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <p style={{ margin: 0, flex: 1, fontSize: 12, color: C.textDim, lineHeight: 1.6 }}>{t.planProvisionDisclaimer}</p>
             <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, flexShrink: 0, minHeight: 36, padding: "3px 10px", fontSize: 12, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .8 }}>{t.clearSession}</button>
           </div>
@@ -707,8 +707,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Statement Chat ──
   return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
     <SkipLink lang={lang} />
-        {showClearConfirm && <Modal><div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}><div style={{ width: 36, height: 36, borderRadius: 10, background: C.dangerDim, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></div>
-      <h3 style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h3></div>
+        {showClearConfirm && <Modal titleId="clear-confirm-title" onClose={() => setShowClearConfirm(false)}><div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}><div style={{ width: 36, height: 36, borderRadius: 10, background: C.dangerDim, display: "flex", alignItems: "center", justifyContent: "center" }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></div>
+      <h3 id="clear-confirm-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h3></div>
       <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 24 }}>{t.clearConfirmBody}</p>
       <div style={{ display: "flex", gap: 12 }}>
         <button onClick={() => setShowClearConfirm(false)} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>{t.clearConfirmNo}</button>
@@ -756,17 +756,17 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
     <div style={{ padding: "10px 16px 12px", borderTop: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
       <div className="focus-wrap" style={{ display: "flex", gap: 8, alignItems: "flex-end", background: C.bg, borderRadius: 14, padding: "4px 4px 4px 14px", border: `1px solid ${C.border}` }}>
-        <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.inputPlaceholder} rows={1}
+        <textarea ref={inputRef} aria-label={t.inputPlaceholder} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.inputPlaceholder} rows={1}
           style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 14, fontFamily: F.body, resize: "none", padding: "9px 0", lineHeight: 1.5, maxHeight: 100, minHeight: 18 }} // a11y-ok: wrapper shows focus
           onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }} />
-        <button onClick={() => sendMessage(input)} disabled={!input.trim() || loading}
+        <button type="button" aria-label={lang === "es" ? "Enviar" : "Send"} onClick={() => sendMessage(input)} disabled={!input.trim() || loading}
           style={{ width: 38, height: 38, borderRadius: 10, border: "none", background: input.trim() && !loading ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.border, cursor: input.trim() && !loading ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s", flexShrink: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !loading ? C.onPrimary : C.textDim} strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !loading ? C.onPrimary : C.textDim} strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
         </button>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
         <span style={{ fontSize: 12, color: C.textDim }}>{t.footerDisclaimer}</span>
-        <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, padding: "3px 10px", fontSize: 12, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
+        <button type="button" onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, minHeight: 36, padding: "3px 10px", fontSize: 12, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
           onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = ".7"}>{t.clearSession}</button>
       </div>
     </div>

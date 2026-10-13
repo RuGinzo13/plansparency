@@ -16,10 +16,11 @@ export function Fm({ t }) { const p = t.split(/(\*\*.*?\*\*)/g); return <>{p.map
 export function SkipLink({ lang }) { return <a href="#main" className="skip-link">{lang === "es" ? "Saltar al contenido principal" : "Skip to main content"}</a>; }
 export function LangToggle({ lang, setLang, disabled }) {
   const labels = { en: "EN", es: "ES" };
+  const names = { en: "English", es: "Español" };
   return (
-    <div style={{ display: "inline-flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.surface, opacity: disabled ? .5 : 1, pointerEvents: disabled ? "none" : "auto" }}>
+    <div role="group" aria-label={lang === "es" ? "Idioma" : "Language"} style={{ display: "inline-flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.surface, opacity: disabled ? .5 : 1, pointerEvents: disabled ? "none" : "auto" }}>
       {["en", "es"].map(l => (
-        <button key={l} onClick={() => setLang(l)} style={{ padding: "7px 11px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 600, background: lang === l ? C.accentDim : "transparent", color: lang === l ? C.accent : C.textMuted, transition: "all .15s" }}>{labels[l]}</button>
+        <button key={l} type="button" lang={l} aria-label={names[l]} aria-pressed={lang === l} onClick={() => setLang(l)} style={{ minWidth: 44, minHeight: 36, padding: "7px 11px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 13, fontWeight: 600, background: lang === l ? C.accentDim : "transparent", color: lang === l ? C.accent : C.textMuted, transition: "all .15s" }}>{labels[l]}</button>
       ))}
     </div>
   );
@@ -30,8 +31,32 @@ export function Logo({ small }) {
     <span style={{ fontFamily: F.display, fontSize: small ? 17 : 22, fontWeight: 600, letterSpacing: "-.01em", color: C.text }}>Plan<span style={{ color: C.accent }}>sparency</span></span>
   </div>;
 }
-export function Shield({ color, sz = 18 }) { return <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>; }
-export function Modal({ children }) { return <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: C.overlayStrong, backdropFilter: "blur(8px)" }}><div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, maxWidth: 520, width: "100%", maxHeight: "85vh", overflowY: "auto", padding: "32px 28px", boxShadow: `0 24px 80px ${C.overlay}` }}>{children}</div></div>; }
+export function Shield({ color, sz = 18 }) { return <svg aria-hidden="true" width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>; }
+// Dialog: names itself with titleId, moves focus in, keeps Tab inside, closes on Escape, returns focus.
+export function Modal({ children, titleId, onClose }: { children?: React.ReactNode; titleId?: string; onClose?: () => void }) {
+  const boxRef = React.useRef<HTMLDivElement>(null);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+  React.useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const focusables = () => Array.from(box.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !(el as HTMLButtonElement).disabled);
+    (focusables()[0] || box).focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); onCloseRef.current?.(); return; }
+      if (e.key !== "Tab") return;
+      const f = focusables();
+      if (!f.length) { e.preventDefault(); box.focus(); return; }
+      const first = f[0], last = f[f.length - 1], cur = document.activeElement;
+      if (e.shiftKey && (cur === first || cur === box || !box.contains(cur))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (cur === last || !box.contains(cur))) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); opener?.focus?.(); };
+  }, []);
+  return <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: C.overlayStrong, backdropFilter: "blur(8px)" }}><div ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, maxWidth: 520, width: "100%", maxHeight: "85vh", overflowY: "auto", padding: "32px 28px", boxShadow: `0 24px 80px ${C.overlay}` }}>{children}</div></div>;
+}
 
 // ── Summary stat chip (Investments) ──
 export function StatChip({ value, label }) {
@@ -66,5 +91,5 @@ export function DonutChart({ segments, size = 140 }) {
     const x4 = cx + ir * Math.cos(startAngle), y4 = cy + ir * Math.sin(startAngle);
     return <path key={i} d={`M${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} L${x3},${y3} A${ir},${ir} 0 ${largeArc},0 ${x4},${y4} Z`} fill={seg.color} />;
   });
-  return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>{paths}</svg>;
+  return <svg aria-hidden="true" width={size} height={size} viewBox={`0 0 ${size} ${size}`}>{paths}</svg>;
 }

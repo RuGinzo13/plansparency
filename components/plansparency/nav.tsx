@@ -11,7 +11,7 @@ export function TabBar({ activeTab, setActiveTab, t }) {
       id: "dashboard",
       label: t.navYourPlan,
       icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
@@ -21,7 +21,7 @@ export function TabBar({ activeTab, setActiveTab, t }) {
       id: "calculator",
       label: t.navCalculator,
       icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="4" y="2" width="16" height="20" rx="2"/>
           <line x1="8" y1="6" x2="16" y2="6"/>
           <line x1="8" y1="10" x2="16" y2="10"/>
@@ -36,7 +36,7 @@ export function TabBar({ activeTab, setActiveTab, t }) {
       id: "keyterms",
       label: t.navKeyTerms,
       icon: (active) => (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
           <line x1="9" y1="7" x2="15" y2="7"/>
@@ -48,7 +48,7 @@ export function TabBar({ activeTab, setActiveTab, t }) {
   ];
 
   return (
-    <div style={{
+    <nav style={{
       display: "flex",
       borderBottom: `1px solid ${C.border}`,
       background: C.surface,
@@ -59,9 +59,12 @@ export function TabBar({ activeTab, setActiveTab, t }) {
         return (
           <button
             key={tab.id}
+            type="button"
+            aria-current={active ? "page" : undefined}
             onClick={() => setActiveTab(tab.id)}
             style={{
               flex: 1,
+              minHeight: 44,
               padding: "10px 4px 8px",
               background: "none",
               border: "none",
@@ -88,7 +91,7 @@ export function TabBar({ activeTab, setActiveTab, t }) {
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }
 
@@ -105,9 +108,11 @@ export function PlanGuideTabBar({ activeTab, setActiveTab, hasFunds }) {
         return (
           <button
             key={tab.id}
+            type="button"
+            aria-current={active ? "page" : undefined}
             onClick={() => setActiveTab(tab.id)}
             style={{
-              flex: 1, padding: "11px 8px 9px",
+              flex: 1, minHeight: 44, padding: "11px 8px 9px",
               background: active ? C.accentDim : "transparent",
               border: "none",
               borderBottom: `2px solid ${active ? C.accent : "transparent"}`,
@@ -144,8 +149,8 @@ export function AppHeader({ accentColor, title, onBack, backLabel, lang, setLang
     <div style={{ padding: "10px 16px", borderBottom: `2px solid ${accentColor}`, background: C.surface, flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
         {onBack && (
-          <button onClick={onBack} style={{
-            padding: "7px 14px", borderRadius: 10, border: `1px solid ${accentColor}`,
+          <button type="button" onClick={onBack} style={{
+            minHeight: 44, padding: "7px 14px", borderRadius: 10, border: `1px solid ${accentColor}`,
             background: `${accentColor}22`, color: accentColor, fontSize: 12, fontFamily: F.body,
             fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
             transition: "all .15s", flexShrink: 0,
@@ -153,7 +158,7 @@ export function AppHeader({ accentColor, title, onBack, backLabel, lang, setLang
             onMouseEnter={e => e.currentTarget.style.background = `${accentColor}44`}
             onMouseLeave={e => e.currentTarget.style.background = `${accentColor}22`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
             {backLabel}
           </button>
         )}

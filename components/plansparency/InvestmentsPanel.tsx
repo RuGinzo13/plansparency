@@ -29,14 +29,14 @@ function FundRow({ fund, showCategory, riskMap, lang }) {
         </span>
         {erPct && (
           <span style={{ display: "flex", alignItems: "baseline", gap: 3, whiteSpace: "nowrap" }}>
-            <span style={{ fontSize: 8, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: ".04em" }}>{es ? "Costo" : "Exp"}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: ".04em" }}>{es ? "Costo" : "Exp"}</span>
             <span style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>{erPct}</span>
           </span>
         )}
         {fund.factSheetUrl && (
           <a
             href={fund.factSheetUrl} target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 12, color: C.accent, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}
+            style={{ display: "inline-flex", alignItems: "center", minHeight: 24, fontSize: 12, color: C.accent, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}
             onMouseEnter={e => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={e => (e.currentTarget.style.textDecoration = "none")}
           >
@@ -82,7 +82,7 @@ function DisclosureCallout({ lang = "en" }) {
       overflow: "hidden",
     }}>
       {/* Always-visible header, tap to expand/collapse */}
-      <button onClick={() => setOpen(o => !o)} style={{
+      <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-controls="invest-disclaimer-body" style={{
         width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "12px 16px", background: "none", border: "none", cursor: "pointer",
         fontFamily: F.body, gap: 8,
@@ -90,14 +90,14 @@ function DisclosureCallout({ lang = "en" }) {
         <span style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: ".05em", textAlign: "left" }}>
           {title}
         </span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"
+        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"
           style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
           <polyline points="6 9 12 15 18 9"/>
         </svg>
       </button>
       {/* Expandable body */}
       {open && (
-        <div style={{ padding: "0 16px 14px", fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>
+        <div id="invest-disclaimer-body" style={{ padding: "0 16px 14px", fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>
           {es ? (<>
             <p style={{ margin: "0 0 8px" }}>Los fondos aquí listados provienen directamente de los documentos de tu plan, tal como fueron proporcionados por tu empleador y administrador. Nada en esta página es una recomendación, respaldo o sugerencia de invertir en ningún fondo específico.</p>
             <p style={{ margin: "0 0 8px" }}>Tú eres responsable de todas las decisiones de inversión en tu plan, incluyendo qué fondos eliges, cuánto asignas y cuándo realizas cambios. Los resultados de tus inversiones, incluyendo ganancias y pérdidas, son tu responsabilidad exclusiva.</p>
@@ -244,8 +244,8 @@ export function InvestmentsPanel({ fundsData, lang, onAddDocument, fundsSource =
       <div style={{ padding: "10px 16px", display: "flex", gap: 6, alignItems: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface, flexWrap: "wrap" }}>
         <span style={{ fontSize: 12, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", marginRight: 4 }}>{es ? "Ordenar:" : "Sort:"}</span>
         {sortOpts.map(opt => (
-          <button key={opt.id} onClick={() => setSortBy(opt.id)} style={{
-            padding: "5px 12px", borderRadius: 100,
+          <button key={opt.id} type="button" aria-pressed={sortBy === opt.id} onClick={() => setSortBy(opt.id)} style={{
+            minHeight: 36, padding: "5px 12px", borderRadius: 100,
             border: `1px solid ${sortBy === opt.id ? C.accent : C.border}`,
             background: sortBy === opt.id ? C.accentDim : "transparent",
             color: sortBy === opt.id ? C.accent : C.textMuted,
