@@ -2,7 +2,7 @@
 **Created:** Oct 12, 2026 in Cowork
 **Run (Auto mode, walk away), AFTER PHASE-17 is done:** `Read "PHASE PROMPTS/PHASE-18-accessibility.md" and execute all steps in order.` 4 steps, 4 commits, each pushed to `main`. No checkpoints. No new npm packages.
 **Open items:** #52 (this), #53 (browser scan with axe, needs Ross to approve an install).
-**Status:** Ready
+**Status:** Done Oct 12, 2026. STEP 1 `2baf1c7`, STEP 2 `fa751b0`, STEP 3 `cd61425`, STEP 4 docs commit (`docs: phase 18 accessibility`).
 **Target:** WCAG 2.2 level AA. This is the benchmark courts and buyers use for "ADA compliant" websites. Code changes alone can't prove compliance: Ross's keyboard + screen reader test (end of this file) and, before public launch, an outside audit are still needed (#53, P3 pre-launch gate).
 
 ## Why

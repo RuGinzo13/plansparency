@@ -595,3 +595,4 @@ The addressable sections of the app — superseded by the updated Component Map 
 
 - **Oct 12, 2026: Sunrise theme chosen (#51), PHASE-17.** **Accessibility target WCAG 2.2 AA (#52), PHASE-18.** Standing rules in CLAUDE.md "Accessibility Rules"; every phase runs `check-a11y.ts` + `check-theme.ts`; Cowork reviews diffs against them; Ross tests keyboard + VoiceOver on screen-changing phases.
 - **Oct 12, 2026: Sunrise theme built (#51).** Every color lives in `theme.ts` (`C`, `CHART`); `scripts/check-theme.ts` fails on any color outside it and on contrast under 4.5. Commits `56c16f4`, `28e9a76`.
+- **Oct 12, 2026: Accessibility target is WCAG 2.2 AA (#52 built).** `scripts/check-a11y.ts` and `scripts/check-theme.ts` run on every phase.
