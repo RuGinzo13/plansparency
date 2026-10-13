@@ -13,12 +13,13 @@ export function Md({ text }) {
 export function Fm({ t }) { const p = t.split(/(\*\*.*?\*\*)/g); return <>{p.map((s, i) => s.startsWith("**") && s.endsWith("**") ? <strong key={i} style={{ color: C.accentText }}>{s.slice(2, -2)}</strong> : <span key={i}>{s}</span>)}</>; }
 
 // ── Shared UI ──
+export function SkipLink({ lang }) { return <a href="#main" className="skip-link">{lang === "es" ? "Saltar al contenido principal" : "Skip to main content"}</a>; }
 export function LangToggle({ lang, setLang, disabled }) {
   const labels = { en: "EN", es: "ES" };
   return (
     <div style={{ display: "inline-flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.surface, opacity: disabled ? .5 : 1, pointerEvents: disabled ? "none" : "auto" }}>
       {["en", "es"].map(l => (
-        <button key={l} onClick={() => setLang(l)} style={{ padding: "7px 11px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 11, fontWeight: 600, background: lang === l ? C.accentDim : "transparent", color: lang === l ? C.accent : C.textMuted, transition: "all .15s" }}>{labels[l]}</button>
+        <button key={l} onClick={() => setLang(l)} style={{ padding: "7px 11px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 600, background: lang === l ? C.accentDim : "transparent", color: lang === l ? C.accent : C.textMuted, transition: "all .15s" }}>{labels[l]}</button>
       ))}
     </div>
   );
@@ -41,7 +42,7 @@ export function StatChip({ value, label }) {
       display: "flex", flexDirection: "column", gap: 1,
     }}>
       <span style={{ fontSize: 16, fontWeight: 700, color: C.text, fontFamily: F.display, lineHeight: 1.1 }}>{value}</span>
-      <span style={{ fontSize: 9, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: ".05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: ".05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
     </div>
   );
 }

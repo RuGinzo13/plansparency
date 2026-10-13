@@ -41,6 +41,12 @@ const cssText = /(?:^|[\s;{])color:\s*(#[0-9a-fA-F]{3,8})\s*;/.exec(css)?.[1];
 check(cssBg?.toLowerCase() === C.bg.toLowerCase(), `globals.css background ${cssBg} should equal C.bg ${C.bg}`);
 check(cssText?.toLowerCase() === C.text.toLowerCase(), `globals.css color ${cssText} should equal C.text ${C.text}`);
 
+// Every other color in globals.css (focus ring, skip link) must also be a theme color.
+const allowed = new Set([C.bg, C.text, C.focus, C.focusOnDark, C.surface].map((c) => c.toLowerCase()));
+for (const m of css.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) {
+  check(allowed.has(m[0].toLowerCase()), `globals.css uses ${m[0]}, which is not a theme color (bg, text, focus, focusOnDark, surface)`);
+}
+
 // 3. Contrast (WCAG): text pairs need 4.5, chart colors against the surface need 3.0 (shapes, not text).
 function lum(hex: string): number {
   const h = hex.length === 4 ? '#' + [...hex.slice(1)].map((x) => x + x).join('') : hex;

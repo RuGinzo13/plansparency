@@ -28,7 +28,7 @@ export function PlanGlance({ groups, activeTopic, onPick, lang }: PlanGlanceProp
           <div key={g.topic} style={{ padding: 12, borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 8, background: active ? C.surface : 'transparent', border: active ? `2px solid ${C.text}` : '2px solid transparent', boxShadow: active ? `0 6px 18px ${C.shadow}` : 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: active ? C.text : C.accentText }}>{g.label}</span>
-              {active && <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 100, background: C.text, color: C.surface }}>{es ? 'Viendo' : 'Showing'}</span>}
+              {active && <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 100, background: C.text, color: C.surface }}>{es ? 'Viendo' : 'Showing'}</span>}
             </div>
             {g.rows.map((row) => (
               <button

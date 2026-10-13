@@ -36,7 +36,7 @@ interface PlanOverviewProps {
 }
 
 const label12 = { fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' } as const;
-const small11 = { fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.textMuted } as const;
+const small11 = { fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.textMuted } as const;
 
 // "Your plan": top bar, topic tabs, question cards that open in place, and the grouped panel.
 export function PlanOverview(p: PlanOverviewProps) {
@@ -101,7 +101,7 @@ export function PlanOverview(p: PlanOverviewProps) {
       <style>{`@media (max-width: 700px) { .plan-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }`}</style>
 
       {/* Top bar */}
-      <div ref={p.headerRef} style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bar, borderBottom: `2px solid ${C.barLine}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
+      <div ref={p.headerRef} className="on-dark" style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bar, borderBottom: `2px solid ${C.barLine}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 20px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px 32px' }}>
           <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ ...label12, color: C.barMuted }}>{L('Your plan', 'Tu plan')}</div>

@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ plan_id: 
 // ── Not-found fallback ─────────────────────────────────────────────────────────
 function PlanNotFound({ note }: { note?: string }) {
   return (
-    <div style={{
+    <main id="main" className="on-dark" style={{
       minHeight: '100vh',
       background: C.bar,
       display: 'flex',
@@ -34,7 +34,7 @@ function PlanNotFound({ note }: { note?: string }) {
         Plan not found. Ask your plan advisor for the correct link.
         {note && <><br /><span style={{ color: C.barMuted, fontSize: 13 }}>{note}</span></>}
       </p>
-    </div>
+    </main>
   );
 }
 

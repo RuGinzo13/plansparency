@@ -4,7 +4,7 @@ import { parsePlanData, stripPlanData } from '@/lib/plan/plandata';
 import { endSessionFiles } from '@/lib/client/session';
 import { i18n } from '@/lib/i18n';
 import { C, F, btnBase } from '@/components/plansparency/theme';
-import { Logo } from '@/components/plansparency/ui';
+import { Logo, SkipLink } from '@/components/plansparency/ui';
 
 const fileToBase64 = (f: File): Promise<string> => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res((r.result as string).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
 
@@ -65,7 +65,7 @@ const controlStyle = { width: '100%', minHeight: 44, padding: '0 12px', borderRa
 
 function ReviewField({ field, draft, editing, onChange }: { field: FieldSpec; draft: any; editing: boolean; onChange: (path: string[], value: any, mirror?: string[]) => void }) {
   const value = getAt(draft, field.path);
-  const caption = <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>{field.label}</div>;
+  const caption = <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>{field.label}</div>;
   const wrap = (children: React.ReactNode) => <div style={{ marginBottom: 10 }}>{caption}{children}</div>;
   const readStyle = { fontSize: 15, lineHeight: 1.5, color: C.text } as const;
 
@@ -304,9 +304,10 @@ export default function AdvisorPage() {
   );
   const shell = (children: React.ReactNode) => (
     <div ref={rootRef} style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: F.body }}>
+      <SkipLink lang="en" />
       <div style={{ maxWidth: 1120, margin: '0 auto', padding: wide ? '28px 32px 48px' : '16px 16px 32px', boxSizing: 'border-box' }}>
         {Header}
-        {children}
+        <main id="main" tabIndex={-1}>{children}</main>
       </div>
     </div>
   );
@@ -358,7 +359,7 @@ export default function AdvisorPage() {
           );
         })}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, marginTop: 20 }}>
-          <label htmlFor="reviewer-name" style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>Your name</label>
+          <label htmlFor="reviewer-name" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>Your name</label>
           <input id="reviewer-name" value={reviewerName} onChange={e => setReviewerName(e.target.value)} required style={{ width: '100%', height: 48, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, boxSizing: 'border-box', marginBottom: 12 }} />
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, fontSize: 14, lineHeight: 1.5, cursor: 'pointer' }}>
             <input type="checkbox" checked={attest} onChange={e => setAttest(e.target.checked)} style={{ width: 18, height: 18, marginTop: 3, flexShrink: 0 }} />
@@ -429,7 +430,7 @@ export default function AdvisorPage() {
     </div>
   ) : (
     <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 22 }}>
-      <label htmlFor="employer-name" style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>Plan / employer name (optional)</label>
+      <label htmlFor="employer-name" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>Plan / employer name (optional)</label>
       <input id="employer-name" value={employerName} onChange={e => setEmployerName(e.target.value)} style={{ width: '100%', height: 48, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, marginBottom: 16, boxSizing: 'border-box' }} />
       <div
         role="button" tabIndex={0}

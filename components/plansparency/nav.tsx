@@ -80,7 +80,7 @@ export function TabBar({ activeTab, setActiveTab, t }) {
           >
             {tab.icon(active)}
             <span style={{
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: active ? 700 : 500,
               letterSpacing: ".03em",
               textTransform: "uppercase",
@@ -124,7 +124,7 @@ export function PlanGuideTabBar({ activeTab, setActiveTab, hasFunds }) {
             </span>
             {tab.id === "investments" && !hasFunds && (
               <span style={{
-                fontSize: 9, fontWeight: 700, background: C.accentDim, color: C.accent,
+                fontSize: 12, fontWeight: 700, background: C.accentDim, color: C.accent,
                 border: `1px solid ${C.accent}44`, borderRadius: 100, padding: "1px 6px",
                 textTransform: "uppercase", letterSpacing: ".04em",
               }}>
@@ -166,11 +166,11 @@ export function AppHeader({ accentColor, title, onBack, backLabel, lang, setLang
           <Logo small />
         )}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: C.green, background: C.greenDim, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.greenLine}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: C.green, background: C.greenDim, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.greenLine}` }}>
             <Shield color={C.green} sz={10} />{t.securityBadge}
           </div>
           <LangToggle lang={lang} setLang={setLang} disabled={loading} />
-          <div style={{ fontSize: 10, color: C.warning, background: C.accentTint, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.accentLine}`, whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: 12, color: C.warning, background: C.accentTint, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.accentLine}`, whiteSpace: "nowrap" }}>
             {t.disclaimer}
           </div>
         </div>

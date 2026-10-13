@@ -41,9 +41,9 @@ const heading = { fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C
 const inputBase = {
   background: C.field, border: `1px solid ${C.inputBorder}`, borderRadius: 8,
   height: 48, fontSize: 16, padding: "0 12px", width: "100%", boxSizing: "border-box",
-  color: C.text, fontFamily: F.body, outline: "none", fontVariantNumeric: "tabular-nums",
+  color: C.text, fontFamily: F.body, fontVariantNumeric: "tabular-nums",
 };
-const label11 = { fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".04em", display: "block", marginBottom: 6 };
+const label11 = { fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".04em", display: "block", marginBottom: 6 };
 
 export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   const rootRef = useRef(null);
@@ -290,7 +290,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <div style={{ fontSize: 12, color: C.textDim }}>{t.calc2CatchUpSub}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[catchUpChip].bg, color: chipColor[catchUpChip].fg }}>
+          <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[catchUpChip].bg, color: chipColor[catchUpChip].fg }}>
             {chipLabel[catchUpChip]}
           </span>
           <span style={{
@@ -309,7 +309,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <div style={{ fontSize: 12, color: C.textDim }}>{t.calc2SuperCatchUpSub}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[superChip].bg, color: chipColor[superChip].fg }}>
+          <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[superChip].bg, color: chipColor[superChip].fg }}>
             {chipLabel[superChip]}
           </span>
           <span style={{
@@ -343,7 +343,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
             >
               {t.calc2WordTraditional}
             </button>
-            <span style={{ fontSize: 11, color: C.textDim }}> {t.calc2SuffixBeforeTax}</span>
+            <span style={{ fontSize: 12, color: C.textDim }}> {t.calc2SuffixBeforeTax}</span>
             {openBubble("traditional") && (
               <Bubble text={traditionalTerm.def} onClose={closeBubbles} closeLabel={t.calc2CloseBubble} />
             )}
@@ -356,7 +356,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
             >
               {t.calc2WordRoth}
             </button>
-            <span style={{ fontSize: 11, color: C.textDim }}> {t.calc2SuffixAfterTax}</span>
+            <span style={{ fontSize: 12, color: C.textDim }}> {t.calc2SuffixAfterTax}</span>
             {openBubble("roth") && (
               <Bubble text={rothTerm.def} onClose={closeBubbles} closeLabel={t.calc2CloseBubble} />
             )}
@@ -378,7 +378,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         )}
 
         {r.hasPreTaxUnknown && (
-          <div style={{ fontSize: 11, color: C.textDim, marginTop: 8, lineHeight: 1.4 }}>{t.calc2PreTaxUnknownNote}</div>
+          <div style={{ fontSize: 12, color: C.textDim, marginTop: 8, lineHeight: 1.4 }}>{t.calc2PreTaxUnknownNote}</div>
         )}
 
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 10, lineHeight: 1.5 }}>
@@ -424,7 +424,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
             </div>
           )}
           {r.rothBasis !== "newHire" && (
-            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 8, lineHeight: 1.4 }}>{t.calc2RothBoxFooter}</div>
+            <div style={{ fontSize: 12, color: C.textMuted, marginTop: 8, lineHeight: 1.4 }}>{t.calc2RothBoxFooter}</div>
           )}
         </div>
       )}
@@ -443,7 +443,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
               onChange={(e) => setLeftText(e.target.value)}
               style={{ ...inputBase, maxWidth: 140 }}
             />
-            <div style={{ fontSize: 11, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2PaychecksLeftHelper}</div>
+            <div style={{ fontSize: 12, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2PaychecksLeftHelper}</div>
 
             <div style={{ marginTop: 16 }}>
               <label style={label11}>{tpl(t.calc2PriorQuestion, { year: limitYear.year })}</label>
@@ -481,7 +481,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
                     style={{ ...inputBase, paddingLeft: 24 }}
                   />
                 </div>
-                <div style={{ fontSize: 11, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2PriorHelper}</div>
+                <div style={{ fontSize: 12, color: C.textDim, marginTop: 6, lineHeight: 1.4 }}>{t.calc2PriorHelper}</div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginTop: 12 }}>
                   <span>{t.calc2PriorUsedRow}</span>
@@ -526,7 +526,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         onChange={(e) => setPct(+e.target.value)}
         style={{ width: "100%", height: 10, cursor: "pointer", accentColor: C.accent }}
       />
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textDim, marginTop: 4 }}><span>0%</span><span>30%</span></div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: C.textDim, marginTop: 4 }}><span>0%</span><span>30%</span></div>
 
       {matchHint && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 12, lineHeight: 1.4 }}>{matchHint}</div>}
 
@@ -592,7 +592,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         </div>
       )}
 
-      <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.5, marginTop: 16 }}>
+      <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.5, marginTop: 16 }}>
         <p style={{ margin: "0 0 6px" }}>
           {startedChecked
             ? tpl(t.calc2NoteStartedPartYear, { n: r.paychecksCounted, year: limitYear.year })
@@ -602,7 +602,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         {(hasSH || hasDiscretionaryMatch) && (
           <p style={{ margin: 0 }}>
             {t.calc2NoteWaitPeriod}{" "}
-            <button onClick={onOpenEligibility} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: C.accentText, textDecoration: "underline dotted", fontFamily: F.body, fontSize: 11 }}>
+            <button onClick={onOpenEligibility} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: C.accentText, textDecoration: "underline dotted", fontFamily: F.body, fontSize: 12 }}>
               {t.calc2CheckEligibilityLink}
             </button>
           </p>
@@ -680,7 +680,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
             >
               <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{row.title}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: row.chip.bg, color: row.chip.fg }}>{row.chip.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: row.chip.bg, color: row.chip.fg }}>{row.chip.label}</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -706,7 +706,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>{t.calc2Title}</h2>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 12, color: C.textDim }}>{tpl(t.calc2LimitsYear, { year: limitYear.year })}</div>
-            {limitYear.isFallback && <div style={{ fontSize: 11, color: C.warning, marginTop: 2 }}>{tpl(t.calc2LimitsFallback, { currentYear })}</div>}
+            {limitYear.isFallback && <div style={{ fontSize: 12, color: C.warning, marginTop: 2 }}>{tpl(t.calc2LimitsFallback, { currentYear })}</div>}
           </div>
         </div>
 

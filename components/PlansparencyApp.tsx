@@ -26,7 +26,7 @@ import { endSessionFiles, INACTIVITY_LIMIT_MS } from '@/lib/client/session';
 import { i18n } from '@/lib/i18n';
 import { uploadFile, callClaude } from '@/lib/client/api';
 import { C, F, STAGE, btnBase } from '@/components/plansparency/theme';
-import { Md, Modal, LangToggle, Logo, Shield } from '@/components/plansparency/ui';
+import { Md, Modal, LangToggle, Logo, Shield, SkipLink } from '@/components/plansparency/ui';
 import { TabBar, PlanGuideTabBar, AppHeader } from '@/components/plansparency/nav';
 import { KeyTermsPanel } from '@/components/plansparency/KeyTermsPanel';
 import { InvestmentsPanel } from '@/components/plansparency/InvestmentsPanel';
@@ -79,6 +79,7 @@ interface PlansparencyAppProps {
 // ── Main App ──
 function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advisorFirmName, planId, advisorSlug, initialPdfBase64 = null, initialPlanData = null, initialMessages = [], initialStage = STAGE.CHOOSER, allowUpload = false }: PlansparencyAppProps = {}) {
   const [lang, setLang] = useState("en");
+  useEffect(() => { document.documentElement.lang = lang === "es" ? "es" : "en"; }, [lang]);
   const [stage, setStage] = useState(initialStage);
   const [docType, setDocType] = useState(null); // "spd" or "statement"
   const [fileName, setFileName] = useState("");
@@ -536,7 +537,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const showChips = (stage === STAGE.CHAT || stage === STAGE.APP) && !loading && lastMsg?.role === "assistant";
 
   // ── Privacy ──
-  if (stage === "privacy") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+  if (stage === "privacy") return <main id="main" tabIndex={-1} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
     <div style={{ maxWidth: 540, width: "100%" }}><div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: "32px 28px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}><div style={{ width: 38, height: 38, borderRadius: 12, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.accentLine}` }}><Shield color={C.accent} sz={20} /></div>
         <h2 style={{ fontFamily: F.display, fontSize: 24, fontWeight: 600, margin: 0 }}>{t.privacyTitle}</h2></div>
@@ -560,26 +561,26 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
         <button onClick={() => { pendingFilesRef.current = []; setStage("landing"); }} style={{ ...btnBase, flex: 1, padding: "12px", fontSize: 14, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>{t.privacyCancel}</button>
         <button onClick={proceedAfterConsent} style={{ ...btnBase, flex: 1, padding: "12px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary }}><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Shield color={C.onPrimary} sz={14} />{t.privacyAgree}</span></button>
-      </div></div></div></div>;
+      </div></div></div></main>;
 
   // ── Start screens (chooser + landing) ──
   if (stage === "chooser" || stage === "landing") return <Landing allowUpload={allowUpload} t={t} lang={lang} setLang={setLang} stage={stage} setStage={setStage} docType={docType} setDocType={setDocType} stagedFiles={stagedFiles} setStagedFiles={setStagedFiles} fileInputRef={fileInputRef} stageFile={stageFile} handleDrop={handleDrop} dragOver={dragOver} setDragOver={setDragOver} uploadError={uploadError} proceedToPrivacy={proceedToPrivacy} />;
 
   // ── Cleared ──
-  if (stage === "cleared") return <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
+  if (stage === "cleared") return <main id="main" tabIndex={-1} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
     <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}><Shield color={C.accent} sz={24} /></div>
     <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.clearedTitle}</h2>
     <p style={{ color: C.textMuted, fontSize: 14, margin: "0 0 28px", textAlign: "center" }}>
       {sessionEndReason === "idle" ? t.calcSessionEndedIdle : sessionEndReason === "expired" ? t.errSessionExpired : t.clearedBody}
     </p>
-    <button onClick={() => { setSessionEndReason(null); setStage("chooser"); }} style={{ ...btnBase, padding: "12px 28px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary }}>{t.clearedButton}</button></div>;
+    <button onClick={() => { setSessionEndReason(null); setStage("chooser"); }} style={{ ...btnBase, padding: "12px 28px", fontSize: 14, background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary }}>{t.clearedButton}</button></main>;
 
   // ── Uploading ──
   if (stage === "uploading") {
     const isMulti = uploadDocCount > 1;
     const es = lang === "es";
     return (
-      <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
+      <main id="main" tabIndex={-1} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
         <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid ${C.accentLine}` }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
         </div>
@@ -611,14 +612,14 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
         {/* Percentage label */}
         {uploadPhase === 'uploading' && (
-          <p style={{ color: C.textDim, fontSize: 11, margin: 0, fontVariantNumeric: "tabular-nums" }}>{uploadProgress}%</p>
+          <p style={{ color: C.textDim, fontSize: 12, margin: 0, fontVariantNumeric: "tabular-nums" }}>{uploadProgress}%</p>
         )}
 
         <style>{`
           @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.75}}
           @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
         `}</style>
-      </div>
+      </main>
     );
   }
 
@@ -627,6 +628,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   if (stage === STAGE.APP) {
     return (
       <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
+        <SkipLink lang={lang} />
         <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUpload(e.target.files[0]); e.target.value = ""; }} />
 
         {showClearConfirm && <Modal>
@@ -647,6 +649,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
         <TabBar activeTab={activeTab} setActiveTab={setActiveTab} t={t} />
 
+        <main id="main" tabIndex={-1} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         {activeTab === "dashboard" && (
           <>
             <PlanGuideTabBar
@@ -671,11 +674,12 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openCard} onOpenCalculator={() => setActiveTab("calculator")} />}
 
+        </main>
         {(
           <div style={{ flexShrink: 0, padding: "8px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: 7 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textDim} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <p style={{ margin: 0, flex: 1, fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>{t.planProvisionDisclaimer}</p>
-            <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, flexShrink: 0, minHeight: 36, padding: "3px 10px", fontSize: 11, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .8 }}>{t.clearSession}</button>
+            <p style={{ margin: 0, flex: 1, fontSize: 12, color: C.textDim, lineHeight: 1.6 }}>{t.planProvisionDisclaimer}</p>
+            <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, flexShrink: 0, minHeight: 36, padding: "3px 10px", fontSize: 12, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .8 }}>{t.clearSession}</button>
           </div>
         )}
 
@@ -686,19 +690,23 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
   // ── Statement Dashboard ──
   if (stage === "stmtDashboard") return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
+    <SkipLink lang={lang} />
         <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUploadStatement(e.target.files[0]); e.target.value = ""; }} />
 
     <AppHeader accentColor={C.green} title={stmtData?.planName || fileName || "Your Statement"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
 
+    <main id="main" tabIndex={-1} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
     <StatementDashboard
       t={t} stmtData={stmtData} lang={lang}
       onChat={() => setStage("chat")}
       onUploadAnother={startFreshUpload}
     />
+    </main>
   </div>;
 
   // ── Statement Chat ──
   return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
+    <SkipLink lang={lang} />
         {showClearConfirm && <Modal><div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}><div style={{ width: 36, height: 36, borderRadius: 10, background: C.dangerDim, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></div>
       <h3 style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h3></div>
       <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 24 }}>{t.clearConfirmBody}</p>
@@ -716,7 +724,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       advisorLogo={advisorLogo} advisorFirmName={advisorFirmName}
     />
 
-    <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+    <main id="main" tabIndex={-1} style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
       {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
         <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
           <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? C.accentTint : C.border}`, fontSize: 14, lineHeight: 1.6 }}>
@@ -744,12 +752,12 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           onMouseEnter={e => e.currentTarget.style.background = C.accentGlow} onMouseLeave={e => e.currentTarget.style.background = C.accentDim}
         >{q}</button>)}</div>}
       <div ref={chatEndRef} />
-    </div>
+    </main>
 
     <div style={{ padding: "10px 16px 12px", borderTop: `1px solid ${C.border}`, background: C.surface, flexShrink: 0 }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "flex-end", background: C.bg, borderRadius: 14, padding: "4px 4px 4px 14px", border: `1px solid ${C.border}` }}>
+      <div className="focus-wrap" style={{ display: "flex", gap: 8, alignItems: "flex-end", background: C.bg, borderRadius: 14, padding: "4px 4px 4px 14px", border: `1px solid ${C.border}` }}>
         <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.inputPlaceholder} rows={1}
-          style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 14, fontFamily: F.body, resize: "none", padding: "9px 0", lineHeight: 1.5, maxHeight: 100, minHeight: 18 }}
+          style={{ flex: 1, background: "none", border: "none", outline: "none", color: C.text, fontSize: 14, fontFamily: F.body, resize: "none", padding: "9px 0", lineHeight: 1.5, maxHeight: 100, minHeight: 18 }} // a11y-ok: wrapper shows focus
           onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }} />
         <button onClick={() => sendMessage(input)} disabled={!input.trim() || loading}
           style={{ width: 38, height: 38, borderRadius: 10, border: "none", background: input.trim() && !loading ? `linear-gradient(135deg,${C.accent},${C.primaryEnd})` : C.border, cursor: input.trim() && !loading ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s", flexShrink: 0 }}>
@@ -757,8 +765,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         </button>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-        <span style={{ fontSize: 10, color: C.textDim }}>{t.footerDisclaimer}</span>
-        <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, padding: "3px 10px", fontSize: 10, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
+        <span style={{ fontSize: 12, color: C.textDim }}>{t.footerDisclaimer}</span>
+        <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, padding: "3px 10px", fontSize: 12, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .7 }}
           onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = ".7"}>{t.clearSession}</button>
       </div>
     </div>
@@ -776,7 +784,7 @@ function globalCss() {
   *{box-sizing:border-box;margin:0}
   ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}
   textarea::placeholder{color:${C.textDim}}
-  input[type=range]{-webkit-appearance:none;appearance:none;background:${C.track};border-radius:6px;outline:none;height:10px}
+  input[type=range]{-webkit-appearance:none;appearance:none;background:${C.track};border-radius:6px;height:10px}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},${C.primaryEnd});cursor:pointer;border:3px solid ${C.thumbRing};box-shadow:0 0 10px ${C.accentGlow}}
   input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,${C.accent},${C.primaryEnd});cursor:pointer;border:3px solid ${C.thumbRing};box-shadow:0 0 10px ${C.accentGlow}}
   select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237A6B5D' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}

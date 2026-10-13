@@ -16,6 +16,7 @@ export const C = {
   greenLine: "rgba(22,101,52,.20)", dangerLine: "rgba(185,28,28,.20)",
   shadow: "rgba(17,24,39,.08)", shadowStrong: "rgba(17,24,39,.25)",
   overlay: "rgba(17,24,39,.60)", overlayStrong: "rgba(17,24,39,.75)",
+  focus: "#111827", focusOnDark: "#FFFFFF",
   bar: "#1F2937", barLine: "#EA580C", barText: "#FFFFFF", barMuted: "#CBD2DC", barLink: "#FDBA74",
 };
 // Chart and legend colors (StatementDashboard)

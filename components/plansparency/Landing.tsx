@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { C, F, btnBase } from './theme';
-import { Logo, LangToggle, Shield } from './ui';
+import { Logo, LangToggle, Shield, SkipLink } from './ui';
 import { IRS_LIMITS, getLimitYear } from '@/lib/plan/irs';
 import { fmtRounded } from '@/lib/format';
 
@@ -196,11 +196,11 @@ export function Landing({ allowUpload = false, t, lang, setLang, stage, setStage
   const Example = (
     <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${C.border}` }}>
       <div style={{ background: C.surfaceAlt, padding: "20px 22px" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: C.textMuted, marginBottom: 10 }}>{t.landExampleLabel}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: C.textMuted, marginBottom: 10 }}>{t.landExampleLabel}</div>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 14, lineHeight: 1.55, color: C.textMuted }}>“{EXAMPLE_QUOTE}”</div>
       </div>
       <div style={{ background: C.text, color: C.surface, padding: "20px 22px" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: C.borderLight, marginBottom: 10 }}>{t.landExamplePlain}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: C.borderLight, marginBottom: 10 }}>{t.landExamplePlain}</div>
         <div style={{ fontFamily: F.display, fontSize: wide ? 30 : 24, lineHeight: 1.25, fontWeight: 600 }}>
           {tpl(t.landExampleAnswer, { deferral: fmtRounded(deferral), year: limitYear.year })}
         </div>
@@ -248,9 +248,11 @@ export function Landing({ allowUpload = false, t, lang, setLang, stage, setStage
 
   return (
     <div ref={rootRef} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body }}>
+      <SkipLink lang={lang} />
       {allowUpload && <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); e.target.value = ""; }} />}
       <div style={{ maxWidth: 1120, margin: "0 auto", padding: wide ? "28px 32px 40px" : "16px 16px 32px", boxSizing: "border-box" }}>
         {Header}
+        <main id="main" tabIndex={-1}>
         {wide ? (
           <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: 56, alignItems: "start" }}>
             {Left}
@@ -262,6 +264,7 @@ export function Landing({ allowUpload = false, t, lang, setLang, stage, setStage
             {Right}
           </div>
         )}
+        </main>
         {Footer}
       </div>
     </div>

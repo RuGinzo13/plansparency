@@ -16,12 +16,12 @@ function FundRow({ fund, showCategory, riskMap, lang }) {
       <div style={{ flex: 1, minWidth: 150 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: showCategory && fund.category ? 2 : 0, lineHeight: 1.3 }}>{fund.name}</div>
         {showCategory && fund.category && (
-          <div style={{ fontSize: 10, color: C.textDim }}>{fund.category}</div>
+          <div style={{ fontSize: 12, color: C.textDim }}>{fund.category}</div>
         )}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginLeft: "auto" }}>
         <span style={{
-          fontSize: 10, fontWeight: 700, color: risk.color,
+          fontSize: 12, fontWeight: 700, color: risk.color,
           background: `${risk.color}18`, border: `1px solid ${risk.color}30`,
           borderRadius: 100, padding: "2px 8px", whiteSpace: "nowrap",
         }}>
@@ -30,13 +30,13 @@ function FundRow({ fund, showCategory, riskMap, lang }) {
         {erPct && (
           <span style={{ display: "flex", alignItems: "baseline", gap: 3, whiteSpace: "nowrap" }}>
             <span style={{ fontSize: 8, fontWeight: 700, color: C.textDim, textTransform: "uppercase", letterSpacing: ".04em" }}>{es ? "Costo" : "Exp"}</span>
-            <span style={{ fontSize: 11, color: C.textMuted, fontWeight: 600 }}>{erPct}</span>
+            <span style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>{erPct}</span>
           </span>
         )}
         {fund.factSheetUrl && (
           <a
             href={fund.factSheetUrl} target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 11, color: C.accent, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}
+            style={{ fontSize: 12, color: C.accent, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}
             onMouseEnter={e => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={e => (e.currentTarget.style.textDecoration = "none")}
           >
@@ -87,7 +87,7 @@ function DisclosureCallout({ lang = "en" }) {
         padding: "12px 16px", background: "none", border: "none", cursor: "pointer",
         fontFamily: F.body, gap: 8,
       }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: ".05em", textAlign: "left" }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: ".05em", textAlign: "left" }}>
           {title}
         </span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"
@@ -153,7 +153,7 @@ export function InvestmentsPanel({ fundsData, lang, onAddDocument, fundsSource =
             <div style={{ fontSize: 13, color: C.textMuted }}>{L("Plansparency doesn't save your document.", "Plansparency no guarda tu documento.")}</div>
           </div>
         </div>
-        <div style={{ padding: "10px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, fontSize: 11, color: C.textDim, lineHeight: 1.6, flexShrink: 0 }}>
+        <div style={{ padding: "10px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textDim, lineHeight: 1.6, flexShrink: 0 }}>
           {FUND_DISCLAIMER}
         </div>
       </div>
@@ -200,7 +200,7 @@ export function InvestmentsPanel({ fundsData, lang, onAddDocument, fundsSource =
           borderBottom: `1px solid ${C.borderLight}`,
           position: "sticky", top: 0, zIndex: 1,
         }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em" }}>{cat}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em" }}>{cat}</span>
         </div>
         {grouped[cat].map((fund, i) => (
           <FundRow key={i} fund={fund} showCategory={false} riskMap={RISK_MAP} lang={lang} />
@@ -242,14 +242,14 @@ export function InvestmentsPanel({ fundsData, lang, onAddDocument, fundsSource =
 
       {/* Sort controls */}
       <div style={{ padding: "10px 16px", display: "flex", gap: 6, alignItems: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.surface, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", marginRight: 4 }}>{es ? "Ordenar:" : "Sort:"}</span>
+        <span style={{ fontSize: 12, color: C.textMuted, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em", marginRight: 4 }}>{es ? "Ordenar:" : "Sort:"}</span>
         {sortOpts.map(opt => (
           <button key={opt.id} onClick={() => setSortBy(opt.id)} style={{
             padding: "5px 12px", borderRadius: 100,
             border: `1px solid ${sortBy === opt.id ? C.accent : C.border}`,
             background: sortBy === opt.id ? C.accentDim : "transparent",
             color: sortBy === opt.id ? C.accent : C.textMuted,
-            fontSize: 11, fontWeight: sortBy === opt.id ? 700 : 500, fontFamily: F.body,
+            fontSize: 12, fontWeight: sortBy === opt.id ? 700 : 500, fontFamily: F.body,
             cursor: "pointer", transition: "all .15s",
           }}>
             {opt.label}
@@ -263,7 +263,7 @@ export function InvestmentsPanel({ fundsData, lang, onAddDocument, fundsSource =
       </div>
 
       {/* Pinned disclaimer */}
-      <div style={{ padding: "10px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, fontSize: 10, color: C.textDim, lineHeight: 1.6, flexShrink: 0 }}>
+      <div style={{ padding: "10px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, fontSize: 12, color: C.textDim, lineHeight: 1.6, flexShrink: 0 }}>
         {FUND_DISCLAIMER}
       </div>
     </div>
