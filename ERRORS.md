@@ -353,3 +353,8 @@ One new entry: the keep-alive that was supposed to stop Supabase pausing never w
 
 ## Session Summary, October 3–4, 2026
 Three new failures, all logged above with fixes: (1) PHASE-07 claimed done items it hadn't fully done (chip size, advisor FIRST_MSG), fixed in PHASE-08; (2) revenue report v1 costed invite-link sessions as if the PDF was sent every question, corrected after reading the code; (3) Cowork `git status` left `.git/index.lock`, deleted, Cowork now uses read-only git only.
+
+## Oct 12, 2026: Hard-coded color count was wrong (~46 vs 93)
+- **What happened:** OPEN-ITEMS #51 said ~46 hard-coded colors sat outside `theme.ts`. A full search (hex plus `rgba(`) found 93 in 13 files. The first count missed `rgba(...)` values and CSS files. #51 also listed theme names from the first lab (Ink & gold, Deep teal...) after they were replaced.
+- **Fix:** PHASE-17 lists every file with its count and re-runs the search in Step 0. `scripts/check-theme.ts` makes the count enforceable instead of estimated.
+- **Rule:** count with the exact search the prompt will use, and update the open item when a canvas option set changes.

@@ -592,3 +592,6 @@ The addressable sections of the app — superseded by the updated Component Map 
 **Why:** free self-upload gives the product away, is the most expensive session (~$1.03 vs ~$0.16, #37), skips the advisor accuracy review, and is harder to clear with compliance (#1). What advisors pay for: reviewed answers, code access with no document to find, their name on every page, engagement record.
 **Consequence:** the 🔴 security section (#31 plan codes, #34 advisor verification) is now the critical path for anything participant-facing. Also decided today: Ask tab merges into Your plan (#49); AI stays for missing-detail answers, Spanish taps and document reading, but participants get no typing box.
 **Prompts:** PHASE-15 (access), PHASE-16 (Your plan merge, to write).
+
+- **Oct 12, 2026: Sunrise theme chosen (#51), PHASE-17.** **Accessibility target WCAG 2.2 AA (#52), PHASE-18.** Standing rules in CLAUDE.md "Accessibility Rules"; every phase runs `check-a11y.ts` + `check-theme.ts`; Cowork reviews diffs against them; Ross tests keyboard + VoiceOver on screen-changing phases.
+- **Oct 12, 2026: Sunrise theme built (#51).** Every color lives in `theme.ts` (`C`, `CHART`); `scripts/check-theme.ts` fails on any color outside it and on contrast under 4.5. Commits `56c16f4`, `28e9a76`.

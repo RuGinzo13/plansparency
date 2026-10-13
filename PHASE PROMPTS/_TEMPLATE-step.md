@@ -28,6 +28,10 @@ Run `git status` and `git log --oneline -3`. Run `ls app/ components/ lib/` plus
 - Type check: ...
 - Search to confirm: ...
 
+## Accessibility (any step that changes a screen)
+- Follow CLAUDE.md "Accessibility Rules". Run `npx --yes tsx scripts/check-a11y.ts` and `npx --yes tsx scripts/check-theme.ts`; both must pass.
+- Checklist lines: keyboard path works, focus visible, labels and states named, 12px minimum, EN + ES, `lang` correct.
+
 ## Commit and push
 Commit: "type: description"
 Push to `main`. Never force-push.

@@ -186,6 +186,20 @@ ERRORS.md session summary format:
 
 ---
 
+## Accessibility Rules (WCAG 2.2 AA), every phase
+Added Oct 12, 2026 (OPEN-ITEMS #52). These apply to every UI change, every canvas board and every phase prompt.
+- **Contrast:** text 4.5:1 or more, large text (24px, or 18.66px bold) and icons/borders that carry meaning 3:1. Colors only from `theme.ts`. `scripts/check-theme.ts` enforces it.
+- **Keyboard:** everything that works with a mouse works with Tab, Enter, Space and Escape. Clickable things are `<button>` or `<a>`, never `<div onClick>`. Focus ring always visible (never `outline: none` without a replacement). Dialogs trap focus, close on Escape and return focus.
+- **Names and states:** every input has a visible label; icon-only buttons have `aria-label`; open/close controls have `aria-expanded`; toggles have `aria-pressed`; current tab has `aria-current` or `aria-selected`. Decorative icons and emoji are `aria-hidden`.
+- **Text:** 12px minimum, 16px for body and inputs. Works at 200% zoom with no sideways scroll at 390px wide. No fixed heights on text boxes.
+- **Language:** `<html lang>` matches the EN/ES toggle. Every new string ships in both.
+- **Announcements:** loading, results and errors are announced (`role="status"` / `role="alert"`).
+- **Motion:** respect "reduce motion". Nothing flashes.
+- **Touch targets:** 24x24px minimum, 44px tall where space allows.
+- **Charts:** never color alone; the numbers are also in text.
+- **Every phase prompt:** checks include `npx --yes tsx scripts/check-a11y.ts` and `scripts/check-theme.ts`, and the end checklist has an "Accessibility" section. **Cowork:** reviews each diff against these rules as well as the canvas. **Ross:** 10-minute keyboard + VoiceOver test on any phase that changes screens (steps in `PHASE PROMPTS/PHASE-18-accessibility.md`).
+- Code checks catch only part of the problems. Before public launch: an outside audit and a published accessibility statement (P3 pre-launch gate).
+
 ## Compliance Reminder
 
 The 45 plans managed by Ross's employer are permanently off-limits for any Plansparency activity — no testing, no piloting, no informal demos, no sales conversations. No exceptions.
