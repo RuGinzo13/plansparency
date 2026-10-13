@@ -13,6 +13,22 @@ export function Md({ text }) {
 export function Fm({ t }) { const p = t.split(/(\*\*.*?\*\*)/g); return <>{p.map((s, i) => s.startsWith("**") && s.endsWith("**") ? <strong key={i} style={{ color: C.accentText }}>{s.slice(2, -2)}</strong> : <span key={i}>{s}</span>)}</>; }
 
 // ── Shared UI ──
+// One shared polite live region, created on first use and kept for the whole page.
+export function announce(text: string) {
+  if (typeof document === "undefined") return;
+  let el = document.getElementById("a11y-live");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "a11y-live";
+    el.setAttribute("role", "status");
+    el.setAttribute("aria-live", "polite");
+    el.className = "sr-only";
+    document.body.appendChild(el);
+  }
+  const live = el;
+  live.textContent = "";
+  setTimeout(() => { live.textContent = text; }, 50);
+}
 export function SkipLink({ lang }) { return <a href="#main" className="skip-link">{lang === "es" ? "Saltar al contenido principal" : "Skip to main content"}</a>; }
 export function LangToggle({ lang, setLang, disabled }) {
   const labels = { en: "EN", es: "ES" };

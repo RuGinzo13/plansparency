@@ -7,6 +7,7 @@ import { calculatorResult } from '@/lib/plan/calc';
 import { getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
 import { fmtRounded, fmtDollars } from '@/lib/format';
 import { getTerm } from '@/lib/glossary';
+import { announce } from './ui';
 
 const tpl = (s, vars) => Object.keys(vars).reduce((acc, k) => acc.split(`{${k}}`).join(String(vars[k])), s);
 
@@ -219,7 +220,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   // ── Card 1, Start with you ──
   const StartWithYou = (
     <div style={card}>
-      <div style={heading}>{t.calc2StartTitle}</div>
+      <h2 style={heading}>{t.calc2StartTitle}</h2>
       <div style={{ marginBottom: 16 }}>
         <label htmlFor="calc-age" style={label11}>{tpl(t.calc2AgeLabel, { year: limitYear.year })}</label>
         <input
@@ -273,7 +274,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   // ── Card 2, Your {year} limit ──
   const LimitCard = (
     <div style={{ ...card, position: "relative" }}>
-      <div style={heading}>{tpl(t.calc2LimitTitle, { year: limitYear.year })}</div>
+      <h2 style={heading}>{tpl(t.calc2LimitTitle, { year: limitYear.year })}</h2>
       <div style={{ fontFamily: F.display, fontSize: 40, fontWeight: 700, color: C.accentText, marginBottom: 16, fontVariantNumeric: "tabular-nums" }}>
         {fmtRounded(r.limit)}
       </div>
@@ -516,7 +517,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   // ── Card 3, How much of your pay you save ──
   const SaveCard = (
     <div style={card}>
-      <div style={heading}>{t.calc2SaveTitle}</div>
+      <h2 style={heading}>{t.calc2SaveTitle}</h2>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 8 }}>
         <button
           aria-label={t.calc2MinusAria}
@@ -562,6 +563,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   // ── Card 4, Result ──
   const ResultCard = (
     <div style={card}>
+      <ResultAnnouncer text={`${hasSH ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly} ${fmtRounded(r.total)} ${t.calc2PerYear}. ${t.calc2PerPaycheckLabel} ${fmtDollars(r.perPaycheck)}`} />
       <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 4 }}>{hasSH ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly}</div>
       <div style={{ fontFamily: F.display, fontSize: wide ? 64 : 48, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums" }}>
         {fmtRounded(r.total)} <span style={{ fontSize: 16, fontWeight: 500, color: C.textMuted }}>{t.calc2PerYear}</span>
@@ -675,7 +677,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
 
   const GoodToKnowCard = (
     <div style={card}>
-      <div style={heading}>{t.calc2GoodToKnowTitle}</div>
+      <h2 style={heading}>{t.calc2GoodToKnowTitle}</h2>
       {infoRows.map((row) => {
         const open = openInfoRow === row.key;
         return (
@@ -715,7 +717,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     <div ref={rootRef} style={{ flex: 1, overflowY: "auto", background: C.bg, padding: "20px 16px 40px" }}>
       <div style={{ maxWidth: 1120, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-          <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>{t.calc2Title}</h2>
+          <h1 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>{t.calc2Title}</h1>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 12, color: C.textDim }}>{tpl(t.calc2LimitsYear, { year: limitYear.year })}</div>
             {limitYear.isFallback && <div style={{ fontSize: 12, color: C.warning, marginTop: 2 }}>{tpl(t.calc2LimitsFallback, { currentYear })}</div>}
@@ -754,6 +756,17 @@ function TaxCell({ ok, unavailable, column, hasPreTaxUnknown, t }) {
     return <div style={{ fontSize: 12, fontWeight: 600, color: C.green, textAlign: "center" }}>{t.calc2Yes}</div>;
   }
   return <div style={{ fontSize: 12, fontWeight: 600, color: C.danger, textAlign: "center" }}>{column === "traditional" ? t.calc2RothOnly : t.calc2NotOffered}</div>;
+}
+
+// Speaks the result sentence 600ms after the inputs stop changing. Silent on first render.
+function ResultAnnouncer({ text }) {
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) { first.current = false; return; }
+    const id = setTimeout(() => announce(text), 600);
+    return () => clearTimeout(id);
+  }, [text]);
+  return null;
 }
 
 function Bubble({ text, onClose, closeLabel }) {

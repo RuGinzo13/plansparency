@@ -136,7 +136,7 @@ export function InvestmentsPanel({ fundsData, lang, onAddDocument, fundsSource =
         <DisclosureCallout lang={lang} />
         <div style={{ flex: 1, overflowY: "auto" }}>
           <div style={{ padding: 28, border: `1px dashed ${C.inputBorder}`, borderRadius: 16, background: C.surface, maxWidth: 760, margin: "28px auto", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 16 }}>
-            <h3 style={{ margin: 0, fontFamily: F.display, fontSize: 28, fontWeight: 700, color: C.text }}>{L("See your investment options", "Ve tus opciones de inversión")}</h3>
+            <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 28, fontWeight: 700, color: C.text }}>{L("See your investment options", "Ve tus opciones de inversión")}</h1>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5, color: C.text }}>{L("Your plan document doesn't list the funds. Add one of these and we'll show them here:", "El documento de tu plan no lista los fondos. Agrega uno de estos y los mostraremos aquí:")}</p>
             {fundsError && (
               <p role="alert" style={{ margin: 0, fontSize: 15, fontWeight: 600, color: C.danger }}>{L("We couldn't find a fund list in that document. Try your enrollment booklet.", "No encontramos una lista de fondos en ese documento. Prueba con tu folleto de inscripción.")}</p>
@@ -215,6 +215,7 @@ export function InvestmentsPanel({ fundsData, lang, onAddDocument, fundsSource =
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <h1 className="sr-only">{es ? "Inversiones" : "Investments"}</h1>
       <DisclosureCallout lang={lang} />
       {fundsSource && (
         <div style={{ padding: "8px 16px 0", fontSize: 13, color: C.textMuted }}>{es ? `Fondos encontrados en ${fundsSource}` : `Funds found in ${fundsSource}`}</div>

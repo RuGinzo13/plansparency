@@ -26,7 +26,7 @@ import { endSessionFiles, INACTIVITY_LIMIT_MS } from '@/lib/client/session';
 import { i18n } from '@/lib/i18n';
 import { uploadFile, callClaude } from '@/lib/client/api';
 import { C, F, STAGE, btnBase } from '@/components/plansparency/theme';
-import { Md, Modal, LangToggle, Logo, Shield, SkipLink } from '@/components/plansparency/ui';
+import { Md, Modal, LangToggle, Logo, Shield, SkipLink, announce } from '@/components/plansparency/ui';
 import { TabBar, PlanGuideTabBar, AppHeader } from '@/components/plansparency/nav';
 import { KeyTermsPanel } from '@/components/plansparency/KeyTermsPanel';
 import { InvestmentsPanel } from '@/components/plansparency/InvestmentsPanel';
@@ -47,9 +47,9 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.error) return (
       <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 40, fontFamily: F.body }}>
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: "32px 28px", maxWidth: 480, textAlign: "center" }}>
+        <div role="alert" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: "32px 28px", maxWidth: 480, textAlign: "center" }}>
           <div aria-hidden="true" style={{ fontSize: 32, marginBottom: 16 }}>⚠️</div>
-          <h2 style={{ fontFamily: F.display, fontSize: 22, color: C.text, marginBottom: 12 }}>Something went wrong</h2>
+          <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.text, marginBottom: 12 }}>Something went wrong</h1>
           <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 24, lineHeight: 1.6 }}>{this.state.error.message}</p>
           <button onClick={() => this.setState({ error: null })} style={{ ...btnBase, padding: "11px 24px", background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary, fontSize: 14 }}>Try again</button>
         </div>
@@ -81,6 +81,15 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [lang, setLang] = useState("en");
   useEffect(() => { document.documentElement.lang = lang === "es" ? "es" : "en"; }, [lang]);
   const [stage, setStage] = useState(initialStage);
+  // Tell screen readers when reading starts and when the result is ready.
+  const prevStage = useRef(stage);
+  useEffect(() => {
+    const was = prevStage.current;
+    prevStage.current = stage;
+    if (stage === "uploading") announce(lang === "es" ? "Leyendo tu documento" : "Reading your document");
+    else if (was === "uploading" && stage === STAGE.APP) announce(lang === "es" ? "Tu plan está listo" : "Your plan is ready");
+    else if (was === "uploading" && stage === STAGE.STMT_DASHBOARD) announce(lang === "es" ? "Tu estado de cuenta está listo" : "Your statement is ready");
+  }, [stage]); // eslint-disable-line react-hooks/exhaustive-deps
   const [docType, setDocType] = useState(null); // "spd" or "statement"
   const [fileName, setFileName] = useState("");
   const [messages, setMessages] = useState(initialMessages);
@@ -540,7 +549,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   if (stage === "privacy") return <main id="main" tabIndex={-1} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
     <div style={{ maxWidth: 540, width: "100%" }}><div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: "32px 28px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}><div style={{ width: 38, height: 38, borderRadius: 12, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.accentLine}` }}><Shield color={C.accent} sz={20} /></div>
-        <h2 style={{ fontFamily: F.display, fontSize: 24, fontWeight: 600, margin: 0 }}>{t.privacyTitle}</h2></div>
+        <h1 style={{ fontFamily: F.display, fontSize: 24, fontWeight: 600, margin: 0 }}>{t.privacyTitle}</h1></div>
       <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 22 }}>{t.privacyIntro}</p>
       {t.privacyPoints.map(([title, body], i) => <div key={i} style={{ marginBottom: 14, paddingLeft: 14, borderLeft: `2px solid ${i === 1 ? C.warning : C.accent}` }}><p style={{ fontSize: 13, fontWeight: 600, color: C.text, margin: "0 0 3px" }}>{title}</p><p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, margin: 0 }}>{body}</p></div>)}
       <div style={{ padding: "12px 14px", borderRadius: 10, background: C.accentTint, border: `1px solid ${C.accentLine}`, marginBottom: 8 }}>
@@ -569,7 +578,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── Cleared ──
   if (stage === "cleared") return <main id="main" tabIndex={-1} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
     <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}><Shield color={C.accent} sz={24} /></div>
-    <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.clearedTitle}</h2>
+    <h1 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 8px" }}>{t.clearedTitle}</h1>
     <p style={{ color: C.textMuted, fontSize: 14, margin: "0 0 28px", textAlign: "center" }}>
       {sessionEndReason === "idle" ? t.calcSessionEndedIdle : sessionEndReason === "expired" ? t.errSessionExpired : t.clearedBody}
     </p>
@@ -584,7 +593,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, animation: "pulse 2s ease-in-out infinite", border: `1px solid ${C.accentLine}` }}>
           <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
         </div>
-        <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 6px", textAlign: "center" }}>{t.readingTitle}</h2>
+        <h1 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, margin: "0 0 6px", textAlign: "center" }}>{t.readingTitle}</h1>
 
         {/* Status label */}
         <p style={{ color: C.textMuted, fontSize: 13, margin: "0 0 16px", textAlign: "center", maxWidth: 320 }}>
@@ -636,7 +645,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
             <div style={{ width: 36, height: 36, borderRadius: 10, background: C.dangerDim, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
             </div>
-            <h3 id="clear-confirm-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h3>
+            <h2 id="clear-confirm-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h2>
           </div>
           <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 24 }}>{t.clearConfirmBody}</p>
           <div style={{ display: "flex", gap: 12 }}>
@@ -708,7 +717,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
     <SkipLink lang={lang} />
         {showClearConfirm && <Modal titleId="clear-confirm-title" onClose={() => setShowClearConfirm(false)}><div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}><div style={{ width: 36, height: 36, borderRadius: 10, background: C.dangerDim, display: "flex", alignItems: "center", justifyContent: "center" }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></div>
-      <h3 id="clear-confirm-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h3></div>
+      <h2 id="clear-confirm-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 600, margin: 0 }}>{t.clearConfirmTitle}</h2></div>
       <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.6, marginBottom: 24 }}>{t.clearConfirmBody}</p>
       <div style={{ display: "flex", gap: 12 }}>
         <button onClick={() => setShowClearConfirm(false)} style={{ ...btnBase, flex: 1, padding: "11px", fontSize: 14, background: "transparent", color: C.textMuted, border: `1px solid ${C.border}` }}>{t.clearConfirmNo}</button>
@@ -725,6 +734,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     />
 
     <main id="main" tabIndex={-1} style={{ flex: 1, overflowY: "auto", padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+      <h1 className="sr-only">{stmtData?.planName || fileName || "Your Statement"}</h1>
       {messages.filter(m => m.role !== "user" || (!m.content.startsWith("I just uploaded") && !m.content.startsWith("Acabo de subir"))).map((msg, i) => (
         <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .3s" }}>
           <div style={{ maxWidth: "85%", padding: "12px 15px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: msg.role === "user" ? C.userBubble : C.aiBubble, border: `1px solid ${msg.role === "user" ? C.accentTint : C.border}`, fontSize: 14, lineHeight: 1.6 }}>

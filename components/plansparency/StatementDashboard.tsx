@@ -60,7 +60,7 @@ function SuggestionBox({ t }) {
           )}
 
           {justSubmitted && (
-            <div style={{ padding: "10px 14px", background: C.greenDim, borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.greenLine}` }}>
+            <div role="status" style={{ padding: "10px 14px", background: C.greenDim, borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 8, border: `1px solid ${C.greenLine}` }}>
               <Shield color={C.green} sz={14} />
               <span style={{ fontSize: 13, color: C.green, fontWeight: 600 }}>{t.suggestionThanks}</span>
             </div>
@@ -142,7 +142,7 @@ export function StatementDashboard({ t, stmtData, onChat, onUploadAnother, lang 
   return (
     <div style={{ padding: "0 16px 16px", overflowY: "auto", flex: 1 }}>
       <div style={{ textAlign: "center", padding: "14px 0 12px" }}>
-        <h2 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, color: C.text, margin: "0 0 10px" }}>{t.stmtDashTitle}</h2>
+        <h1 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 600, color: C.text, margin: "0 0 10px" }}>{t.stmtDashTitle}</h1>
         <div style={{ display: "inline-flex", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg }}>
           <button type="button" onClick={() => setViewMode("period")} aria-pressed={viewMode === "period"} style={{ minHeight: 44, padding: "9px 20px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 600, background: viewMode === "period" ? C.accentDim : "transparent", color: viewMode === "period" ? C.accent : C.textMuted, transition: "all .15s" }}>{lang === "es" ? "Este Período" : "This Period"}</button>
           <button type="button" onClick={() => setViewMode("ytd")} aria-pressed={viewMode === "ytd"} style={{ minHeight: 44, padding: "9px 20px", border: "none", cursor: "pointer", fontFamily: F.body, fontSize: 12, fontWeight: 600, background: viewMode === "ytd" ? C.greenDim : "transparent", color: viewMode === "ytd" ? C.green : C.textMuted, transition: "all .15s" }}>YTD</button>
