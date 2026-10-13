@@ -101,28 +101,28 @@ export function PlanOverview(p: PlanOverviewProps) {
       <style>{`@media (max-width: 700px) { .plan-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }`}</style>
 
       {/* Top bar */}
-      <div ref={p.headerRef} style={{ position: 'sticky', top: 0, zIndex: 5, background: C.accentSoft, borderBottom: `2px solid ${C.accentBorder}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
+      <div ref={p.headerRef} style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bar, borderBottom: `2px solid ${C.barLine}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 20px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px 32px' }}>
           <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ ...label12, color: C.textMuted }}>{L('Your plan', 'Tu plan')}</div>
-            <h1 className="plan-name" style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(20px, 3vw, 26px)', fontWeight: 700, lineHeight: 1.1, color: C.text }}>{planData?.planName || L('Your 401(k) Plan', 'Tu Plan 401(k)')}</h1>
-            <span style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 100, background: reviewer ? C.greenSoft : C.accentDim, color: reviewer ? C.green : C.accentText }}>
+            <div style={{ ...label12, color: C.barMuted }}>{L('Your plan', 'Tu plan')}</div>
+            <h1 className="plan-name" style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(20px, 3vw, 26px)', fontWeight: 700, lineHeight: 1.1, color: C.barText }}>{planData?.planName || L('Your 401(k) Plan', 'Tu Plan 401(k)')}</h1>
+            <span style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 100, background: reviewer ? C.greenSoft : C.accentSoft, color: reviewer ? C.green : C.accentText }}>
               {reviewer ? L(`Details reviewed by ${reviewer}${when ? ` on ${when}` : ''}`, `Detalles revisados por ${reviewer}${when ? ` el ${when}` : ''}`) : L('Read from the document you uploaded', 'Leído del documento que subiste')}
             </span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 28px' }}>
             {advisor && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={small11}>{L('Your advisor', 'Tu asesor')}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{advisor.firm ? `${advisor.name}, ${advisor.firm}` : advisor.name}</div>
-                {advisor.email && <a href={`mailto:${advisor.email}`} style={{ fontSize: 14, fontWeight: 600, color: C.accentText }}>{advisor.email}</a>}
+                <div style={{ ...small11, color: C.barMuted }}>{L('Your advisor', 'Tu asesor')}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.barText }}>{advisor.firm ? `${advisor.name}, ${advisor.firm}` : advisor.name}</div>
+                {advisor.email && <a href={`mailto:${advisor.email}`} style={{ fontSize: 14, fontWeight: 600, color: C.barLink }}>{advisor.email}</a>}
               </div>
             )}
             {rkName && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={small11}>{L('Recordkeeper', 'Administrador del plan')}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{rkName}</div>
-                {rkUrl && <a href={rkUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, fontWeight: 600, color: C.accentText }}>{L('Log in to your account ↗', 'Entra a tu cuenta ↗')}</a>}
+                <div style={{ ...small11, color: C.barMuted }}>{L('Recordkeeper', 'Administrador del plan')}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.barText }}>{rkName}</div>
+                {rkUrl && <a href={rkUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, fontWeight: 600, color: C.barLink }}>{L('Log in to your account ↗', 'Entra a tu cuenta ↗')}</a>}
               </div>
             )}
           </div>

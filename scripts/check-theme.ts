@@ -2,7 +2,7 @@
 // Run with: npx --yes tsx scripts/check-theme.ts
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { C } from '../components/plansparency/theme';
+import { C, CHART } from '../components/plansparency/theme';
 
 const ROOT = join(__dirname, '..');
 const THEME = 'components/plansparency/theme.ts';
@@ -40,6 +40,38 @@ const cssBg = /background:\s*(#[0-9a-fA-F]{3,8})\s*;/.exec(css)?.[1];
 const cssText = /(?:^|[\s;{])color:\s*(#[0-9a-fA-F]{3,8})\s*;/.exec(css)?.[1];
 check(cssBg?.toLowerCase() === C.bg.toLowerCase(), `globals.css background ${cssBg} should equal C.bg ${C.bg}`);
 check(cssText?.toLowerCase() === C.text.toLowerCase(), `globals.css color ${cssText} should equal C.text ${C.text}`);
+
+// 3. Contrast (WCAG): text pairs need 4.5, chart colors against the surface need 3.0 (shapes, not text).
+function lum(hex: string): number {
+  const h = hex.length === 4 ? '#' + [...hex.slice(1)].map((x) => x + x).join('') : hex;
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function ratio(a: string, b: string): number {
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+const PAIRS: [keyof typeof C, keyof typeof C][] = [
+  ['text', 'bg'], ['textMuted', 'surface'], ['textMuted', 'surfaceAlt'], ['textDim', 'surface'], ['textDim', 'surfaceAlt'],
+  ['accent', 'surface'], ['accent', 'accentSoft'], ['accentText', 'surface'], ['accentText', 'accentSoft'], ['accentText', 'highlight'],
+  ['onPrimary', 'accent'], ['onPrimary', 'primaryEnd'], ['onDanger', 'danger'], ['green', 'greenSoft'], ['green', 'surface'],
+  ['warning', 'warningDim'], ['danger', 'dangerSoft'], ['danger', 'surface'], ['barText', 'bar'], ['barMuted', 'bar'], ['barLink', 'bar'],
+];
+let lowest = { name: '', value: Infinity };
+const note = (name: string, v: number) => { if (v < lowest.value) lowest = { name, value: v }; };
+for (const [fg, bg] of PAIRS) {
+  if (C[fg].startsWith('rgba(') || C[bg].startsWith('rgba(')) continue;
+  const r = ratio(C[fg], C[bg]);
+  note(`${fg}/${bg}`, r);
+  check(r >= 4.5, `contrast ${fg}/${bg} is ${r.toFixed(2)}, needs 4.5`);
+}
+for (const [name, color] of Object.entries(CHART)) {
+  if (color.startsWith('rgba(')) continue;
+  const r = ratio(color, C.surface);
+  check(r >= 3.0, `CHART.${name} against surface is ${r.toFixed(2)}, needs 3.0`);
+}
+console.log(`Lowest text contrast: ${lowest.name} at ${lowest.value.toFixed(2)}`);
 
 console.log(`PASS ${pass} / FAIL ${fail}`);
 if (fail > 0) process.exit(1);

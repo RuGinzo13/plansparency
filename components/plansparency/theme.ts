@@ -1,28 +1,28 @@
 // ── Colors ──
 export const C = {
-  bg: "#F4EFE6", surface: "#FDFAF6", surfaceAlt: "#EDE8DE",
-  border: "#D5C9B8", borderLight: "#E5DDD0",
-  accent: "#B8860B", accentDim: "rgba(184,134,11,.13)", accentGlow: "rgba(184,134,11,.24)",
-  green: "#287048", greenDim: "rgba(46,125,82,.11)", greenGlow: "rgba(46,125,82,.2)",
-  text: "#1E1408", textMuted: "#5E4E3A", textDim: "#6F6254",
-  userBubble: "#E6DCCC", aiBubble: "#FFFFFF",
-  warning: "#A4470F", danger: "#B83232", dangerDim: "rgba(184,50,50,.1)",
-  accentText: "#7F5F0F", accentSoft: "#F6ECD6",
-  warningDim: "#FBE9D9", greenSoft: "#E8F1EA", dangerSoft: "#F6E0E0",
-  inputBorder: "#9A8878", primaryEnd: "#B8863A", onPrimary: "#0F1621",
-  accentBorder: "#E5C77A", highlight: "#F1EBE0",
-  field: "#FFFFFF", onDanger: "#FFFFFF", track: "#C8BFAE", thumbRing: "#FBF7F0",
-  accentTint: "rgba(212,168,83,.08)", accentLine: "rgba(212,168,83,.18)",
-  greenLine: "rgba(92,184,138,.18)", dangerLine: "rgba(212,106,90,.18)",
-  shadow: "rgba(30,20,8,.07)", shadowStrong: "rgba(0,0,0,.25)",
-  overlay: "rgba(0,0,0,.6)", overlayStrong: "rgba(0,0,0,.75)",
-  bar: "#F6ECD6", barLine: "#E5C77A", barText: "#1E1408", barMuted: "#5E4E3A", barLink: "#7F5F0F",
+  bg: "#FFFFFF", surface: "#FFFFFF", surfaceAlt: "#F3F4F6",
+  border: "#D1D5DB", borderLight: "#E5E7EB",
+  accent: "#C2410C", accentDim: "rgba(194,65,12,.10)", accentGlow: "rgba(194,65,12,.22)",
+  green: "#166534", greenDim: "rgba(22,101,52,.10)", greenGlow: "rgba(22,101,52,.20)",
+  text: "#111827", textMuted: "#4B5563", textDim: "#646B78",
+  userBubble: "#F3F4F6", aiBubble: "#FFFFFF",
+  warning: "#854D0E", danger: "#B91C1C", dangerDim: "rgba(185,28,28,.08)",
+  accentText: "#A3360A", accentSoft: "#FFEDE3",
+  warningDim: "#FEF3C7", greenSoft: "#E6F4EA", dangerSoft: "#FEE2E2",
+  inputBorder: "#9CA3AF", primaryEnd: "#CC440C", onPrimary: "#FFFFFF",
+  accentBorder: "#FDBA94", highlight: "#FFF3EC",
+  field: "#FFFFFF", onDanger: "#FFFFFF", track: "#D1D5DB", thumbRing: "#FFFFFF",
+  accentTint: "rgba(194,65,12,.08)", accentLine: "rgba(194,65,12,.20)",
+  greenLine: "rgba(22,101,52,.20)", dangerLine: "rgba(185,28,28,.20)",
+  shadow: "rgba(17,24,39,.08)", shadowStrong: "rgba(17,24,39,.25)",
+  overlay: "rgba(17,24,39,.60)", overlayStrong: "rgba(17,24,39,.75)",
+  bar: "#1F2937", barLine: "#EA580C", barText: "#FFFFFF", barMuted: "#CBD2DC", barLink: "#FDBA74",
 };
 // Chart and legend colors (StatementDashboard)
 export const CHART = {
-  stocks: "#5CB88A", bonds: "#D4A853", multiAsset: "#94A0B2", other: "#536178",
-  roth: "#6BB8D4", match: "#7A9EC9", safeHarbor: "#5CB88A", profit: "#D4A853",
-  rollover: "#8B7EC9", rolloverOut: "#D4A853", neutral: "#94A0B2",
+  stocks: "#0F766E", bonds: "#C2410C", multiAsset: "#6B7280", other: "#1F2937",
+  roth: "#2563EB", match: "#7C3AED", safeHarbor: "#166534", profit: "#A16207",
+  rollover: "#BE185D", rolloverOut: "#BE185D", neutral: "#6B7280",
 };
 export const F = { display: "var(--font-display), Georgia, serif", body: "var(--font-body), 'Segoe UI', system-ui, sans-serif" };
 

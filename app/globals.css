@@ -5,8 +5,8 @@ body {
 }
 
 body {
-  color: #1E1408;
-  background: #F4EFE6;
+  color: #111827;
+  background: #FFFFFF;
   font-family: var(--font-body), 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
