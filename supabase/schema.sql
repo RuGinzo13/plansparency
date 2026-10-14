@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS plans (
   plandata_json JSONB,
   initial_summary  TEXT NOT NULL DEFAULT '',
   pdf_storage_path TEXT NOT NULL,
-  created_at    TIMESTAMPTZ DEFAULT NOW()
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  team_json     JSONB NOT NULL DEFAULT '[]'::jsonb
 );
 
 CREATE TABLE IF NOT EXISTS plan_sessions (
@@ -20,3 +21,8 @@ CREATE TABLE IF NOT EXISTS plan_sessions (
 
 CREATE INDEX IF NOT EXISTS idx_plans_advisor_token ON plans(advisor_token);
 CREATE INDEX IF NOT EXISTS idx_sessions_plan_id    ON plan_sessions(plan_id);
+
+-- Phase 19: the app only uses the service-role key, which ignores RLS.
+ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS team_json JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plan_sessions ENABLE ROW LEVEL SECURITY;
