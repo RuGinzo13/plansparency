@@ -363,3 +363,8 @@ Three new failures, all logged above with fixes: (1) PHASE-07 claimed done items
 - **What happened:** after each of PHASE-11 to PHASE-16, OPEN-ITEMS said "awaiting Cowork review against the board." None were done; new phases were written on top. PHASE-17/18 then changed the same screens.
 - **Fix:** logged as #54, to be done against the Sunrise boards.
 - **Rule:** before writing the next phase prompt, Cowork finishes the review of the last phase (diff vs board + checks) and records the result in OPEN-ITEMS. Done for PHASE-17/18 on Oct 12.
+
+## Oct 14, 2026: globals.css never loaded; Cowork marked PHASE-18 verified anyway
+- **What happened:** PHASE-18 and PHASE-19 put the skip link hide rule, `.sr-only`, focus rings, reduced motion and the tab label switch in `app/globals.css`. `app/layout.tsx` never imports that file, so none of it reached the browser. Ross saw "Skip to main content" on every page and both tab labels. Cowork's Oct 12 verification said "skip link on every screen ✓" after reading code and running the check scripts, without loading a page.
+- **Fix:** PHASE-20 step 1 imports the file, removes starter resets that would have changed the site, and makes `check-a11y.ts` fail if the import or the key rules go missing.
+- **Rule:** for any UI phase, Cowork's review includes the rendered result (built CSS contains the rules, or a page screenshot), not only code and scripts. A class name in JSX proves nothing until the stylesheet that defines it is confirmed loaded.
