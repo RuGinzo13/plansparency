@@ -6,7 +6,7 @@ import { Logo, SkipLink } from '@/components/plansparency/ui';
 import { RoleChip } from '@/components/plansparency/RoleChip';
 import { TeamAvatar } from '@/components/plansparency/TeamAvatar';
 import {
-  TEAM_ROLES, ROLE_TEXT, MAX_TEAM, MAX_PHOTO_CHARS,
+  TEAM_ROLES, ROLE_TEXT, MAX_TEAM, MAX_PHOTO_CHARS, rolesOf,
   isValidEmail, isValidPhone, isValidBooking,
   type TeamMember, type TeamRole,
 } from '@/lib/team';
@@ -15,7 +15,7 @@ const MAX_PHOTO_FILE = 5 * 1024 * 1024;
 
 type Draft = Omit<TeamMember, 'id'> & { id: string };
 const blank = (): Draft => ({
-  id: '', name: '', role: 'service', title: '', phone: '', email: '',
+  id: '', name: '', role: 'service', also: [], title: '', phone: '', email: '',
   langs: { en: false, es: false, other: '' }, booking: '', photo: '', lead: false,
 });
 
@@ -242,7 +242,7 @@ export default function TeamEditorPage() {
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                     <div style={{ fontSize: 16, fontWeight: 700, overflowWrap: 'anywhere' }}>{m.name}</div>
                     {m.title && <div style={{ fontSize: 14, color: C.textMuted, overflowWrap: 'anywhere' }}>{m.title}</div>}
-                    <RoleChip role={m.role} />
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>{rolesOf(m).map((r) => <RoleChip key={r} role={r} />)}</div>
                     {(m.phone || m.email) && <div style={{ fontSize: 13, color: C.textDim, overflowWrap: 'anywhere' }}>{[m.phone, m.email].filter(Boolean).join(' · ')}</div>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'stretch' }}>
@@ -292,8 +292,8 @@ export default function TeamEditorPage() {
 
             <div style={labelStyle}>
               <label style={labelStyle}>
-                Role (sets the color employees see)
-                <select value={draft.role} onChange={(e) => set('role', e.target.value as TeamRole)} style={inputStyle}>
+                Main role (sets the color employees see)
+                <select value={draft.role} onChange={(e) => { const r = e.target.value as TeamRole; setDraft((d) => ({ ...d, role: r, also: d.also.filter((x) => x !== r) })); }} style={inputStyle}>
                   {TEAM_ROLES.map((r) => <option key={r} value={r}>{ROLE_TEXT[r].en.label}</option>)}
                 </select>
               </label>
@@ -302,6 +302,19 @@ export default function TeamEditorPage() {
                 <span style={{ fontSize: 13, fontWeight: 400, color: C.textMuted, lineHeight: 1.4, flex: '1 1 200px' }}>{ROLE_TEXT[draft.role].en.what}</span>
               </div>
             </div>
+
+            <fieldset style={{ border: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <legend style={{ fontSize: 14, fontWeight: 600, padding: 0, marginBottom: 6 }}>Also helps with (optional)</legend>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px' }}>
+                {TEAM_ROLES.filter((r) => r !== draft.role).map((r) => (
+                  <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 36, fontSize: 15 }}>
+                    <input type="checkbox" checked={draft.also.includes(r)} onChange={(e) => setDraft((d) => ({ ...d, also: TEAM_ROLES.filter((x) => x !== d.role && (x === r ? e.target.checked : d.also.includes(x))) }))} style={{ width: 20, height: 20, accentColor: C.accent }} />
+                    {ROLE_TEXT[r].en.label}
+                  </label>
+                ))}
+              </div>
+              <span style={{ fontSize: 12, color: C.textDim }}>Each role shows as its own tag on the card. The card color follows the main role.</span>
+            </fieldset>
 
             <label style={labelStyle}>
               Title (exactly as you want it shown)

@@ -1,6 +1,6 @@
 // Sanity script for lib/team.ts (team validation on each plan).
 // Run with: npx --yes tsx scripts/check-team.ts
-import { normalizeTeam, telHref, initials, MAX_TEAM, MAX_PHOTO_CHARS } from '../lib/team';
+import { normalizeTeam, telHref, initials, rolesOf, MAX_TEAM, MAX_PHOTO_CHARS } from '../lib/team';
 
 let pass = 0;
 let fail = 0;
@@ -57,6 +57,16 @@ check(normalizeTeam(Array.from({ length: 13 }, (_, i) => ({ ...base, name: `P${i
 // id kept when valid, long id replaced
 check(normalizeTeam([{ ...base, id: 'abc' }]).team[0].id === 'abc', 'valid id kept');
 check(normalizeTeam([{ ...base, id: 'x'.repeat(41) }]).team[0].id.length > 0 && normalizeTeam([{ ...base, id: 'x'.repeat(41) }]).team[0].id !== 'x'.repeat(41), 'too-long id replaced');
+// other roles (also)
+{
+  const a = normalizeTeam([{ ...base, role: 'advisor', also: ['support', 'wizard', 'service', 'service', 'advisor', 7] }]).team[0];
+  check(a.also.join(',') === 'service,support', 'also: invalid, duplicate and main role dropped, order fixed');
+  check(rolesOf(a).join(',') === 'advisor,service,support', 'rolesOf puts the main role first');
+  check(normalizeTeam([base]).team[0].also.length === 0, 'old record without also loads with an empty list');
+  check(normalizeTeam([{ ...base, also: 'service' }]).team[0].also.length === 0, 'also that is not a list becomes empty');
+  const many = normalizeTeam([{ ...base, role: 'advisor', also: ['consultant', 'education', 'service', 'support'] }]).team[0];
+  check(many.also.length === 4, 'also allows all four other roles');
+}
 // helpers
 check(telHref('(555) 010-2001') === 'tel:5550102001', 'telHref keeps digits only');
 check(telHref('+1 (555) 010-2001') === 'tel:+15550102001', 'telHref keeps a leading +');

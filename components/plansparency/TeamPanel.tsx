@@ -4,7 +4,7 @@ import React from 'react';
 import { C, F, ROLE, LAYOUT } from './theme';
 import { RoleChip } from './RoleChip';
 import { TeamAvatar } from './TeamAvatar';
-import { TEAM_ROLES, ROLE_TEXT, telHref, type TeamMember } from '@/lib/team';
+import { TEAM_ROLES, ROLE_TEXT, telHref, rolesOf, type TeamMember } from '@/lib/team';
 
 interface Props {
   team: TeamMember[];
@@ -31,7 +31,7 @@ export function TeamPanel({ team, planName, lang, t }: Props) {
   const es = lang === 'es';
   const L = (en: string, esText: string) => (es ? esText : en);
   const plan = planName ? L(`the ${planName}`, `el ${planName}`) : L('your 401(k)', 'tu 401(k)');
-  const rolesInUse = TEAM_ROLES.filter((r) => team.some((m) => m.role === r));
+  const rolesInUse = TEAM_ROLES.filter((r) => team.some((m) => rolesOf(m).includes(r)));
 
   const speaks = (m: TeamMember) => [m.langs.en ? 'English' : '', m.langs.es ? 'Español' : '', m.langs.other].filter(Boolean).join(', ');
 
@@ -78,7 +78,7 @@ export function TeamPanel({ team, planName, lang, t }: Props) {
                   </div>
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    <RoleChip role={m.role} lang={lang} />
+                    {rolesOf(m).map((r) => <RoleChip key={r} role={r} lang={lang} />)}
                     {m.lead && <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 100, border: `1px solid ${C.border}`, color: C.text }}>{t.teamSetup}</span>}
                   </div>
 

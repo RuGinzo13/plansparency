@@ -8,6 +8,7 @@ export type TeamMember = {
   id: string;
   name: string;
   role: TeamRole;
+  also: TeamRole[];
   title: string;
   phone: string;
   email: string;
@@ -18,6 +19,7 @@ export type TeamMember = {
 };
 
 export const MAX_TEAM = 12;
+export const MAX_ALSO = 4;
 export const MAX_PHOTO_CHARS = 80000;
 
 // DRAFT wording, Ross approves with #39.
@@ -73,6 +75,10 @@ export function normalizeTeam(raw: unknown): { team: TeamMember[]; errors: strin
 
     const role: TeamRole = (TEAM_ROLES as readonly string[]).includes(m.role) ? m.role : 'support';
 
+    // Other roles: valid, no duplicates, never the main role, in TEAM_ROLES order, at most 4.
+    const alsoRaw: unknown[] = Array.isArray(m.also) ? m.also : [];
+    const also = TEAM_ROLES.filter((r) => r !== role && alsoRaw.includes(r)).slice(0, MAX_ALSO);
+
     let phone = str(m.phone);
     if (!isValidPhone(phone)) { errors.push(`${name}: the phone number has characters that aren't allowed.`); phone = ''; }
 
@@ -93,6 +99,7 @@ export function normalizeTeam(raw: unknown): { team: TeamMember[]; errors: strin
       id: typeof m.id === 'string' && m.id.length > 0 && m.id.length <= 40 ? m.id : newId(),
       name,
       role,
+      also,
       title: str(m.title).slice(0, 80),
       phone,
       email,
@@ -114,4 +121,9 @@ export function initials(name: string): string {
   const words = name.split(',')[0].trim().split(/\s+/).filter(Boolean);
   const out = words.slice(0, 2).map((w) => Array.from(w)[0] ?? '').join('').toUpperCase();
   return out || '?';
+}
+
+// Main role first, then the other roles.
+export function rolesOf(m: Pick<TeamMember, 'role' | 'also'>): TeamRole[] {
+  return [m.role, ...m.also];
 }
