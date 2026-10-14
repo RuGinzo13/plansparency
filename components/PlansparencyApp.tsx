@@ -30,6 +30,7 @@ import { Md, Modal, LangToggle, Logo, Shield, SkipLink, announce } from '@/compo
 import { TabBar, PlanGuideTabBar, AppHeader } from '@/components/plansparency/nav';
 import { KeyTermsPanel } from '@/components/plansparency/KeyTermsPanel';
 import { TeamPanel } from '@/components/plansparency/TeamPanel';
+import { WelcomeDialog } from '@/components/plansparency/WelcomeDialog';
 import type { TeamMember } from '@/lib/team';
 import { InvestmentsPanel } from '@/components/plansparency/InvestmentsPanel';
 import { PlanOverview } from '@/components/plansparency/PlanOverview';
@@ -95,6 +96,22 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     else if (was === "uploading" && stage === STAGE.APP) announce(lang === "es" ? "Tu plan está listo" : "Your plan is ready");
     else if (was === "uploading" && stage === STAGE.STMT_DASHBOARD) announce(lang === "es" ? "Tu estado de cuenta está listo" : "Your statement is ready");
   }, [stage]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Welcome pop-up: once per page load when the plan app first shows, unless hidden on this device.
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const welcomeShown = useRef(false);
+  const welcomeKey = 'plansparency_welcome_hidden_' + (planId || 'preview');
+  useEffect(() => {
+    if (stage !== STAGE.APP || welcomeShown.current) return;
+    if (!employerName && !planData?.recordkeeperName) return;
+    welcomeShown.current = true;
+    let hidden = false;
+    try { hidden = localStorage.getItem(welcomeKey) === '1'; } catch { /* storage blocked: just show it */ }
+    if (!hidden) setWelcomeOpen(true);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeWelcome = (dontShowAgain: boolean) => {
+    setWelcomeOpen(false);
+    if (dontShowAgain) { try { localStorage.setItem(welcomeKey, '1'); } catch { /* ignore */ } }
+  };
   const [docType, setDocType] = useState(null); // "spd" or "statement"
   const [fileName, setFileName] = useState("");
   const [messages, setMessages] = useState(initialMessages);
@@ -659,6 +676,12 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           </div>
         </Modal>}
 
+        {welcomeOpen && <WelcomeDialog
+          employerName={employerName} planName={planData?.planName || ""}
+          recordkeeperName={planData?.recordkeeperName || ""} recordkeeperUrl={typeof planData?.recordkeeperUrl === "string" ? planData.recordkeeperUrl : ""}
+          team={team} lang={lang} t={t} onClose={closeWelcome} onOpenTeam={() => setActiveTab("team")}
+        />}
+
         <AppHeader accentColor={C.accent} title={planData?.planName || fileName || "Your Plan"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
 
         <TabBar activeTab={activeTab} setActiveTab={setActiveTab} t={t} />
@@ -694,6 +717,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           <div style={{ flexShrink: 0, padding: "8px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: 7 }}>
             <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textDim} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <p style={{ margin: 0, flex: 1, fontSize: 12, color: C.textDim, lineHeight: 1.6 }}>{t.planProvisionDisclaimer}</p>
+            {(employerName || planData?.recordkeeperName) && <button type="button" onClick={() => setWelcomeOpen(true)} style={{ ...btnBase, flexShrink: 0, minHeight: 36, padding: "3px 10px", fontSize: 12, fontWeight: 600, background: "transparent", color: C.accentText, border: `1px solid ${C.border}`, borderRadius: 8 }}>{t.welcomeInfo}</button>}
             <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, flexShrink: 0, minHeight: 36, padding: "3px 10px", fontSize: 12, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .8 }}>{t.clearSession}</button>
           </div>
         )}
