@@ -29,6 +29,8 @@ import { C, F, STAGE, btnBase } from '@/components/plansparency/theme';
 import { Md, Modal, LangToggle, Logo, Shield, SkipLink, announce } from '@/components/plansparency/ui';
 import { TabBar, PlanGuideTabBar, AppHeader } from '@/components/plansparency/nav';
 import { KeyTermsPanel } from '@/components/plansparency/KeyTermsPanel';
+import { TeamPanel } from '@/components/plansparency/TeamPanel';
+import type { TeamMember } from '@/lib/team';
 import { InvestmentsPanel } from '@/components/plansparency/InvestmentsPanel';
 import { PlanOverview } from '@/components/plansparency/PlanOverview';
 import { CalcPanel } from '@/components/plansparency/CalcPanel';
@@ -66,6 +68,8 @@ interface PlansparencyAppProps {
   advisorLogo?: string;
   advisorFirmName?: string;
   planId?: string;
+  employerName?: string;
+  initialTeam?: TeamMember[];
   advisorSlug?: string;
   // Participant mode — pre-load an existing plan without requiring upload
   initialPdfBase64?: string | null;
@@ -77,8 +81,9 @@ interface PlansparencyAppProps {
 }
 
 // ── Main App ──
-function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advisorFirmName, planId, advisorSlug, initialPdfBase64 = null, initialPlanData = null, initialMessages = [], initialStage = STAGE.CHOOSER, allowUpload = false }: PlansparencyAppProps = {}) {
+function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advisorFirmName, planId, employerName = '', initialTeam = [], advisorSlug, initialPdfBase64 = null, initialPlanData = null, initialMessages = [], initialStage = STAGE.CHOOSER, allowUpload = false }: PlansparencyAppProps = {}) {
   const [lang, setLang] = useState("en");
+  const [team] = useState<TeamMember[]>(initialTeam);
   useEffect(() => { document.documentElement.lang = lang === "es" ? "es" : "en"; }, [lang]);
   const [stage, setStage] = useState(initialStage);
   // Tell screen readers when reading starts and when the result is ready.
@@ -682,6 +687,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         )}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openCard} onOpenCalculator={() => setActiveTab("calculator")} />}
+        {activeTab === "team" && <TeamPanel team={team} planName={planData?.planName || ""} lang={lang} t={t} />}
 
         </main>
         {(

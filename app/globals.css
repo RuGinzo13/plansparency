@@ -73,3 +73,10 @@ a {
   white-space: nowrap;
   border: 0;
 }
+
+/* Fourth tab: full name on wide screens, short name under 700px */
+.tab-short { display: none; }
+@media (max-width: 699px) {
+  .tab-long { display: none; }
+  .tab-short { display: inline; }
+}

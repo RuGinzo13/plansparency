@@ -1,6 +1,7 @@
 // Server component — no 'use client'
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import PlansparencyApp from '@/components/PlansparencyApp';
+import { normalizeTeam } from '@/lib/team';
 import { C } from '@/components/plansparency/theme';
 
 // ── Dynamic metadata — static export cannot reference async data ──────────────
@@ -79,6 +80,9 @@ export default async function ParticipantPlanPage({ params }: { params: Promise<
       initialPlanData={plan.plandata_json}
       initialMessages={initialMessages}
       initialStage="app"
+      planId={plan.plan_id}
+      employerName={plan.employer_name ?? ''}
+      initialTeam={normalizeTeam(plan.team_json).team}
     />
   );
 }

@@ -45,6 +45,20 @@ export function TabBar({ activeTab, setActiveTab, t }) {
         </svg>
       ),
     },
+    {
+      id: "team",
+      label: t.navTeam,
+      shortLabel: t.navTeamShort,
+      shaded: true,
+      icon: (active) => (
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.text : C.tabShadeText} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="9" cy="8" r="3.2"/>
+          <path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/>
+          <circle cx="17" cy="9" r="2.4"/>
+          <path d="M15.5 14.6c3 .2 5.5 2.1 5.5 5.4"/>
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -61,14 +75,15 @@ export function TabBar({ activeTab, setActiveTab, t }) {
             key={tab.id}
             type="button"
             aria-current={active ? "page" : undefined}
+            aria-label={tab.shortLabel ? tab.label : undefined}
             onClick={() => setActiveTab(tab.id)}
             style={{
               flex: 1,
               minHeight: 44,
               padding: "10px 4px 8px",
-              background: "none",
+              background: tab.shaded ? C.tabShade : "none",
               border: "none",
-              borderBottom: `2px solid ${active ? C.accent : "transparent"}`,
+              borderBottom: `2px solid ${active ? C.accent : tab.shaded ? C.inputBorder : "transparent"}`,
               cursor: "pointer",
               fontFamily: F.body,
               display: "flex",
@@ -76,18 +91,25 @@ export function TabBar({ activeTab, setActiveTab, t }) {
               alignItems: "center",
               gap: 4,
               transition: "all .15s",
-              color: active ? C.accent : C.textMuted,
+              color: tab.shaded ? (active ? C.text : C.tabShadeText) : (active ? C.accent : C.textMuted),
             }}
-            onMouseEnter={e => { if (!active) e.currentTarget.style.color = C.text; }}
-            onMouseLeave={e => { if (!active) e.currentTarget.style.color = C.textMuted; }}
+            onMouseEnter={e => { if (!active && !tab.shaded) e.currentTarget.style.color = C.text; }}
+            onMouseLeave={e => { if (!active && !tab.shaded) e.currentTarget.style.color = C.textMuted; }}
           >
             {tab.icon(active)}
-            <span style={{
-              fontSize: 12,
-              fontWeight: active ? 700 : 500,
-              letterSpacing: ".03em",
-              textTransform: "uppercase",
-            }}>{tab.label}</span>
+            {tab.shortLabel ? (
+              <>
+                <span aria-hidden="true" className="tab-long" style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase" }}>{tab.label}</span>
+                <span aria-hidden="true" className="tab-short" style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase" }}>{tab.shortLabel}</span>
+              </>
+            ) : (
+              <span style={{
+                fontSize: 12,
+                fontWeight: active ? 700 : 500,
+                letterSpacing: ".03em",
+                textTransform: "uppercase",
+              }}>{tab.label}</span>
+            )}
           </button>
         );
       })}
