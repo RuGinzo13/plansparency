@@ -17,6 +17,7 @@ export const C = {
   shadow: "rgba(17,24,39,.08)", shadowStrong: "rgba(17,24,39,.25)",
   overlay: "rgba(17,24,39,.60)", overlayStrong: "rgba(17,24,39,.75)",
   focus: "#111827", focusOnDark: "#FFFFFF",
+  tabShade: "#E5E7EB", tabShadeText: "#374151",
   bar: "#1F2937", barLine: "#EA580C", barText: "#FFFFFF", barMuted: "#CBD2DC", barLink: "#FDBA74",
 };
 // Chart and legend colors (StatementDashboard)
@@ -24,6 +25,14 @@ export const CHART = {
   stocks: "#0F766E", bonds: "#C2410C", multiAsset: "#6B7280", other: "#1F2937",
   roth: "#2563EB", match: "#7C3AED", safeHarbor: "#166534", profit: "#A16207",
   rollover: "#BE185D", rolloverOut: "#BE185D", neutral: "#6B7280",
+};
+// Team roles: color shows each person's job function (the role name is always written too).
+export const ROLE = {
+  advisor:    { base: "#C2410C", text: "#A3360A", soft: "#FFEDE3" },
+  consultant: { base: "#7C3AED", text: "#5B21B6", soft: "#F1EAFE" },
+  education:  { base: "#0F766E", text: "#115E59", soft: "#E0F2EF" },
+  service:    { base: "#2563EB", text: "#1D4ED8", soft: "#E6EEFE" },
+  support:    { base: "#4B5563", text: "#374151", soft: "#EEF0F3" },
 };
 export const F = { display: "var(--font-display), Georgia, serif", body: "var(--font-body), 'Segoe UI', system-ui, sans-serif" };
 

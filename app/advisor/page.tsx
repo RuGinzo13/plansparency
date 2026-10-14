@@ -396,6 +396,7 @@ export default function AdvisorPage() {
               <code style={{ fontSize: 12, color: C.textMuted, background: C.surfaceAlt, padding: '8px 10px', borderRadius: 6, flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</code>
               <button onClick={() => copy(url, p.plan_id)} style={{ ...btnBase, minHeight: 44, padding: '0 16px', fontSize: 13, borderRadius: 10, background: copiedId === p.plan_id ? C.greenSoft : 'transparent', color: copiedId === p.plan_id ? C.green : C.textMuted, border: `1px solid ${C.border}` }}>{copiedId === p.plan_id ? 'Copied!' : 'Copy Link'}</button>
               <a href={p.share_url} target="_blank" rel="noreferrer" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', boxSizing: 'border-box', fontSize: 13, fontWeight: 600, color: C.accentText, textDecoration: 'none', padding: '0 16px', border: `1px solid ${C.accent}`, borderRadius: 10 }}>Preview →</a>
+              <a href={`/advisor/plans/${p.plan_id}/team`} style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', boxSizing: 'border-box', fontSize: 13, fontWeight: 600, color: C.accentText, textDecoration: 'none', padding: '0 16px', border: `1px solid ${C.accent}`, borderRadius: 10 }}>Edit team</a>
             </div>
           </div>
         );

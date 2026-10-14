@@ -2,7 +2,7 @@
 // Run with: npx --yes tsx scripts/check-theme.ts
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { C, CHART } from '../components/plansparency/theme';
+import { C, CHART, ROLE } from '../components/plansparency/theme';
 
 const ROOT = join(__dirname, '..');
 const THEME = 'components/plansparency/theme.ts';
@@ -76,6 +76,20 @@ for (const [name, color] of Object.entries(CHART)) {
   if (color.startsWith('rgba(')) continue;
   const r = ratio(color, C.surface);
   check(r >= 3.0, `CHART.${name} against surface is ${r.toFixed(2)}, needs 3.0`);
+}
+// Team role colors and the shaded tab.
+for (const [role, c] of Object.entries(ROLE)) {
+  const a = ratio('#FFFFFF', c.base);
+  note(`white/ROLE.${role}.base`, a);
+  check(a >= 4.5, `contrast white on ROLE.${role}.base is ${a.toFixed(2)}, needs 4.5`);
+  const b = ratio(c.text, c.soft);
+  note(`ROLE.${role}.text/soft`, b);
+  check(b >= 4.5, `contrast ROLE.${role}.text on soft is ${b.toFixed(2)}, needs 4.5`);
+}
+for (const fg of ['tabShadeText', 'text'] as const) {
+  const r = ratio(C[fg], C.tabShade);
+  note(`${fg}/tabShade`, r);
+  check(r >= 4.5, `contrast ${fg} on tabShade is ${r.toFixed(2)}, needs 4.5`);
 }
 console.log(`Lowest text contrast: ${lowest.name} at ${lowest.value.toFixed(2)}`);
 
