@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { C, F } from './theme';
+import { C, F, LAYOUT } from './theme';
 import { calculatorResult } from '@/lib/plan/calc';
 import { getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
 import { fmtRounded, fmtDollars } from '@/lib/format';
@@ -80,7 +80,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   if (!planData) {
     return (
       <div style={{ flex: 1, overflowY: "auto", background: C.bg, padding: "20px 16px 40px" }}>
-        <div style={{ maxWidth: 1120, margin: "0 auto", padding: 24, textAlign: "center", color: C.textMuted, fontSize: 13, background: C.surface, borderRadius: 14, border: `1px dashed ${C.border}` }}>
+        <div style={{ maxWidth: LAYOUT.advisor, margin: "0 auto", padding: 24, textAlign: "center", color: C.textMuted, fontSize: 13, background: C.surface, borderRadius: 14, border: `1px dashed ${C.border}` }}>
           {t.calcWaiting}
         </div>
       </div>
@@ -715,7 +715,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
 
   return (
     <div ref={rootRef} style={{ flex: 1, overflowY: "auto", background: C.bg, padding: "20px 16px 40px" }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+      <div style={{ maxWidth: LAYOUT.advisor, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
           <h1 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>{t.calc2Title}</h1>
           <div style={{ textAlign: "right" }}>

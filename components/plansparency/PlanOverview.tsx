@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import type { RefObject } from 'react';
-import { C, F } from './theme';
+import { C, F, LAYOUT } from './theme';
 import { getOverview, type TopicKey } from '@/lib/plan/overview';
 import { AnswerBody, type CardAI } from './AnswerBody';
 import { PlanGlance } from './PlanGlance';
@@ -102,7 +102,7 @@ export function PlanOverview(p: PlanOverviewProps) {
 
       {/* Top bar */}
       <div ref={p.headerRef} className="on-dark" style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bar, borderBottom: `2px solid ${C.barLine}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 20px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px 32px' }}>
+        <div style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '16px 20px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px 32px' }}>
           <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ ...label12, color: C.barMuted }}>{L('Your plan', 'Tu plan')}</div>
             <h1 className="plan-name" style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(20px, 3vw, 26px)', fontWeight: 700, lineHeight: 1.1, color: C.barText }}>{planData?.planName || L('Your 401(k) Plan', 'Tu Plan 401(k)')}</h1>
@@ -129,7 +129,7 @@ export function PlanOverview(p: PlanOverviewProps) {
         </div>
       </div>
 
-      <div ref={p.layoutRef} style={{ maxWidth: 1180, margin: '0 auto', padding: '40px 20px 48px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', flexDirection: 'row-reverse', gap: 28, alignItems: 'flex-start' }}>
+      <div ref={p.layoutRef} style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '40px 20px 48px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', flexDirection: 'row-reverse', gap: 28, alignItems: 'flex-start' }}>
         <main style={{ flex: '999 1 540px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Topic tabs */}
           <div role="tablist" aria-label={L('Plan topics', 'Temas del plan')} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8 }}>
@@ -195,7 +195,7 @@ export function PlanOverview(p: PlanOverviewProps) {
           <div style={{ fontSize: 12, color: C.textDim, paddingTop: 16, borderTop: `1px solid ${C.borderLight}` }}>{p.footer}</div>
         </main>
 
-        <div style={{ flex: '1 1 300px', maxWidth: 360, minWidth: 0, ...(sticky.twoCol ? { position: 'sticky', top: sticky.top, height: sticky.height, display: 'flex', alignItems: 'center' } : {}) }}>
+        <div style={{ flex: '1 1 300px', maxWidth: 400, minWidth: 0, ...(sticky.twoCol ? { position: 'sticky', top: sticky.top, height: sticky.height, display: 'flex', alignItems: 'center' } : {}) }}>
           <PlanGlance groups={o.groups} activeTopic={topic} onPick={(tp, id) => p.onPickRow(tp, id)} lang={lang} />
         </div>
       </div>

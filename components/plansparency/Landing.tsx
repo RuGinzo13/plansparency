@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { C, F, btnBase } from './theme';
+import { C, F, btnBase, LAYOUT } from './theme';
 import { Logo, LangToggle, Shield, SkipLink } from './ui';
 import { IRS_LIMITS, getLimitYear } from '@/lib/plan/irs';
 import { fmtRounded } from '@/lib/format';
@@ -250,7 +250,7 @@ export function Landing({ allowUpload = false, t, lang, setLang, stage, setStage
     <div ref={rootRef} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body }}>
       <SkipLink lang={lang} />
       {allowUpload && <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); e.target.value = ""; }} />}
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: wide ? "28px 32px 40px" : "16px 16px 32px", boxSizing: "border-box" }}>
+      <div style={{ maxWidth: LAYOUT.advisor, margin: "0 auto", padding: wide ? "28px 32px 40px" : "16px 16px 32px", boxSizing: "border-box" }}>
         {Header}
         <main id="main" tabIndex={-1}>
         {wide ? (

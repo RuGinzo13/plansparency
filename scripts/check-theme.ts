@@ -30,6 +30,9 @@ for (const dir of ['app', 'components', 'lib']) {
     readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
       if (line.trimEnd().endsWith('// theme-ok')) return;
       check(!HEX.test(line) && !FN.test(line), `${rel}:${i + 1} has a hard-coded color: ${line.trim().slice(0, 80)}`);
+      for (const m of line.matchAll(/max-?[wW]idth:\s*['"]?(\d{3,5})(?!\d)/g)) {
+        check(Number(m[1]) < 900, `${rel}:${i + 1} has a page-width maxWidth of ${m[1]}; use LAYOUT from theme.ts`);
+      }
     });
   }
 }

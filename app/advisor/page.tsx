@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { parsePlanData, stripPlanData } from '@/lib/plan/plandata';
 import { endSessionFiles } from '@/lib/client/session';
 import { i18n } from '@/lib/i18n';
-import { C, F, btnBase } from '@/components/plansparency/theme';
+import { C, F, btnBase, LAYOUT } from '@/components/plansparency/theme';
 import { Logo, SkipLink } from '@/components/plansparency/ui';
 
 const fileToBase64 = (f: File): Promise<string> => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res((r.result as string).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
@@ -305,7 +305,7 @@ export default function AdvisorPage() {
   const shell = (children: React.ReactNode) => (
     <div ref={rootRef} style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: F.body }}>
       <SkipLink lang="en" />
-      <div style={{ maxWidth: 1120, margin: '0 auto', padding: wide ? '28px 32px 48px' : '16px 16px 32px', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: LAYOUT.advisor, margin: '0 auto', padding: wide ? '28px 32px 48px' : '16px 16px 32px', boxSizing: 'border-box' }}>
         {Header}
         <main id="main" tabIndex={-1}>{children}</main>
       </div>

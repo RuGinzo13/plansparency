@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { C, F, ROLE, btnBase } from '@/components/plansparency/theme';
+import { C, F, ROLE, btnBase, LAYOUT } from '@/components/plansparency/theme';
 import { Logo, SkipLink } from '@/components/plansparency/ui';
 import { RoleChip } from '@/components/plansparency/RoleChip';
 import { TeamAvatar } from '@/components/plansparency/TeamAvatar';
@@ -178,7 +178,7 @@ export default function TeamEditorPage() {
   const frame = (children: React.ReactNode) => (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: F.body }}>
       <SkipLink lang="en" />
-      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '20px 16px 48px', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: LAYOUT.advisor, margin: '0 auto', padding: '20px 16px 48px', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
           <Logo small={false} />
           <span style={{ fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 100, background: C.accentSoft, color: C.accentText }}>For advisors</span>

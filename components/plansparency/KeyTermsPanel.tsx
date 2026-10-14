@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { C, F } from './theme';
+import { C, F, LAYOUT } from './theme';
 import { getKeyTerms, KEY_TERM_SECTION_NAMES, KEY_TERM_SUB_NAMES, type KeyTermSection, type KeyTerm } from '@/lib/glossary';
 
 const SECTIONS: KeyTermSection[] = ['start', 'employer', 'access', 'invest'];
@@ -173,13 +173,13 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
   return (
     <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
       <div className="on-dark" style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bar, borderBottom: `2px solid ${C.barLine}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 20px 12px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '16px 20px 12px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(20px, 3vw, 26px)', lineHeight: 1.1, fontWeight: 700, color: C.barText }}>{t.keyTermsTitle}</h1>
           <div style={{ fontSize: 14, color: C.barMuted }}>{t.keyTermsSubtitle}</div>
         </div>
       </div>
 
-      <div ref={layoutRef} style={{ maxWidth: 1180, margin: '0 auto', padding: '20px 20px 48px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div ref={layoutRef} style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '20px 20px 48px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div className="focus-wrap" style={{ maxWidth: 420, display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', border: `1px solid ${C.inputBorder}`, borderRadius: 14, background: C.aiBubble }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" /></svg>
           <input

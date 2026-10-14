@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { C, F, ROLE } from './theme';
+import { C, F, ROLE, LAYOUT } from './theme';
 import { RoleChip } from './RoleChip';
 import { TeamAvatar } from './TeamAvatar';
 import { TEAM_ROLES, ROLE_TEXT, telHref, type TeamMember } from '@/lib/team';
@@ -38,7 +38,7 @@ export function TeamPanel({ team, planName, lang, t }: Props) {
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
       <div className="on-dark" style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bar, borderBottom: `2px solid ${C.barLine}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '16px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(20px, 3vw, 26px)', lineHeight: 1.1, fontWeight: 700, color: C.barText }}>{t.teamTitle}</h1>
           <div style={{ fontSize: 14, color: C.barMuted }}>
             {L(`The people who help with ${plan}. Reach out with questions about your plan.`, `Las personas que ayudan con ${plan}. Escríbeles si tienes preguntas sobre tu plan.`)}
@@ -46,7 +46,7 @@ export function TeamPanel({ team, planName, lang, t }: Props) {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 20px 48px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '28px 20px 48px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {team.length === 0 ? (
           <section aria-labelledby="team-empty-title" style={{ maxWidth: 640, padding: 24, border: `1px dashed ${C.inputBorder}`, borderRadius: 16, boxSizing: 'border-box' }}>
             <h2 id="team-empty-title" style={{ margin: '0 0 10px', fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text }}>{t.teamEmptyTitle}</h2>
@@ -110,7 +110,7 @@ export function TeamPanel({ team, planName, lang, t }: Props) {
           </>
         )}
 
-        <p style={{ margin: 0, maxWidth: 760, fontSize: 13, lineHeight: 1.5, color: C.textDim }}>{t.teamFootnote}</p>
+        <p style={{ margin: 0, maxWidth: LAYOUT.reading, fontSize: 13, lineHeight: 1.5, color: C.textDim }}>{t.teamFootnote}</p>
       </div>
     </div>
   );

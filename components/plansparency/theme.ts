@@ -34,6 +34,8 @@ export const ROLE = {
   service:    { base: "#2563EB", text: "#1D4ED8", soft: "#E6EEFE" },
   support:    { base: "#4B5563", text: "#374151", soft: "#EEF0F3" },
 };
+// Page widths live here only (check-theme fails on a maxWidth of 900+ anywhere else).
+export const LAYOUT = { page: 1360, advisor: 1280, reading: 760 };
 export const F = { display: "var(--font-display), Georgia, serif", body: "var(--font-body), 'Segoe UI', system-ui, sans-serif" };
 
 // ── Stage constants ──
