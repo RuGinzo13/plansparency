@@ -100,7 +100,9 @@ export async function PUT(req: NextRequest, { params }: Ctx): Promise<NextRespon
     if (fileName) entry.fileName = fileName;
     if (note) entry.note = note;
     const history: HistoryEntry[] = [...(Array.isArray(storedReview?.history) ? storedReview.history : []), entry].slice(-MAX_HISTORY);
-    merged.review = { ...(storedReview ?? {}), reviewerName: by, reviewedAt: at, history };
+    // Remember who first reviewed the plan and when, since reviewedAt moves forward with every change.
+    const original = storedReview?.original ?? (storedReview?.reviewedAt ? { at: storedReview.reviewedAt, by: storedReview.reviewerName || '' } : undefined);
+    merged.review = { ...(storedReview ?? {}), ...(original ? { original } : {}), reviewerName: by, reviewedAt: at, history };
 
     const update: Record<string, unknown> = { plandata_json: merged };
     if (employerChanged) update.employer_name = newEmployer || null;
