@@ -1,120 +1,15 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { parsePlanData, stripPlanData } from '@/lib/plan/plandata';
 import { endSessionFiles } from '@/lib/client/session';
-import { i18n } from '@/lib/i18n';
 import { C, F, btnBase, LAYOUT } from '@/components/plansparency/theme';
 import { Logo, SkipLink } from '@/components/plansparency/ui';
+import { REVIEW_ROWS, setAt } from '@/lib/plan/reviewRows';
+import { ReviewField } from '@/components/plansparency/advisor/ReviewField';
+import { readPlanDocument } from '@/lib/plan/readPlanDocument';
 
 const fileToBase64 = (f: File): Promise<string> => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res((r.result as string).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
 
 type StoredPlan = { plan_id: string; share_url: string; employer_name: string; uploaded_at: string };
-
-// ── Review step: the items an advisor must check before a plan is saved ──────
-type FieldSpec = { path: string[]; kind: 'text' | 'select' | 'tri' | 'triInvert' | 'tiers'; label: string; options?: [string, string][]; mirror?: string[] };
-type ReviewRow = { key: string; label: string; fields: FieldSpec[] };
-
-const SAFE_HARBOR_OPTIONS: [string, string][] = [['none', 'None'], ['nonelective', 'Nonelective (3% of pay)'], ['basic_match', 'Basic match'], ['enhanced_match', 'Enhanced match'], ['qaca', 'QACA']];
-
-const REVIEW_ROWS: ReviewRow[] = [
-  { key: 'safeHarbor', label: 'Guaranteed employer money', fields: [
-    { path: ['safeHarbor', 'type'], kind: 'select', label: 'Type', options: SAFE_HARBOR_OPTIONS },
-    { path: ['safeHarbor', 'formula'], kind: 'text', label: 'How it works' },
-  ] },
-  { key: 'match', label: 'Extra (discretionary) match', fields: [
-    { path: ['noMatch'], kind: 'triInvert', label: 'Does the plan have an extra employer match?' },
-    { path: ['matchTiers'], kind: 'tiers', label: 'Match tiers' },
-  ] },
-  { key: 'lastDay', label: 'Must work on the last day of the year for extra employer money', fields: [
-    { path: ['lastDayProvision'], kind: 'tri', label: 'Last-day rule' },
-  ] },
-  { key: 'profitSharing', label: 'Profit sharing', fields: [
-    { path: ['profitSharing', 'available'], kind: 'tri', label: 'Offered' },
-    { path: ['profitSharing', 'formula'], kind: 'text', label: 'How it works' },
-  ] },
-  { key: 'vesting', label: 'Vesting', fields: [
-    { path: ['vestingSchedule'], kind: 'text', label: 'Vesting schedule' },
-  ] },
-  { key: 'join', label: 'Who can join', fields: [
-    { path: ['contribEligibility', 'requirement'], kind: 'text', label: 'Requirement' },
-    { path: ['contribEligibility', 'entryDates'], kind: 'text', label: 'Entry dates' },
-  ] },
-  { key: 'matchStarts', label: 'When employer money starts', fields: [
-    { path: ['matchEligibility', 'requirement'], kind: 'text', label: 'Requirement' },
-    { path: ['matchEligibility', 'entryDates'], kind: 'text', label: 'Entry dates' },
-    { path: ['matchEligibility', 'immediateMatch'], kind: 'tri', label: 'Starts right away' },
-  ] },
-  { key: 'preTax', label: 'Before-tax (Traditional)', fields: [{ path: ['hasPreTax'], kind: 'tri', label: 'Offered' }] },
-  { key: 'roth', label: 'Roth', fields: [{ path: ['hasRoth'], kind: 'tri', label: 'Offered', mirror: ['rothAvailable'] }] },
-  { key: 'catchUp', label: 'Catch-up allowed', fields: [{ path: ['planAllowsCatchUp'], kind: 'tri', label: 'Allowed' }] },
-  { key: 'loans', label: 'Loans', fields: [{ path: ['loanAvailable'], kind: 'tri', label: 'Offered' }] },
-  { key: 'hardship', label: 'Hardship withdrawals', fields: [{ path: ['hardshipAvailable'], kind: 'tri', label: 'Offered' }] },
-];
-
-const getAt = (o: any, path: string[]) => path.reduce((a, k) => (a == null ? undefined : a[k]), o);
-const setAt = (o: any, path: string[], value: any) => {
-  const copy = JSON.parse(JSON.stringify(o));
-  let cur = copy;
-  for (let i = 0; i < path.length - 1; i++) { if (cur[path[i]] == null || typeof cur[path[i]] !== 'object') cur[path[i]] = {}; cur = cur[path[i]]; }
-  cur[path[path.length - 1]] = value;
-  return copy;
-};
-
-const triLabel = (v: any) => (v === true ? 'Yes' : v === false ? 'No' : 'Not stated');
-const controlStyle = { width: '100%', minHeight: 44, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, boxSizing: 'border-box' } as const;
-
-function ReviewField({ field, draft, editing, onChange }: { field: FieldSpec; draft: any; editing: boolean; onChange: (path: string[], value: any, mirror?: string[]) => void }) {
-  const value = getAt(draft, field.path);
-  const caption = <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 4 }}>{field.label}</div>;
-  const wrap = (children: React.ReactNode) => <div style={{ marginBottom: 10 }}>{caption}{children}</div>;
-  const readStyle = { fontSize: 15, lineHeight: 1.5, color: C.text } as const;
-
-  if (field.kind === 'text') {
-    return wrap(editing
-      ? <input value={typeof value === 'string' ? value : ''} onChange={e => onChange(field.path, e.target.value)} aria-label={field.label} style={controlStyle} />
-      : <div style={readStyle}>{typeof value === 'string' && value ? value : 'Not stated'}</div>);
-  }
-  if (field.kind === 'select') {
-    const opts = field.options || [];
-    return wrap(editing
-      ? <select value={typeof value === 'string' ? value : 'none'} onChange={e => onChange(field.path, e.target.value)} aria-label={field.label} style={controlStyle}>{opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
-      : <div style={readStyle}>{opts.find(([v]) => v === value)?.[1] ?? 'Not stated'}</div>);
-  }
-  if (field.kind === 'tri' || field.kind === 'triInvert') {
-    // triInvert: the data field says "no match" but the question is asked as "has a match".
-    const invert = field.kind === 'triInvert';
-    const shown = value === true || value === false ? (invert ? !value : value) : null;
-    const set = (v: boolean | null) => onChange(field.path, v === null ? null : invert ? !v : v, field.mirror);
-    return wrap(editing
-      ? (
-        <div role="group" aria-label={field.label} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {([[true, 'Yes'], [false, 'No'], [null, 'Not stated']] as [boolean | null, string][]).map(([v, l]) => (
-            <button key={l} aria-pressed={shown === v} onClick={() => set(v)} style={{ ...btnBase, minHeight: 44, padding: '0 16px', fontSize: 14, borderRadius: 8, background: shown === v ? C.accentSoft : C.aiBubble, border: shown === v ? `2px solid ${C.accent}` : `1px solid ${C.inputBorder}`, color: shown === v ? C.accentText : C.text }}>{l}</button>
-          ))}
-        </div>
-      )
-      : <div style={readStyle}>{triLabel(shown)}</div>);
-  }
-  // tiers
-  const tiers: { pct: number; upTo: number }[] = Array.isArray(value) ? value : [];
-  const num = (v: string) => (v === '' ? 0 : Math.max(0, Number(v)) || 0);
-  return wrap(editing
-    ? (
-      <div>
-        {tiers.map((t, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-            <input type="number" min={0} value={t.pct} aria-label={`Tier ${i + 1} match percent`} onChange={e => onChange(field.path, tiers.map((x, j) => (j === i ? { ...x, pct: num(e.target.value) } : x)))} style={{ ...controlStyle, width: 90 }} />
-            <span style={{ fontSize: 14 }}>% match on the first</span>
-            <input type="number" min={0} value={t.upTo} aria-label={`Tier ${i + 1} percent of pay`} onChange={e => onChange(field.path, tiers.map((x, j) => (j === i ? { ...x, upTo: num(e.target.value) } : x)))} style={{ ...controlStyle, width: 90 }} />
-            <span style={{ fontSize: 14 }}>% of pay</span>
-            <button onClick={() => onChange(field.path, tiers.filter((_, j) => j !== i))} aria-label={`Remove tier ${i + 1}`} style={{ ...btnBase, minHeight: 44, minWidth: 44, background: 'transparent', color: C.danger, border: `1px solid ${C.border}`, borderRadius: 8 }}>×</button>
-          </div>
-        ))}
-        <button onClick={() => onChange(field.path, [...tiers, { pct: 0, upTo: 0 }])} style={{ ...btnBase, minHeight: 44, padding: '0 16px', fontSize: 14, background: 'transparent', color: C.text, border: `1px dashed ${C.inputBorder}`, borderRadius: 8 }}>+ Add a tier</button>
-      </div>
-    )
-    : <div style={readStyle}>{tiers.length ? tiers.map((t, i) => <div key={i}>{t.pct}% match on the first {t.upTo}% of pay</div>) : 'None listed'}</div>);
-}
 
 function AccuracyDialog({ onClose }: { onClose: () => void }) {
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -190,35 +85,8 @@ export default function AdvisorPage() {
 
   const handleFile = async (file: File) => {
     setError('');
-    if (!file.type.includes('pdf')) { setError('Please upload a PDF file.'); return; }
-    if (file.size > 25 * 1024 * 1024) { setError('File must be under 25 MB.'); return; }
     try {
-      // Step 1 — upload PDF to Anthropic Files API via Node.js /api/ingest
-      // (avoids sending large base64 through the 4 MB edge function body limit)
-      setStatus('Uploading plan document…');
-      const fd = new FormData();
-      fd.append('file', file);
-      const ingestRes = await fetch('/api/ingest', { method: 'POST', body: fd });
-      if (!ingestRes.ok) { const d = await ingestRes.json().catch(() => ({})); throw new Error(d.error || `Upload error ${ingestRes.status}`); }
-      const { fileId } = await ingestRes.json();
-
-      // Step 2 — call /api/chat with fileId only (no PDF bytes in body)
-      setStatus('Reading plan document…');
-      const chatRes = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: i18n.en.firstMessage }], fileIds: [fileId], lang: 'en', planData: null }),
-      });
-      if (!chatRes.ok) { const d = await chatRes.json().catch(() => ({})); throw new Error(d.error || `Chat error ${chatRes.status}`); }
-      const reader = chatRes.body?.getReader();
-      if (!reader) throw new Error('No response stream from chat API');
-      const decoder = new TextDecoder();
-      let raw = '';
-      while (true) { const { done, value } = await reader.read(); if (done) break; raw += decoder.decode(value, { stream: true }); }
-
-      const planData = parsePlanData(raw);
-      if (!planData) { setError('Could not extract plan data. Try a different copy of the document.'); setStatus(''); return; }
-      const initialSummary = stripPlanData(raw);
+      const { planData, initialSummary, fileId } = await readPlanDocument(file, setStatus);
 
       // Stop here: the advisor must review every item before anything is saved.
       setStatus('');

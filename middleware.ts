@@ -1,7 +1,8 @@
 // This middleware gates access to the Plansparency site.
 //
 // Two rules:
-// 1. "Always private" — /advisor/*, /api/save-plan and /api/plan-team/* always
+// 1. "Always private" — /advisor/*, /api/save-plan, /api/plan-team/* and
+//    /api/plan-details/* always
 //    require the advisor Basic Auth password, no matter what SITE_PUBLIC is set to.
 // 2. "Site open" switch — every other path is locked behind the same
 //    password UNLESS process.env.SITE_PUBLIC === 'true'. Missing or any
@@ -36,7 +37,8 @@ export function middleware(req: NextRequest) {
   const alwaysPrivate =
     pathname.startsWith('/advisor') ||
     pathname === '/api/save-plan' ||
-    pathname.startsWith('/api/plan-team');
+    pathname.startsWith('/api/plan-team') ||
+    pathname.startsWith('/api/plan-details');
 
   if (!alwaysPrivate && process.env.SITE_PUBLIC === 'true') {
     return NextResponse.next();
