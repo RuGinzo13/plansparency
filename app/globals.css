@@ -67,3 +67,12 @@ body {
   .tab-long { display: none; }
   .tab-short { display: inline; }
 }
+
+/* Compare table on "Upload additional plan doc": columns on wide screens, stacked under 700px */
+.cmp-grid { display: grid; grid-template-columns: 1.1fr 1.4fr 1.4fr 140px; gap: 16px; align-items: start; }
+.cmp-lbl { display: none; }
+@media (max-width: 699px) {
+  .cmp-grid { grid-template-columns: 1fr; gap: 6px; }
+  .cmp-head { display: none; }
+  .cmp-lbl { display: inline; font-weight: 700; }
+}

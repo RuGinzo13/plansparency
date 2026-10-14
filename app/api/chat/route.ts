@@ -8,6 +8,7 @@ import {
   ANTHROPIC_MESSAGES_URL,
   ANTHROPIC_MODEL,
 } from '@/lib/anthropic/client';
+import { REVIEW_ROWS, rowValueText } from '@/lib/plan/reviewRows';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -103,9 +104,11 @@ export async function POST(req: NextRequest): Promise<Response> {
   // System prompt as blocks: the fixed instructions are cached; the per-plan
   // account line (if any) comes after the marker so it never breaks the cache.
   const acct = accountLine(planData);
+  const reviewed = reviewedDetailsLine(planData);
   const systemBlocks: any[] = [
     { type: 'text', text: fixedInstructions(lang), cache_control: { type: 'ephemeral' } },
     ...(acct ? [{ type: 'text', text: acct }] : []),
+    ...(reviewed ? [{ type: 'text', text: reviewed }] : []),
   ];
 
   // ── 5. Call Anthropic with streaming ─────────────────────────────────────────
@@ -232,6 +235,14 @@ function accountLine(planData: any): string {
   return acctUrl
     ? `ACCOUNT MANAGEMENT QUESTIONS: For ANY question about changing contributions, changing investments, taking a loan, taking a withdrawal, taking a distribution, processing a rollover, or any other account management action, tell the participant they can do this by logging into their account. Provide this link: ${acctUrl} and tell them to log in at ${acctName}. Frame it helpfully. ALWAYS include the URL.`
     : '';
+}
+
+// The details the advisor checked and may have edited since the document was read. After the cache
+// marker, so the cached instructions stay identical for every request.
+function reviewedDetailsLine(planData: any): string {
+  if (!planData?.review) return '';
+  const lines = REVIEW_ROWS.map((row) => `- ${row.label}: ${rowValueText(row, planData).slice(0, 300)}`);
+  return `Plan details reviewed by the advisor (newer than the plan document; when they differ, use these):\n${lines.join('\n')}`;
 }
 
 function fixedInstructions(lang: string): string {
