@@ -358,3 +358,8 @@ Three new failures, all logged above with fixes: (1) PHASE-07 claimed done items
 - **What happened:** OPEN-ITEMS #51 said ~46 hard-coded colors sat outside `theme.ts`. A full search (hex plus `rgba(`) found 93 in 13 files. The first count missed `rgba(...)` values and CSS files. #51 also listed theme names from the first lab (Ink & gold, Deep teal...) after they were replaced.
 - **Fix:** PHASE-17 lists every file with its count and re-runs the search in Step 0. `scripts/check-theme.ts` makes the count enforceable instead of estimated.
 - **Rule:** count with the exact search the prompt will use, and update the open item when a canvas option set changes.
+
+## Oct 12, 2026: Cowork canvas reviews promised but skipped (PHASE-11 to PHASE-16)
+- **What happened:** after each of PHASE-11 to PHASE-16, OPEN-ITEMS said "awaiting Cowork review against the board." None were done; new phases were written on top. PHASE-17/18 then changed the same screens.
+- **Fix:** logged as #54, to be done against the Sunrise boards.
+- **Rule:** before writing the next phase prompt, Cowork finishes the review of the last phase (diff vs board + checks) and records the result in OPEN-ITEMS. Done for PHASE-17/18 on Oct 12.
