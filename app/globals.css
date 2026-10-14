@@ -76,3 +76,10 @@ body {
   .cmp-head { display: none; }
   .cmp-lbl { display: inline; font-weight: 700; }
 }
+
+/* Advisor plans table: under 700px keep Plan, Last updated and the +/- button */
+.pt-show-sm { display: none; }
+@media (max-width: 699px) {
+  .pt-hide-sm { display: none; }
+  .pt-show-sm { display: block; }
+}

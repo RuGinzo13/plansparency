@@ -2,7 +2,7 @@
 //
 // Two rules:
 // 1. "Always private" — /advisor/*, /api/save-plan, /api/plan-team/* and
-//    /api/plan-details/* always
+//    /api/plan-details/* and /api/plans-list always
 //    require the advisor Basic Auth password, no matter what SITE_PUBLIC is set to.
 // 2. "Site open" switch — every other path is locked behind the same
 //    password UNLESS process.env.SITE_PUBLIC === 'true'. Missing or any
@@ -38,7 +38,8 @@ export function middleware(req: NextRequest) {
     pathname.startsWith('/advisor') ||
     pathname === '/api/save-plan' ||
     pathname.startsWith('/api/plan-team') ||
-    pathname.startsWith('/api/plan-details');
+    pathname.startsWith('/api/plan-details') ||
+    pathname === '/api/plans-list';
 
   if (!alwaysPrivate && process.env.SITE_PUBLIC === 'true') {
     return NextResponse.next();

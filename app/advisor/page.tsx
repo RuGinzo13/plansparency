@@ -6,6 +6,7 @@ import { Logo, SkipLink } from '@/components/plansparency/ui';
 import { REVIEW_ROWS, setAt } from '@/lib/plan/reviewRows';
 import { ReviewField } from '@/components/plansparency/advisor/ReviewField';
 import { readPlanDocument } from '@/lib/plan/readPlanDocument';
+import { PlansTable } from '@/components/plansparency/advisor/PlansTable';
 
 const fileToBase64 = (f: File): Promise<string> => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res((r.result as string).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
 
@@ -247,30 +248,7 @@ export default function AdvisorPage() {
   }
 
   // ── STATE B — plans exist ──────────────────────────────────────────────────
-  if (hasToken) return shell(
-    <div style={{ maxWidth: 680 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
-        <h1 style={{ fontFamily: display, fontSize: 32, fontWeight: 700, margin: 0 }}>Your Plans</h1>
-        <button onClick={() => setHasToken(false)} style={{ ...btnBase, minHeight: 44, padding: '0 18px', fontSize: 14, background: C.accentSoft, color: C.accentText, border: `1px solid ${C.accent}` }}>+ Upload Another Plan</button>
-      </div>
-      {plans.length === 0 && <p style={{ color: C.textMuted }}>No plans uploaded yet.</p>}
-      {plans.map(p => {
-        const url = (typeof window !== 'undefined' ? window.location.origin : '') + p.share_url;
-        return (
-          <div key={p.plan_id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 22, marginBottom: 16 }}>
-            <div style={{ fontFamily: display, fontWeight: 700, fontSize: 20, marginBottom: 4 }}>{p.employer_name}</div>
-            <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 14 }}>Uploaded {new Date(p.uploaded_at).toLocaleDateString()}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <code style={{ fontSize: 12, color: C.textMuted, background: C.surfaceAlt, padding: '8px 10px', borderRadius: 6, flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</code>
-              <button onClick={() => copy(url, p.plan_id)} style={{ ...btnBase, minHeight: 44, padding: '0 16px', fontSize: 13, borderRadius: 10, background: copiedId === p.plan_id ? C.greenSoft : 'transparent', color: copiedId === p.plan_id ? C.green : C.textMuted, border: `1px solid ${C.border}` }}>{copiedId === p.plan_id ? 'Copied!' : 'Copy Link'}</button>
-              <a href={p.share_url} target="_blank" rel="noreferrer" style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', boxSizing: 'border-box', fontSize: 13, fontWeight: 600, color: C.accentText, textDecoration: 'none', padding: '0 16px', border: `1px solid ${C.accent}`, borderRadius: 10 }}>Preview →</a>
-              <a href={`/advisor/plans/${p.plan_id}/team`} style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', boxSizing: 'border-box', fontSize: 13, fontWeight: 600, color: C.accentText, textDecoration: 'none', padding: '0 16px', border: `1px solid ${C.accent}`, borderRadius: 10 }}>Edit team</a>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+  if (hasToken) return shell(<PlansTable onUpload={() => setHasToken(false)} />);
 
   // ── STATE A — upload form ──────────────────────────────────────────────────
   const steps = ['Upload', 'You review every detail', 'Share one link'];
