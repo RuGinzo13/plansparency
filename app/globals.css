@@ -61,11 +61,13 @@ body {
   border: 0;
 }
 
-/* Fourth tab: full name on wide screens, short name under 700px */
-.tab-short { display: none; }
+/* Plan bar: three columns on wide screens, one compact row under 700px */
+.pb-wide { display: grid; }
+.pb-compact { display: none; }
 @media (max-width: 699px) {
-  .tab-long { display: none; }
-  .tab-short { display: inline; }
+  .pb-wide { display: none; }
+  .pb-compact { display: flex; }
+  .hdr-badge { display: none !important; }
 }
 
 /* Compare table on "Upload additional plan doc": columns on wide screens, stacked under 700px */

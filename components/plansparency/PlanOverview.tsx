@@ -34,7 +34,6 @@ interface PlanOverviewProps {
   errorText: string;
   footer: string;
   scrollRef: RefObject<HTMLDivElement | null>;
-  headerRef: RefObject<HTMLDivElement | null>;
   layoutRef: RefObject<HTMLDivElement | null>;
   sticky: { twoCol: boolean; top: number; height: number; headerH: number };
   // The focus strip, shown above the topic tabs when the person picked a focus.
@@ -46,18 +45,14 @@ interface PlanOverviewProps {
 // The video that belongs at the top of each answer card.
 const CARD_VIDEO: Record<string, VideoId> = { safeHarbor: 'match', match: 'match', vesting: 'vesting', roth: 'taxes', limit: 'limits', elig: 'limits' };
 
-const label12 = { fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' } as const;
-const small11 = { fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.textMuted } as const;
 
-// "Your plan": top bar, topic tabs, question cards that open in place, and the grouped panel.
+// "Your plan": topic tabs, question cards that open in place, and the grouped panel.
 export function PlanOverview(p: PlanOverviewProps) {
   const { planData, lang, review, topic, openCardId, sticky } = p;
   const es = lang === 'es';
   const L = (en: string, esText: string) => (es ? esText : en);
   const o = getOverview(planData, lang);
 
-  const reviewer = review?.reviewerName && review.reviewerName.trim() ? review.reviewerName.trim() : '';
-  const when = review?.reviewedAt ? new Date(review.reviewedAt).toLocaleDateString(es ? 'es-US' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
   const advisor: AdvisorInfo | null = p.advisor ?? (planData?.advisorName ? { name: planData.advisorName, firm: planData.advisorFirm, email: planData.advisorEmail } : null);
   const rkName: string | undefined = planData?.recordkeeperName;
   const rkUrl: string | undefined = typeof planData?.recordkeeperUrl === 'string' && planData.recordkeeperUrl.startsWith('https://') ? planData.recordkeeperUrl : undefined;
@@ -71,37 +66,6 @@ export function PlanOverview(p: PlanOverviewProps) {
   const cards = o.topics[topic];
   return (
     <div ref={p.scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
-      <style>{`@media (max-width: 700px) { .plan-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }`}</style>
-
-      {/* Top bar */}
-      <div ref={p.headerRef} className="on-dark" style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bar, borderBottom: `2px solid ${C.barLine}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
-        <div style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '16px 20px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px 32px' }}>
-          <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ ...label12, color: C.barMuted }}>{L('Your plan', 'Tu plan')}</div>
-            <h1 className="plan-name" style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(20px, 3vw, 26px)', fontWeight: 700, lineHeight: 1.1, color: C.barText }}>{planData?.planName || L('Your 401(k) Plan', 'Tu Plan 401(k)')}</h1>
-            <span style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 100, background: reviewer ? C.greenSoft : C.accentSoft, color: reviewer ? C.green : C.accentText }}>
-              {reviewer ? L(`Details reviewed by ${reviewer}${when ? ` on ${when}` : ''}`, `Detalles revisados por ${reviewer}${when ? ` el ${when}` : ''}`) : L('Read from the document you uploaded', 'Leído del documento que subiste')}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 28px' }}>
-            {advisor && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={{ ...small11, color: C.barMuted }}>{L('Your advisor', 'Tu asesor')}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.barText }}>{advisor.firm ? `${advisor.name}, ${advisor.firm}` : advisor.name}</div>
-                {advisor.email && <a href={`mailto:${advisor.email}`} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 24, fontSize: 14, fontWeight: 600, color: C.barLink }}>{advisor.email}</a>}
-              </div>
-            )}
-            {rkName && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <div style={{ ...small11, color: C.barMuted }}>{L('Recordkeeper', 'Administrador del plan')}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.barText }}>{rkName}</div>
-                {rkUrl && <a href={rkUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 24, fontSize: 14, fontWeight: 600, color: C.barLink }}>{L('Log in to your account ↗', 'Entra a tu cuenta ↗')}</a>}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       <div ref={p.layoutRef} style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '40px 20px 48px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', flexDirection: 'row-reverse', gap: 28, alignItems: 'flex-start' }}>
         <main style={{ flex: '999 1 540px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {p.focusSlot}

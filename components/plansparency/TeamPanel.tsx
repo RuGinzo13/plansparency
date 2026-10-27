@@ -11,6 +11,7 @@ interface Props {
   planName: string;
   lang: 'en' | 'es';
   t: any;
+  onBack: () => void;
 }
 
 const linkStyle = { display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 32, fontSize: 15, fontWeight: 600, color: C.accentText, overflowWrap: 'anywhere' } as const;
@@ -26,8 +27,8 @@ const MailIcon = () => (
   </svg>
 );
 
-// Tab 4: the advisor's team for this plan, color-coded by role.
-export function TeamPanel({ team, planName, lang, t }: Props) {
+// The advisor's team view (opened from the plan bar) for this plan, color-coded by role.
+export function TeamPanel({ team, planName, lang, t, onBack }: Props) {
   const es = lang === 'es';
   const L = (en: string, esText: string) => (es ? esText : en);
   const plan = planName ? L(`the ${planName}`, `el ${planName}`) : L('your 401(k)', 'tu 401(k)');
@@ -37,16 +38,14 @@ export function TeamPanel({ team, planName, lang, t }: Props) {
 
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
-      <div className="on-dark" style={{ position: 'sticky', top: 0, zIndex: 5, background: C.bar, borderBottom: `2px solid ${C.barLine}`, boxShadow: `0 8px 20px ${C.shadow}` }}>
-        <div style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '16px 20px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(20px, 3vw, 26px)', lineHeight: 1.1, fontWeight: 700, color: C.barText }}>{t.teamTitle}</h1>
-          <div style={{ fontSize: 14, color: C.barMuted }}>
-            {L(`The people who help with ${plan}. Reach out with questions about your plan.`, `Las personas que ayudan con ${plan}. Escríbeles si tienes preguntas sobre tu plan.`)}
-          </div>
-        </div>
-      </div>
-
       <div style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '28px 20px 48px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <button type="button" onClick={onBack} style={{ alignSelf: 'flex-start', minHeight: 44, padding: 0, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, color: C.accentText }}>{L('← Back to your plan', '← Volver a tu plan')}</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 36, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{t.teamTitle}</h1>
+          <p style={{ margin: 0, fontSize: 15, color: C.textMuted }}>
+            {L(`The people who help with ${plan}. Reach out with questions about your plan.`, `Las personas que ayudan con ${plan}. Escríbeles si tienes preguntas sobre tu plan.`)}
+          </p>
+        </div>
         {team.length === 0 ? (
           <section aria-labelledby="team-empty-title" style={{ maxWidth: 640, padding: 24, border: `1px dashed ${C.inputBorder}`, borderRadius: 16, boxSizing: 'border-box' }}>
             <h2 id="team-empty-title" style={{ margin: '0 0 10px', fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text }}>{t.teamEmptyTitle}</h2>

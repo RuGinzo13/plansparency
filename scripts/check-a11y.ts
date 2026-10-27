@@ -130,7 +130,7 @@ for (const file of [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'components')
   const layout = readFileSync(join(ROOT, 'app/layout.tsx'), 'utf8');
   check(/import\s+['"]\.\/globals\.css['"]/.test(layout), 'app/layout.tsx', "does not import './globals.css'");
   const css = readFileSync(join(ROOT, 'app/globals.css'), 'utf8');
-  for (const rule of ['.skip-link', '.sr-only', '.tab-short', ':focus-visible']) {
+  for (const rule of ['.skip-link', '.sr-only', '.pb-compact', ':focus-visible']) {
     check(css.includes(rule), 'app/globals.css', `is missing ${rule}`);
   }
 }

@@ -30,6 +30,7 @@ import { Md, Modal, LangToggle, Logo, Shield, SkipLink, announce } from '@/compo
 import { TabBar, PlanGuideTabBar, AppHeader } from '@/components/plansparency/nav';
 import { KeyTermsPanel } from '@/components/plansparency/KeyTermsPanel';
 import { TeamPanel } from '@/components/plansparency/TeamPanel';
+import { PlanBar } from '@/components/plansparency/PlanBar';
 import { WelcomeDialog } from '@/components/plansparency/WelcomeDialog';
 import type { TeamMember } from '@/lib/team';
 import { InvestmentsPanel } from '@/components/plansparency/InvestmentsPanel';
@@ -138,7 +139,6 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const [cardAI, setCardAI] = useState<Record<string, { status: 'waiting' | 'loading' | 'done' | 'error'; text: string }>>({});
   const cardBusyRef = useRef(false);
   const planScrollRef = useRef(null);
-  const planHeaderRef = useRef(null);
   const planLayoutRef = useRef(null);
   const [stmtData, setStmtData] = useState(null);
   const [uploadError, setUploadError] = useState("");
@@ -159,7 +159,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   const lastActivityRef = useRef(Date.now());
 
   const t = i18n[lang];
-  const planSticky = useStickyPanel(planScrollRef, planHeaderRef, planLayoutRef, `${stage}-${activeTab}-${planGuideTab}`);
+  const planSticky = useStickyPanel(planScrollRef, null, planLayoutRef, `${stage}-${activeTab}-${planGuideTab}`);
 
   const bumpActivity = () => { lastActivityRef.current = Date.now(); };
 
@@ -725,7 +725,9 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           onSkip={(hide) => { closeWelcome(hide); setFocus([]); setFocusCur(0); }}
         />}
 
-        <AppHeader accentColor={C.accent} title={planData?.planName || fileName || "Your Plan"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
+        <AppHeader bare accentColor={C.accent} title={planData?.planName || fileName || "Your Plan"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
+
+        <PlanBar planData={planData} review={planData?.review} team={team} lang={lang} onOpenTeam={() => setActiveTab("team")} />
 
         <TabBar activeTab={activeTab} setActiveTab={setActiveTab} t={t} />
 
@@ -743,7 +745,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
                 onSelectTopic={selectTopic} openCardId={openCardId} onToggleCard={(id) => setOpenCardId(prev => prev === id ? null : id)} onPickRow={pickRow}
                 getWritten={(id) => getStockAnswer(id, planData, lang)} getAI={(id) => cardAI[cardKey(id)] || null} onRetry={retryCard}
                 onOpenCalculator={() => setActiveTab("calculator")} errorText={t.errorReply} footer={t.footerDisclaimer}
-                scrollRef={planScrollRef} headerRef={planHeaderRef} layoutRef={planLayoutRef} sticky={planSticky}
+                scrollRef={planScrollRef} layoutRef={planLayoutRef} sticky={planSticky}
                 focusSlot={focusStrip} focusTopics={focusTopics(focus)}
               />
             )}
@@ -756,7 +758,8 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         {activeTab === "calculator" && <div style={{ padding: "12px 20px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>{focusStrip}<WatchVideo id="limits" placeKey="calc" label={(s, title) => `${lang === "es" ? "¿Nuevo en esto? ▶ Ver" : "New to this? ▶ Watch"}: ${title} · ${s} s`} /></div>}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openCard} onOpenCalculator={() => setActiveTab("calculator")} />}
-        {activeTab === "team" && <TeamPanel team={team} planName={planData?.planName || ""} lang={lang} t={t} />}
+        {activeTab === "videos" && <div style={{ flex: 1, overflowY: "auto", padding: "28px 20px" }}><h1 style={{ margin: 0, fontFamily: F.display, fontSize: 36, fontWeight: 700, color: C.text }}>{t.navVideos}</h1></div>}
+        {activeTab === "team" && <TeamPanel team={team} planName={planData?.planName || ""} lang={lang} t={t} onBack={() => setActiveTab("dashboard")} />}
 
         </main>
         {(

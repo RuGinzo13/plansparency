@@ -80,7 +80,7 @@ for (const [name, color] of Object.entries(CHART)) {
   const r = ratio(color, C.surface);
   check(r >= 3.0, `CHART.${name} against surface is ${r.toFixed(2)}, needs 3.0`);
 }
-// Team role colors and the shaded tab.
+// Team role colors.
 for (const [role, c] of Object.entries(ROLE)) {
   const a = ratio('#FFFFFF', c.base);
   note(`white/ROLE.${role}.base`, a);
@@ -89,10 +89,11 @@ for (const [role, c] of Object.entries(ROLE)) {
   note(`ROLE.${role}.text/soft`, b);
   check(b >= 4.5, `contrast ROLE.${role}.text on soft is ${b.toFixed(2)}, needs 4.5`);
 }
-for (const fg of ['tabShadeText', 'text'] as const) {
-  const r = ratio(C[fg], C.tabShade);
-  note(`${fg}/tabShade`, r);
-  check(r >= 4.5, `contrast ${fg} on tabShade is ${r.toFixed(2)}, needs 4.5`);
+// Plan bar: the lock icon (barLink) sits on the tabShadeText box.
+{
+  const r = ratio(C.barLink, C.tabShadeText);
+  note('barLink/tabShadeText', r);
+  check(r >= 3.0, `non-text: barLink icon on tabShadeText is ${r.toFixed(2)}, needs 3.0`);
 }
 // Non-text colors: the striped "still left" part of the employer bar is drawn with warningDim and stripe,
 // outlined in warning, so the outline must stand out from both (3.0).

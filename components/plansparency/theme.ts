@@ -17,7 +17,7 @@ export const C = {
   shadow: "rgba(17,24,39,.08)", shadowStrong: "rgba(17,24,39,.25)",
   overlay: "rgba(17,24,39,.60)", overlayStrong: "rgba(17,24,39,.75)",
   focus: "#111827", focusOnDark: "#FFFFFF",
-  tabShade: "#E5E7EB", tabShadeText: "#374151",
+  tabShadeText: "#374151",
   bar: "#1F2937", barLine: "#EA580C", barText: "#FFFFFF", barMuted: "#CBD2DC", barLink: "#FDBA74",
   stripe: "#FDE68A", captionBg: "rgba(17,24,39,.85)",
 };

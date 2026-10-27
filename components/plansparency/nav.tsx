@@ -46,16 +46,12 @@ export function TabBar({ activeTab, setActiveTab, t }) {
       ),
     },
     {
-      id: "team",
-      label: t.navTeam,
-      shortLabel: t.navTeamShort,
-      shaded: true,
+      id: "videos",
+      label: t.navVideos,
       icon: (active) => (
-        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.text : C.tabShadeText} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="9" cy="8" r="3.2"/>
-          <path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/>
-          <circle cx="17" cy="9" r="2.4"/>
-          <path d="M15.5 14.6c3 .2 5.5 2.1 5.5 5.4"/>
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active ? C.accent : C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="3"/>
+          <path d="M10 9l5 3-5 3z"/>
         </svg>
       ),
     },
@@ -75,15 +71,14 @@ export function TabBar({ activeTab, setActiveTab, t }) {
             key={tab.id}
             type="button"
             aria-current={active ? "page" : undefined}
-            aria-label={tab.shortLabel ? tab.label : undefined}
             onClick={() => setActiveTab(tab.id)}
             style={{
               flex: 1,
               minHeight: 44,
               padding: "10px 4px 8px",
-              background: tab.shaded ? C.tabShade : "none",
+              background: "none",
               border: "none",
-              borderBottom: `2px solid ${active ? C.accent : tab.shaded ? C.inputBorder : "transparent"}`,
+              borderBottom: `2px solid ${active ? C.accent : "transparent"}`,
               cursor: "pointer",
               fontFamily: F.body,
               display: "flex",
@@ -91,25 +86,18 @@ export function TabBar({ activeTab, setActiveTab, t }) {
               alignItems: "center",
               gap: 4,
               transition: "all .15s",
-              color: tab.shaded ? (active ? C.text : C.tabShadeText) : (active ? C.accent : C.textMuted),
+              color: active ? C.accent : C.textMuted,
             }}
-            onMouseEnter={e => { if (!active && !tab.shaded) e.currentTarget.style.color = C.text; }}
-            onMouseLeave={e => { if (!active && !tab.shaded) e.currentTarget.style.color = C.textMuted; }}
+            onMouseEnter={e => { if (!active) e.currentTarget.style.color = C.text; }}
+            onMouseLeave={e => { if (!active) e.currentTarget.style.color = C.textMuted; }}
           >
             {tab.icon(active)}
-            {tab.shortLabel ? (
-              <>
-                <span aria-hidden="true" className="tab-long" style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase" }}>{tab.label}</span>
-                <span aria-hidden="true" className="tab-short" style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase" }}>{tab.shortLabel}</span>
-              </>
-            ) : (
-              <span style={{
-                fontSize: 12,
-                fontWeight: active ? 700 : 500,
-                letterSpacing: ".03em",
-                textTransform: "uppercase",
-              }}>{tab.label}</span>
-            )}
+            <span style={{
+              fontSize: 12,
+              fontWeight: active ? 700 : 500,
+              letterSpacing: ".03em",
+              textTransform: "uppercase",
+            }}>{tab.label}</span>
           </button>
         );
       })}
@@ -166,10 +154,11 @@ export function PlanGuideTabBar({ activeTab, setActiveTab, hasFunds }) {
 }
 
 // ── App Header (shared across dashboard / statement / chat stages) ──
-export function AppHeader({ accentColor, title, onBack, backLabel, lang, setLang, loading, t, advisorLogo, advisorFirmName }) {
+// `bare`: the plan screens show the plan name in the plan bar below, so the header is just logo, badges and language.
+export function AppHeader({ accentColor, title, onBack, backLabel, lang, setLang, loading, t, advisorLogo, advisorFirmName, bare = false }) {
   return (
     <div style={{ padding: "10px 16px", borderBottom: `2px solid ${accentColor}`, background: C.surface, flexShrink: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: bare ? 0 : 8 }}>
         {onBack && (
           <button type="button" onClick={onBack} style={{
             minHeight: 44, padding: "7px 14px", borderRadius: 10, border: `1px solid ${accentColor}`,
@@ -193,19 +182,21 @@ export function AppHeader({ accentColor, title, onBack, backLabel, lang, setLang
           <Logo small />
         )}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: C.green, background: C.greenDim, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.greenLine}` }}>
+          <div className={bare ? "hdr-badge" : undefined} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: C.green, background: C.greenDim, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.greenLine}` }}>
             <Shield color={C.green} sz={10} />{t.securityBadge}
           </div>
           <LangToggle lang={lang} setLang={setLang} disabled={loading} />
-          <div style={{ fontSize: 12, color: C.warning, background: C.accentTint, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.accentLine}`, whiteSpace: "nowrap" }}>
+          <div className={bare ? "hdr-badge" : undefined} style={{ fontSize: 12, color: C.warning, background: C.accentTint, padding: "3px 8px", borderRadius: 100, border: `1px solid ${C.accentLine}`, whiteSpace: "nowrap" }}>
             {t.disclaimer}
           </div>
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: accentColor, flexShrink: 0 }} />
-        <div style={{ fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: ".01em" }}>{title}</div>
-      </div>
+      {!bare && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: accentColor, flexShrink: 0 }} />
+          <div style={{ fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: ".01em" }}>{title}</div>
+        </div>
+      )}
     </div>
   );
 }
