@@ -15,7 +15,7 @@ interface ButtonProps {
   placeKey: string;
   onNext: () => void;
   // Replaces "▶ Watch: {title} · {seconds} s".
-  label?: (seconds: number) => string;
+  label?: (seconds: number, title: string) => string;
 }
 
 // The entry point everywhere: a pill button. The player opens inline right below it.
@@ -25,7 +25,7 @@ export function WatchButton({ video, lang, planName, placeKey, onNext, label }: 
   // The card closes or the screen changes: the player goes away and stays closed.
   useEffect(() => () => closeVideoIf(placeKey), [placeKey]);
   const seconds = videoSeconds(video);
-  const text = open ? (es ? 'Ocultar video' : 'Hide video') : label ? label(seconds) : `▶ ${es ? 'Ver' : 'Watch'}: ${video.title} · ${seconds} s`;
+  const text = open ? (es ? 'Ocultar video' : 'Hide video') : label ? label(seconds, video.title) : `▶ ${es ? 'Ver' : 'Watch'}: ${video.title} · ${seconds} s`;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
       <button type="button" aria-expanded={open} onClick={() => setOpenVideo(open ? null : placeKey)}
@@ -42,7 +42,7 @@ export function WatchButton({ video, lang, planName, placeKey, onNext, label }: 
 }
 
 // Drop-in version: builds the video from the plan and renders nothing when the video is hidden for this plan.
-export function WatchVideo({ id, placeKey, label }: { id: VideoId; placeKey: string; label?: (seconds: number) => string }) {
+export function WatchVideo({ id, placeKey, label }: { id: VideoId; placeKey: string; label?: (seconds: number, title: string) => string }) {
   const c = useVideoCtx();
   const video = useVideo(id);
   if (!c || !video) return null;

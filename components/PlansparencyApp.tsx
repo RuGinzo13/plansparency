@@ -35,6 +35,9 @@ import type { TeamMember } from '@/lib/team';
 import { InvestmentsPanel } from '@/components/plansparency/InvestmentsPanel';
 import { PlanOverview } from '@/components/plansparency/PlanOverview';
 import { FocusStrip } from '@/components/plansparency/FocusStrip';
+import { VideoProvider } from '@/components/plansparency/video/VideoContext';
+import { WatchVideo } from '@/components/plansparency/video/WatchButton';
+import { WatchFirst } from '@/components/plansparency/video/WatchFirst';
 import { focusPlace, focusTopics, type FocusId } from '@/lib/plan/focus';
 import { CalcPanel } from '@/components/plansparency/CalcPanel';
 import { StatementDashboard } from '@/components/plansparency/StatementDashboard';
@@ -440,6 +443,17 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     else if (place.kind === 'investments') { setActiveTab("dashboard"); setPlanGuideTab("investments"); }
     else setActiveTab("calculator");
   };
+  // What the end card button of a video does.
+  const scrollToId = (id: string) => setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+  const videoAction = (action: string) => {
+    if (action === "calculator") setActiveTab("calculator");
+    else if (action === "scrollVesting") { openCard("vesting"); scrollToId("visual-vesting"); }
+    else if (action === "scrollLeave") { setActiveTab("dashboard"); setPlanGuideTab("guide"); setTopic("leave"); setOpenCardId("leave"); scrollToId("visual-leave"); }
+    else if (action === "openLoans") openCard("loans");
+    else if (action === "openHardship") openCard("hardship");
+    else if (action === "investments") { setActiveTab("dashboard"); setPlanGuideTab("investments"); }
+  };
+  const videoCtx = { planData, lang, info: { employerName, planName: planData?.planName, recordkeeperName: planData?.recordkeeperName, hasTeam: team.length > 0 }, onAction: (a) => videoAction(a) };
   const startFocus = (picks: FocusId[]) => { setFocus(picks); setFocusCur(0); if (picks[0]) goToFocus(picks[0]); };
   const focusStrip = focus.length > 0 ? (
     <FocusStrip
@@ -447,6 +461,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
       onChip={(i) => { setFocusCur(i); goToFocus(focus[i]); }}
       onNext={() => { const n = Math.min(focusCur + 1, focus.length - 1); setFocusCur(n); goToFocus(focus[n]); }}
       onChange={() => openWelcome(2)}
+      extra={<WatchFirst pick={focus[focusCur]} lang={lang} onGo={goToFocus} />}
     />
   ) : null;
   const retryCard = (id) => setCardAI(prev => { const next = { ...prev }; delete next[cardKey(id)]; return next; });
@@ -682,6 +697,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // ── SPD App (dashboard + calculator + key terms + chat) ──
   if (stage === STAGE.APP) {
     return (
+      <VideoProvider value={videoCtx}>
       <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
         <SkipLink lang={lang} />
         <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUpload(e.target.files[0]); e.target.value = ""; }} />
@@ -731,13 +747,13 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
                 focusSlot={focusStrip} focusTopics={focusTopics(focus)}
               />
             )}
-            {planGuideTab === "investments" && focusStrip && <div style={{ padding: "12px 20px 0", flexShrink: 0 }}>{focusStrip}</div>}
+            {planGuideTab === "investments" && <div style={{ padding: "12px 20px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>{focusStrip}<WatchVideo id="tdf" placeKey="invest" /></div>}
             {planGuideTab === "investments" && (
               <InvestmentsPanel fundsData={planData?.fundsData || []} lang={lang} onAddDocument={() => addDocRef.current?.click()} fundsSource={fundsSource} fundsError={fundsError} />
             )}
           </>
         )}
-        {activeTab === "calculator" && focusStrip && <div style={{ padding: "12px 20px 0", flexShrink: 0 }}>{focusStrip}</div>}
+        {activeTab === "calculator" && <div style={{ padding: "12px 20px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>{focusStrip}<WatchVideo id="limits" placeKey="calc" label={(s, title) => `${lang === "es" ? "¿Nuevo en esto? ▶ Ver" : "New to this? ▶ Watch"}: ${title} · ${s} s`} /></div>}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openCard} onOpenCalculator={() => setActiveTab("calculator")} />}
         {activeTab === "team" && <TeamPanel team={team} planName={planData?.planName || ""} lang={lang} t={t} />}
@@ -754,6 +770,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
 
         <style>{globalCss()}</style>
       </div>
+      </VideoProvider>
     );
   }
 

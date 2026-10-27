@@ -34,7 +34,7 @@ export function LeaveChoicesVisual({ options, lang }: Props) {
   return (
     <section aria-labelledby="leave-choices-h" style={{ padding: 22, borderRadius: 16, background: C.surfaceAlt, display: 'flex', flexDirection: 'column', gap: 14 }}>
       <h2 id="leave-choices-h" style={{ margin: 0, fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text }}>{L('Your 4 choices when you leave', 'Tus 4 opciones cuando te vas')}</h2>
-      <VisualFrame lang={lang} label={L('your 4 choices when you leave', 'tus 4 opciones cuando te vas')} words={words} controls={cards} />
+      <VisualFrame anchor="visual-leave" lang={lang} label={L('your 4 choices when you leave', 'tus 4 opciones cuando te vas')} words={words} controls={cards} />
       <div style={{ fontSize: 13, color: C.textMuted }}>{L("Each choice has trade-offs. Your plan's website walks you through the steps.", 'Cada opción tiene sus ventajas y desventajas. El sitio web de tu plan te guía en los pasos.')}</div>
     </section>
   );

@@ -7,6 +7,9 @@ import { TeamAvatar } from './TeamAvatar';
 import type { TeamMember } from '@/lib/team';
 import { FOCUS_CHOICES, MAX_FOCUS, type FocusId } from '@/lib/plan/focus';
 import { FocusIcon } from './FocusIcon';
+import { VideoPlayer } from './video/VideoPlayer';
+import { useVideo, useVideoCtx } from './video/VideoContext';
+import { videoSeconds } from '@/lib/videos/build';
 
 interface Props {
   employerName: string;
@@ -41,6 +44,9 @@ export function WelcomeDialog({ employerName, planName, recordkeeperName, record
   const [hide, setHide] = useState(false);
   const [step, setStep] = useState<1 | 2>(initialStep);
   const [picks, setPicks] = useState<FocusId[]>(initialPicks);
+  const video = useVideo('welcome');
+  const vctx = useVideoCtx();
+  const [watching, setWatching] = useState(false);
   const step2Heading = useRef<HTMLHeadingElement>(null);
   const moved = useRef(false);
   useEffect(() => { if (moved.current && step === 2) step2Heading.current?.focus(); }, [step]);
@@ -48,7 +54,8 @@ export function WelcomeDialog({ employerName, planName, recordkeeperName, record
   const toggle = (id: FocusId) => setPicks((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= MAX_FOCUS ? prev : [...prev, id]));
   const url = recordkeeperUrl.startsWith('https://') ? recordkeeperUrl : '';
   const first = team[0];
-  const close = () => onClose(hide);
+  // Esc while the video plays goes back to step 1; otherwise it closes the dialog.
+  const close = () => (watching ? setWatching(false) : onClose(hide));
 
   const progress = (n: 1 | 2) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -61,12 +68,21 @@ export function WelcomeDialog({ employerName, planName, recordkeeperName, record
   );
 
   return (
-    <Modal titleId="welcome-title" onClose={close} closeOnBackdrop closeLabel={t.welcomeClose} maxWidth={step === 2 ? 720 : 520}>
+    <Modal titleId="welcome-title" onClose={close} closeOnBackdrop closeLabel={t.welcomeClose} maxWidth={step === 2 || watching ? 720 : 520}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <button type="button" onClick={close} aria-label={t.welcomeClose} style={{ position: 'absolute', top: 12, right: 12, width: 44, height: 44, borderRadius: 10, border: 'none', background: 'transparent', color: C.textMuted, fontSize: 26, lineHeight: 1, cursor: 'pointer', fontFamily: F.body }}>
+        <button type="button" onClick={() => onClose(hide)} aria-label={t.welcomeClose} style={{ position: 'absolute', top: 12, right: 12, width: 44, height: 44, borderRadius: 10, border: 'none', background: 'transparent', color: C.textMuted, fontSize: 26, lineHeight: 1, cursor: 'pointer', fontFamily: F.body }}>
           <span aria-hidden="true">×</span>
         </button>
-        {step === 1 && (
+        {step === 1 && watching && video && (
+          <>
+            <div style={{ paddingRight: 40 }}>
+              <button type="button" onClick={() => setWatching(false)} style={{ minHeight: 44, padding: 0, background: 'none', border: 'none', fontSize: 15, fontWeight: 700, color: C.accentText, cursor: 'pointer', fontFamily: F.body }}>{L('← Back', '← Atrás')}</button>
+              <h2 id="welcome-title" style={{ margin: '4px 0 0', fontFamily: F.display, fontSize: 28, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{video.title}</h2>
+            </div>
+            <VideoPlayer video={video} lang={lang} planName={planName || employerName || L('Your 401(k) plan', 'Tu plan 401(k)')} focusPlay onNext={() => { setWatching(false); moved.current = true; setStep(2); }} />
+          </>
+        )}
+        {step === 1 && !watching && (
           <>
         <div style={{ paddingRight: 40 }}>
           {progress(1)}
@@ -99,6 +115,12 @@ export function WelcomeDialog({ employerName, planName, recordkeeperName, record
               </div>
             )}
           </dl>
+        )}
+
+        {video && vctx && (
+          <button type="button" onClick={() => setWatching(true)} style={{ alignSelf: 'flex-start', minHeight: 40, borderRadius: 100, padding: '0 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: F.body, background: C.highlight, color: C.accentText, border: `1px solid ${C.accentBorder}` }}>
+            {L(`▶ Watch: your plan in ${videoSeconds(video)} seconds`, `▶ Ver: tu plan en ${videoSeconds(video)} segundos`)}
+          </button>
         )}
 
         {first && (

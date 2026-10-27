@@ -8,6 +8,8 @@ import { AnswerBody, type CardAI } from './AnswerBody';
 import { PlanGlance } from './PlanGlance';
 import { CardVisual } from './visuals/CardVisual';
 import { LeaveChoicesVisual } from './visuals/LeaveChoicesVisual';
+import { WatchVideo } from './video/WatchButton';
+import type { VideoId } from '@/lib/videos/types';
 
 export type { TopicKey };
 
@@ -40,6 +42,9 @@ interface PlanOverviewProps {
   // Side panel groups to show first (empty: all).
   focusTopics?: ('you' | 'employer' | 'access')[];
 }
+
+// The video that belongs at the top of each answer card.
+const CARD_VIDEO: Record<string, VideoId> = { safeHarbor: 'match', match: 'match', vesting: 'vesting', roth: 'taxes', limit: 'limits', elig: 'limits' };
 
 const label12 = { fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' } as const;
 const small11 = { fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.textMuted } as const;
@@ -118,6 +123,9 @@ export function PlanOverview(p: PlanOverviewProps) {
             })}
           </div>
 
+          {topic === 'access' && <WatchVideo id="access" placeKey="topic:access" />}
+          {topic === 'leave' && <WatchVideo id="leave" placeKey="topic:leave" />}
+
           {/* Cards */}
           {cards.map((c) => {
             const open = openCardId === c.id;
@@ -132,6 +140,7 @@ export function PlanOverview(p: PlanOverviewProps) {
                 </button>
                 {open && (
                   <div id={`card-body-${c.id}`} style={{ padding: '0 20px 20px' }}>
+                    {CARD_VIDEO[c.id] && <div style={{ marginBottom: 14 }}><WatchVideo id={CARD_VIDEO[c.id]} placeKey={`card:${c.id}`} /></div>}
                     <AnswerBody
                       written={written} ai={p.getAI(c.id)} lang={lang} stockId={c.id} review={review}
                       recordkeeper={{ name: rkName, url: rkUrl }} advisorEmail={advisor?.email}

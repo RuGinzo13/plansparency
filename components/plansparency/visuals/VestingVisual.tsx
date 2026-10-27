@@ -20,7 +20,7 @@ export function VestingVisual({ planData, lang }: Props) {
 
   if (v.immediate) {
     return (
-      <VisualFrame lang={lang} label={label} words={L('All of the money your employer adds is 100% yours right away. Your own savings are always 100% yours.', 'Todo el dinero que agrega tu empleador es 100% tuyo de inmediato. Tus propios ahorros siempre son 100% tuyos.')}>
+      <VisualFrame anchor="visual-vesting" lang={lang} label={label} words={L('All of the money your employer adds is 100% yours right away. Your own savings are always 100% yours.', 'Todo el dinero que agrega tu empleador es 100% tuyo de inmediato. Tus propios ahorros siempre son 100% tuyos.')}>
         <div style={{ height: 44, borderRadius: 12, background: C.green, color: C.onPrimary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>
           {L('100% yours right away', '100% tuyo de inmediato')}
         </div>
@@ -55,7 +55,7 @@ export function VestingVisual({ planData, lang }: Props) {
   );
 
   return (
-    <VisualFrame lang={lang} label={label} words={words} controls={controls} summary={summary}>
+    <VisualFrame lang={lang} label={label} words={words} controls={controls} summary={summary} anchor="visual-vesting">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {v.sources.map((s) => (
           <div key={s.label} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

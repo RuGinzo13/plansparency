@@ -13,6 +13,8 @@ interface Props {
   controls?: React.ReactNode;
   // The message that changes with the control (announced politely), shown after the picture.
   summary?: React.ReactNode;
+  // Lets other parts of the page scroll to this picture (e.g. the end of a video).
+  anchor?: string;
   // Shows the "Example uses $50,000 pay" note.
   example?: boolean;
   // The picture itself (hidden from screen readers). Leave out when `controls` already holds real text.
@@ -20,10 +22,10 @@ interface Props {
 }
 
 // Wraps a picture inside an answer card: label, the picture (hidden from screen readers), then the words.
-export function VisualFrame({ lang, label, words, controls, summary, example, children }: Props) {
+export function VisualFrame({ lang, label, words, controls, summary, example, anchor, children }: Props) {
   const es = lang === 'es';
   return (
-    <div style={{ borderTop: `1px solid ${C.borderLight}`, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div id={anchor} style={{ scrollMarginTop: 80, borderTop: `1px solid ${C.borderLight}`, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.textMuted }}>
         {es ? 'Imagen' : 'Picture'}: {label}
       </div>
