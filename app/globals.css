@@ -83,3 +83,13 @@ body {
   .pt-hide-sm { display: none; }
   .pt-show-sm { display: block; }
 }
+
+/* Pictures inside answers: steps in a row, stacked under 560px */
+.vz-steps { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 12px; position: relative; }
+.vz-line { display: block; }
+.vz-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 560px) {
+  .vz-steps { grid-template-columns: minmax(0, 1fr); }
+  .vz-line { display: none; }
+  .vz-two { grid-template-columns: minmax(0, 1fr); }
+}
