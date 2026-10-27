@@ -9,20 +9,26 @@ interface Props {
   label: string;
   // The same facts as the picture, in a sentence or two. This is what screen readers read.
   words: string;
+  // A slider or other control, shown before the picture. Not hidden from screen readers.
+  controls?: React.ReactNode;
+  // The message that changes with the control (announced politely), shown after the picture.
+  summary?: React.ReactNode;
   // Shows the "Example uses $50,000 pay" note.
   example?: boolean;
   children: React.ReactNode;
 }
 
 // Wraps a picture inside an answer card: label, the picture (hidden from screen readers), then the words.
-export function VisualFrame({ lang, label, words, example, children }: Props) {
+export function VisualFrame({ lang, label, words, controls, summary, example, children }: Props) {
   const es = lang === 'es';
   return (
     <div style={{ borderTop: `1px solid ${C.borderLight}`, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.textMuted }}>
         {es ? 'Imagen' : 'Picture'}: {label}
       </div>
+      {controls}
       <div aria-hidden="true">{children}</div>
+      {summary && <div role="status">{summary}</div>}
       <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: C.textMuted }}>
         <strong style={{ color: C.text, fontWeight: 700 }}>{es ? 'En palabras:' : 'In words:'}</strong> {words}
       </p>

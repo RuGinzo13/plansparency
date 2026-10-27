@@ -17,7 +17,7 @@ interface AnswerBodyProps {
   errorText: string;
   onOpenCalculator: () => void;
   onRetry: () => void;
-  children?: React.ReactNode; // extra block after the answer (the vesting slider)
+  children?: React.ReactNode; // extra block after the answer (the picture for that card)
 }
 
 // What opens inside a card: the written answer built from the plan's details, or an AI answer.

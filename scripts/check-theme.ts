@@ -94,6 +94,20 @@ for (const fg of ['tabShadeText', 'text'] as const) {
   note(`${fg}/tabShade`, r);
   check(r >= 4.5, `contrast ${fg} on tabShade is ${r.toFixed(2)}, needs 4.5`);
 }
+// Non-text colors: the striped "still left" part of the employer bar is drawn with warningDim and stripe,
+// outlined in warning, so the outline must stand out from both (3.0).
+for (const bg of ['warningDim', 'stripe'] as const) {
+  const r = ratio(C.warning, C[bg]);
+  check(r >= 3.0, `non-text: warning outline against ${bg} is ${r.toFixed(2)}, needs 3.0`);
+}
+// Video captions: white text on the caption box over the stage (the box is mostly opaque; checked on its solid color).
+{
+  const solid = '#111827';
+  const r = ratio(C.onPrimary, solid);
+  note('onPrimary/captionBg', r);
+  check(r >= 4.5, `contrast onPrimary on captionBg is ${r.toFixed(2)}, needs 4.5`);
+  check(C.captionBg.startsWith('rgba(17,24,39'), 'captionBg should be the C.text color at high opacity');
+}
 console.log(`Lowest text contrast: ${lowest.name} at ${lowest.value.toFixed(2)}`);
 
 console.log(`PASS ${pass} / FAIL ${fail}`);

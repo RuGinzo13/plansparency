@@ -19,6 +19,7 @@ export const C = {
   focus: "#111827", focusOnDark: "#FFFFFF",
   tabShade: "#E5E7EB", tabShadeText: "#374151",
   bar: "#1F2937", barLine: "#EA580C", barText: "#FFFFFF", barMuted: "#CBD2DC", barLink: "#FDBA74",
+  stripe: "#FDE68A", captionBg: "rgba(17,24,39,.85)",
 };
 // Chart and legend colors (StatementDashboard)
 export const CHART = {

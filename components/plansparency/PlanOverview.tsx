@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import type { RefObject } from 'react';
 import { C, F, LAYOUT } from './theme';
 import { getOverview, type TopicKey } from '@/lib/plan/overview';
 import { AnswerBody, type CardAI } from './AnswerBody';
 import { PlanGlance } from './PlanGlance';
+import { CardVisual } from './visuals/CardVisual';
 
 export type { TopicKey };
 
@@ -43,7 +44,6 @@ export function PlanOverview(p: PlanOverviewProps) {
   const { planData, lang, review, topic, openCardId, sticky } = p;
   const es = lang === 'es';
   const L = (en: string, esText: string) => (es ? esText : en);
-  const [years, setYears] = useState(3);
   const o = getOverview(planData, lang);
 
   const reviewer = review?.reviewerName && review.reviewerName.trim() ? review.reviewerName.trim() : '';
@@ -59,43 +59,6 @@ export function PlanOverview(p: PlanOverviewProps) {
     { key: 'leave', title: L('When you leave', 'Cuando te vas'), sub: L('What goes with you', 'Lo que se va contigo') },
   ];
   const cards = o.topics[topic];
-  const v = o.vesting;
-
-  const vestingBlock = v ? (() => {
-    const anyParsed = v.bars.some((b) => b.parsed && b.byYear.length > 0);
-    const atMax = years >= v.maxYears;
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 16, borderRadius: 12, background: C.surfaceAlt }}>
-        <div style={{ fontFamily: F.display, fontSize: 22, fontWeight: 700, color: C.text }}>{L('When is it mine to keep?', '¿Cuándo es mío?')}</div>
-        <div style={{ fontSize: 14, color: C.textMuted }}>{L("Slide to see what's yours if you left after that many years.", 'Desliza para ver qué es tuyo si te fueras después de esa cantidad de años.')}</div>
-        {anyParsed && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, color: C.text }}>
-              <label htmlFor="vest-years">{L('Years worked here', 'Años trabajados aquí')}</label>
-              <span>{atMax ? `${v.maxYears}+ ${L('years', 'años')}` : `${years} ${L('years', 'años')}`}</span>
-            </div>
-            <input id="vest-years" type="range" min={0} max={v.maxYears} step={1} value={years} onChange={(e) => setYears(Number(e.target.value))} style={{ width: '100%', height: 44, accentColor: C.accent }} />
-          </div>
-        )}
-        {v.bars.map((b) => {
-          const pct = b.parsed && b.byYear.length > 0 ? b.byYear[Math.min(years, b.byYear.length - 1)] : null;
-          return (
-            <div key={b.label} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{b.label}</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{pct === null ? L('See the schedule below', 'Ve el calendario abajo') : L(`${pct}% yours`, `${pct}% tuyo`)}</span>
-              </div>
-              <div style={{ height: 12, borderRadius: 100, background: C.borderLight, overflow: 'hidden' }}>
-                {pct !== null && <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? C.green : C.accent, transition: 'width .2s' }} />}
-              </div>
-            </div>
-          );
-        })}
-        {v.scheduleText && <div style={{ fontSize: 13, color: C.textMuted }}>{L(`Your plan's schedule: "${v.scheduleText}"`, `El calendario de tu plan: "${v.scheduleText}"`)}</div>}
-      </div>
-    );
-  })() : null;
-
   return (
     <div ref={p.scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
       <style>{`@media (max-width: 700px) { .plan-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }`}</style>
@@ -167,7 +130,7 @@ export function PlanOverview(p: PlanOverviewProps) {
                       recordkeeper={{ name: rkName, url: rkUrl }} advisorEmail={advisor?.email}
                       errorText={p.errorText} onOpenCalculator={p.onOpenCalculator} onRetry={() => p.onRetry(c.id)}
                     >
-                      {c.id === 'vesting' ? vestingBlock : null}
+                      <CardVisual id={c.id} planData={planData} lang={lang} />
                     </AnswerBody>
                   </div>
                 )}
