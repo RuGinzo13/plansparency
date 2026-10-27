@@ -28,7 +28,8 @@ export interface TopicCard {
 }
 export interface VestingBar { label: string; byYear: number[]; parsed: boolean }
 export interface VestingInfo { bars: VestingBar[]; maxYears: number; scheduleText: string; parsed: boolean }
-export interface LeaveOption { title: string; tag: string; body: string; warning?: boolean }
+export interface LeaveFlag { yes: boolean; text: string }
+export interface LeaveOption { title: string; tag: string; body: string; warning?: boolean; taxNow: LeaveFlag; penalty: LeaveFlag }
 export interface LegacyOverview {
   headlines: Headline[];
   glance: GlanceRow[];
@@ -322,11 +323,13 @@ export function getOverviewLegacy(
   }
 
   // ── e) leave choices ──
+  const noTax: LeaveFlag = { yes: false, text: 'No' };
+  const noTaxMoved: LeaveFlag = { yes: false, text: L('No (if moved directly)', 'No (si se mueve directo)') };
   const leaveOptions: LeaveOption[] = [
-    { title: L('Leave it here', 'Déjalo aquí'), tag: L('No tax now', 'Sin impuesto ahora'), body: L('It stays in this plan and keeps growing. Small balances (under $7,000) may be moved out for you.', 'Se queda en este plan y sigue creciendo. Los saldos pequeños (menos de $7,000) pueden sacarse del plan por ti.') },
-    { title: L("Move it to your new job's plan", 'Muévelo al plan de tu nuevo trabajo'), tag: L('No tax if moved directly', 'Sin impuesto si se mueve directo'), body: L('A "direct rollover" keeps it tax-free. Your new plan has to accept it.', 'Un "rollover directo" lo mantiene libre de impuestos. Tu nuevo plan tiene que aceptarlo.') },
-    { title: L('Move it to an IRA', 'Muévelo a una IRA'), tag: L('No tax if moved directly', 'Sin impuesto si se mueve directo'), body: L('An account you open yourself. Also done as a direct rollover.', 'Una cuenta que abres tú mismo. También se hace como rollover directo.') },
-    { title: L('Cash it out', 'Retíralo en efectivo'), tag: L('Taxed', 'Con impuestos'), body: L("Counts as income. Under 59½ there's usually an extra 10% tax.", 'Cuenta como ingreso. Si tienes menos de 59½ normalmente hay un 10% extra de impuesto.'), warning: true },
+    { title: L('Leave it here', 'Déjalo aquí'), tag: L('No tax now', 'Sin impuesto ahora'), body: L('It stays in this plan and keeps growing. Small balances (under $7,000) may be moved out for you.', 'Se queda en este plan y sigue creciendo. Los saldos pequeños (menos de $7,000) pueden sacarse del plan por ti.'), taxNow: noTax, penalty: noTax },
+    { title: L("Move it to your new job's plan", 'Muévelo al plan de tu nuevo trabajo'), tag: L('No tax if moved directly', 'Sin impuesto si se mueve directo'), body: L('A "direct rollover" keeps it tax-free. Your new plan has to accept it.', 'Un "rollover directo" lo mantiene libre de impuestos. Tu nuevo plan tiene que aceptarlo.'), taxNow: noTaxMoved, penalty: noTax },
+    { title: L('Move it to an IRA', 'Muévelo a una IRA'), tag: L('No tax if moved directly', 'Sin impuesto si se mueve directo'), body: L('An account you open yourself. Also done as a direct rollover.', 'Una cuenta que abres tú mismo. También se hace como rollover directo.'), taxNow: noTaxMoved, penalty: noTax },
+    { title: L('Cash it out', 'Retíralo en efectivo'), tag: L('Taxed', 'Con impuestos'), body: L("Counts as income. Under 59½ there's usually an extra 10% tax.", 'Cuenta como ingreso. Si tienes menos de 59½ normalmente hay un 10% extra de impuesto.'), warning: true, taxNow: { yes: true, text: L('Yes, on pre-tax money', 'Sí, sobre el dinero antes de impuestos') }, penalty: { yes: true, text: L('10% if under 59½', '10% si tienes menos de 59½') } },
   ];
 
   return { headlines, glance, topics: { you, company, while: whileWorking, leave }, vesting, leaveOptions };

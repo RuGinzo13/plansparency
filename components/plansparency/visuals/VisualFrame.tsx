@@ -15,7 +15,8 @@ interface Props {
   summary?: React.ReactNode;
   // Shows the "Example uses $50,000 pay" note.
   example?: boolean;
-  children: React.ReactNode;
+  // The picture itself (hidden from screen readers). Leave out when `controls` already holds real text.
+  children?: React.ReactNode;
 }
 
 // Wraps a picture inside an answer card: label, the picture (hidden from screen readers), then the words.
@@ -27,7 +28,7 @@ export function VisualFrame({ lang, label, words, controls, summary, example, ch
         {es ? 'Imagen' : 'Picture'}: {label}
       </div>
       {controls}
-      <div aria-hidden="true">{children}</div>
+      {children && <div aria-hidden="true">{children}</div>}
       {summary && <div role="status">{summary}</div>}
       <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: C.textMuted }}>
         <strong style={{ color: C.text, fontWeight: 700 }}>{es ? 'En palabras:' : 'In words:'}</strong> {words}

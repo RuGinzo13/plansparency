@@ -62,6 +62,9 @@ check(basic.vesting !== null && basic.vesting.bars.length >= 2, 'basic safe harb
 const cash = basic.leaveOptions[3];
 check(cash.warning === true && cash.tag === 'Taxes may apply' && cash.body.includes('Roth money comes out tax-free'), 'cash it out wording');
 
+check(basic.leaveOptions.slice(0, 3).every((x) => !x.taxNow.yes && !x.penalty.yes), 'first three leave choices: no tax now, no penalty');
+check(cash.taxNow.yes && cash.taxNow.text === 'Yes, on pre-tax money' && cash.penalty.yes && cash.penalty.text === '10% if under 59½', 'cash it out: tax and penalty badges');
+
 // Catch-up row shows the age 50+ amount first, then the 60 to 63 amount (2026: $8,000 and $11,250).
 const cuRow = getOverview(samples.basicSafeHarbor, 'en').groups[0].rows[2];
 check(cuRow.value.startsWith('Yes, up to $8,000') && cuRow.value.includes('$11,250 at ages 60 to 63'), `catch-up row: ${cuRow.value}`);

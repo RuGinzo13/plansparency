@@ -7,6 +7,7 @@ import { getOverview, type TopicKey } from '@/lib/plan/overview';
 import { AnswerBody, type CardAI } from './AnswerBody';
 import { PlanGlance } from './PlanGlance';
 import { CardVisual } from './visuals/CardVisual';
+import { LeaveChoicesVisual } from './visuals/LeaveChoicesVisual';
 
 export type { TopicKey };
 
@@ -139,21 +140,7 @@ export function PlanOverview(p: PlanOverviewProps) {
           })}
 
           {/* Leave choices */}
-          {topic === 'leave' && (
-            <section style={{ padding: 22, borderRadius: 16, background: C.surfaceAlt, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <h2 style={{ margin: 0, fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text }}>{L('Your 4 choices when you leave', 'Tus 4 opciones cuando te vas')}</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-                {o.leaveOptions.map((opt) => (
-                  <div key={opt.title} style={{ padding: 16, borderRadius: 12, background: C.surface, border: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>{opt.title}</div>
-                    <span style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, padding: '3px 8px', borderRadius: 100, background: opt.warning ? C.warningDim : C.greenSoft, color: opt.warning ? C.warning : C.green }}>{opt.tag}</span>
-                    <div style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.5 }}>{opt.body}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ fontSize: 13, color: C.textMuted }}>{L("Each choice has trade-offs. Your plan's website walks you through the steps.", 'Cada opción tiene sus ventajas y desventajas. El sitio web de tu plan te guía en los pasos.')}</div>
-            </section>
-          )}
+          {topic === 'leave' && <LeaveChoicesVisual options={o.leaveOptions} lang={lang} />}
 
           <div style={{ fontSize: 12, color: C.textDim, paddingTop: 16, borderTop: `1px solid ${C.borderLight}` }}>{p.footer}</div>
         </main>
