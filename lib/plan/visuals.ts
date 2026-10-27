@@ -90,12 +90,17 @@ export function employerMoneyAt(pd: PlanData | null, pct: number, pay: number = 
   return { you: (pay * p) / 100, employer, fullEmployer, pctForFull };
 }
 
+// "$1" / "50¢" for a match rate of 100 / 50.
+export function rateMoney(rate: number): string {
+  return rate % 100 === 0 ? `$${rate / 100}` : rate < 100 ? `${Math.round(rate)}¢` : `$${(rate / 100).toFixed(2)}`;
+}
+
 // The match in plain words, one phrase per step ("$1 for every $1 you save, up to 3% of your pay").
 export function matchPhrases(pd: PlanData | null, lang: Lang = 'en'): { phrases: string[]; flat: string | null } | null {
   const t = pd ? employerTiers(pd) : null;
   if (!t) return null;
   const L = pick(lang);
-  const money = (rate: number) => (rate % 100 === 0 ? `$${rate / 100}` : rate < 100 ? `${Math.round(rate)}¢` : `$${(rate / 100).toFixed(2)}`);
+  const money = rateMoney;
   const phrases = t.tiers.map((x, i) => {
     const w = Math.round((x.to - x.from) * 100) / 100;
     return i === 0

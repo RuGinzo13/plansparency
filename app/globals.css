@@ -93,3 +93,32 @@ body {
   .vz-line { display: none; }
   .vz-two { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Explainer videos: scene animations (replayed because each scene is mounted fresh when it starts).
+   Elements show their finished state when motion is reduced. */
+@keyframes vidDrop { from { transform: translateY(-70px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes vidPop { from { transform: scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes vidSlideIn { from { transform: translateX(-140px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes vidFalloff { from { transform: none; opacity: 1; } to { transform: translate(80px, 150px) rotate(24deg); opacity: 0; } }
+@keyframes vidGrow { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes vidGrowY { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes vidPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+.vid-a, .vid-g {
+  animation-duration: .7s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+  animation-delay: var(--d, 0s);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.vid-drop { animation-name: vidDrop; }
+.vid-pop { animation-name: vidPop; }
+.vid-slide { animation-name: vidSlideIn; }
+.vid-fall { animation-name: vidFalloff; animation-duration: 1.1s; animation-timing-function: ease-in; }
+.vid-g { animation-name: vidGrow; animation-duration: 1.2s; transform-origin: 0 50%; }
+.vid-gy { animation-name: vidGrowY; animation-duration: 1.2s; transform-origin: 50% 100%; }
+.vid-pulse { animation-name: vidPulse; animation-duration: 1.4s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  .vid-a, .vid-g { animation: none !important; }
+  .vid-fall { transform: translate(80px, 150px) rotate(24deg); opacity: 0; }
+}
