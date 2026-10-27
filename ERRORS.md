@@ -368,3 +368,8 @@ Three new failures, all logged above with fixes: (1) PHASE-07 claimed done items
 - **What happened:** PHASE-18 and PHASE-19 put the skip link hide rule, `.sr-only`, focus rings, reduced motion and the tab label switch in `app/globals.css`. `app/layout.tsx` never imports that file, so none of it reached the browser. Ross saw "Skip to main content" on every page and both tab labels. Cowork's Oct 12 verification said "skip link on every screen ✓" after reading code and running the check scripts, without loading a page.
 - **Fix:** PHASE-20 step 1 imports the file, removes starter resets that would have changed the site, and makes `check-a11y.ts` fail if the import or the key rules go missing.
 - **Rule:** for any UI phase, Cowork's review includes the rendered result (built CSS contains the rules, or a page screenshot), not only code and scripts. A class name in JSX proves nothing until the stylesheet that defines it is confirmed loaded.
+
+## Oct 27, 2026: Referred to visuals by names Ross couldn't see
+- **What happened:** Cowork put 6 visuals inside one canvas board and then referred to "1, 2 and 6" and to card headings. Ross navigates the canvas by board titles, which only said "Visual library", so the numbers and names meant nothing to him.
+- **Fix:** each visual is now its own board titled "Visual N: name".
+- **Rule:** anything Ross must pick from gets its own board, and Cowork refers to it by the exact board title.
