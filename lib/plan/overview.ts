@@ -380,7 +380,7 @@ export function getOverview(
 
   const req = pd && has(pd.contribEligibility?.requirement) ? pd.contribEligibility.requirement!.trim() : null;
   const catchUp = pd && bool(pd.planAllowsCatchUp) ? pd.planAllowsCatchUp : null;
-  const catchUpValue = catchUp === true ? L(`Yes, up to ${fmtRounded(limits.catchUp6063)}`, `Sí, hasta ${fmtRounded(limits.catchUp6063)}`) : catchUp === false ? no : tap;
+  const catchUpValue = catchUp === true ? L(`Yes, up to ${fmtRounded(limits.catchUp50)} (${fmtRounded(limits.catchUp6063)} at ages 60 to 63)`, `Sí, hasta ${fmtRounded(limits.catchUp50)} (${fmtRounded(limits.catchUp6063)} entre los 60 y 63 años)`) : catchUp === false ? no : tap;
   const deferral = fmtRounded(limits.deferral);
 
   const groups: PanelGroup[] = [
