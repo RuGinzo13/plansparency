@@ -35,6 +35,10 @@ interface PlanOverviewProps {
   headerRef: RefObject<HTMLDivElement | null>;
   layoutRef: RefObject<HTMLDivElement | null>;
   sticky: { twoCol: boolean; top: number; height: number; headerH: number };
+  // The focus strip, shown above the topic tabs when the person picked a focus.
+  focusSlot?: React.ReactNode;
+  // Side panel groups to show first (empty: all).
+  focusTopics?: ('you' | 'employer' | 'access')[];
 }
 
 const label12 = { fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' } as const;
@@ -95,6 +99,8 @@ export function PlanOverview(p: PlanOverviewProps) {
 
       <div ref={p.layoutRef} style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '40px 20px 48px', boxSizing: 'border-box', display: 'flex', flexWrap: 'wrap', flexDirection: 'row-reverse', gap: 28, alignItems: 'flex-start' }}>
         <main style={{ flex: '999 1 540px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {p.focusSlot}
+
           {/* Topic tabs */}
           <div role="tablist" aria-label={L('Plan topics', 'Temas del plan')} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8 }}>
             {topics.map((tp, i) => {
@@ -146,7 +152,7 @@ export function PlanOverview(p: PlanOverviewProps) {
         </main>
 
         <div style={{ flex: '1 1 300px', maxWidth: 400, minWidth: 0, ...(sticky.twoCol ? { position: 'sticky', top: sticky.top, height: sticky.height, display: 'flex', alignItems: 'center' } : {}) }}>
-          <PlanGlance groups={o.groups} activeTopic={topic} onPick={(tp, id) => p.onPickRow(tp, id)} lang={lang} />
+          <PlanGlance groups={o.groups} activeTopic={topic} onPick={(tp, id) => p.onPickRow(tp, id)} lang={lang} focusTopics={p.focusTopics} key={(p.focusTopics ?? []).join()} />
         </div>
       </div>
     </div>

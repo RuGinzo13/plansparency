@@ -49,7 +49,7 @@ export function Logo({ small }) {
 }
 export function Shield({ color, sz = 18 }) { return <svg aria-hidden="true" width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>; }
 // Dialog: names itself with titleId, moves focus in, keeps Tab inside, closes on Escape, returns focus.
-export function Modal({ children, titleId, onClose, closeOnBackdrop, closeLabel }: { children?: React.ReactNode; titleId?: string; onClose?: () => void; closeOnBackdrop?: boolean; closeLabel?: string }) {
+export function Modal({ children, titleId, onClose, closeOnBackdrop, closeLabel, maxWidth = 520 }: { children?: React.ReactNode; titleId?: string; onClose?: () => void; closeOnBackdrop?: boolean; closeLabel?: string; maxWidth?: number }) {
   const boxRef = React.useRef<HTMLDivElement>(null);
   const onCloseRef = React.useRef(onClose);
   onCloseRef.current = onClose;
@@ -73,7 +73,7 @@ export function Modal({ children, titleId, onClose, closeOnBackdrop, closeLabel 
   }, []);
   return <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: C.overlayStrong, backdropFilter: "blur(8px)" }}>
     {closeOnBackdrop && <button type="button" tabIndex={-1} aria-label={closeLabel} onClick={() => onCloseRef.current?.()} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", padding: 0, background: "transparent", cursor: "pointer" }} />}
-    <div ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} style={{ position: "relative", zIndex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, maxWidth: 520, width: "100%", maxHeight: "85vh", overflowY: "auto", padding: "32px 28px", boxShadow: `0 24px 80px ${C.overlay}` }}>{children}</div>
+    <div ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} style={{ position: "relative", zIndex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, maxWidth, width: "100%", maxHeight: "85vh", overflowY: "auto", padding: "32px 28px", boxShadow: `0 24px 80px ${C.overlay}` }}>{children}</div>
   </div>;
 }
 

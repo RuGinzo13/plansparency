@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { C, F } from './theme';
 import type { PanelGroup, TopicKey } from '@/lib/plan/overview';
 
@@ -9,12 +9,17 @@ interface PlanGlanceProps {
   activeTopic: TopicKey;
   onPick: (topic: PanelGroup['topic'], cardId: string) => void;
   lang: 'en' | 'es';
+  // Groups the person's focus picks start with. Empty: show every group.
+  focusTopics?: PanelGroup['topic'][];
 }
 
 // "Your plan at a glance": three groups that follow the topic tabs. The group for the open tab is
 // highlighted as a whole; every row looks the same and opens its card.
-export function PlanGlance({ groups, activeTopic, onPick, lang }: PlanGlanceProps) {
+export function PlanGlance({ groups, activeTopic, onPick, lang, focusTopics = [] }: PlanGlanceProps) {
   const es = lang === 'es';
+  const [showAll, setShowAll] = useState(false);
+  const narrowed = focusTopics.length > 0 && !showAll;
+  const shown = narrowed ? groups.filter((g) => focusTopics.includes(g.topic)) : groups;
   const title = es ? 'Tu plan de un vistazo' : 'Your plan at a glance';
 
   return (
@@ -22,7 +27,7 @@ export function PlanGlance({ groups, activeTopic, onPick, lang }: PlanGlanceProp
       <h2 style={{ margin: 0, fontFamily: F.display, fontSize: 24, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{title}</h2>
       <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>{es ? 'Toca cualquier dato para abrir su respuesta.' : 'Tap any detail to open its answer.'}</div>
 
-      {groups.map((g) => {
+      {shown.map((g) => {
         const active = g.topic === activeTopic;
         return (
           <div key={g.topic} style={{ padding: 12, borderRadius: 14, display: 'flex', flexDirection: 'column', gap: 8, background: active ? C.surface : 'transparent', border: active ? `2px solid ${C.text}` : '2px solid transparent', boxShadow: active ? `0 6px 18px ${C.shadow}` : 'none' }}>
@@ -47,6 +52,11 @@ export function PlanGlance({ groups, activeTopic, onPick, lang }: PlanGlanceProp
           </div>
         );
       })}
+      {narrowed && shown.length < groups.length && (
+        <button type="button" onClick={() => setShowAll(true)} style={{ alignSelf: 'flex-start', minHeight: 44, padding: 0, background: 'none', border: 'none', fontSize: 15, fontWeight: 700, color: C.accentText, textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit' }}>
+          {es ? 'Ver todos los detalles del plan' : 'Show all plan details'}
+        </button>
+      )}
     </aside>
   );
 }

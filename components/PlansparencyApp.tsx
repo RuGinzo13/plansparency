@@ -34,6 +34,8 @@ import { WelcomeDialog } from '@/components/plansparency/WelcomeDialog';
 import type { TeamMember } from '@/lib/team';
 import { InvestmentsPanel } from '@/components/plansparency/InvestmentsPanel';
 import { PlanOverview } from '@/components/plansparency/PlanOverview';
+import { FocusStrip } from '@/components/plansparency/FocusStrip';
+import { focusPlace, focusTopics, type FocusId } from '@/lib/plan/focus';
 import { CalcPanel } from '@/components/plansparency/CalcPanel';
 import { StatementDashboard } from '@/components/plansparency/StatementDashboard';
 import { Landing } from '@/components/plansparency/Landing';
@@ -97,16 +99,20 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     else if (was === "uploading" && stage === STAGE.STMT_DASHBOARD) announce(lang === "es" ? "Tu estado de cuenta está listo" : "Your statement is ready");
   }, [stage]); // eslint-disable-line react-hooks/exhaustive-deps
   // Welcome pop-up: once per page load when the plan app first shows, unless hidden on this device.
+  // Step 1 is the info; step 2 is "pick your focus". With nothing to show on step 1 it opens at step 2.
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [welcomeStep, setWelcomeStep] = useState<1 | 2>(1);
   const welcomeShown = useRef(false);
   const welcomeKey = 'plansparency_welcome_hidden_' + (planId || 'preview');
+  // The focus picks: React state only, never saved on the device or on a server.
+  const [focus, setFocus] = useState<FocusId[]>([]);
+  const [focusCur, setFocusCur] = useState(0);
   useEffect(() => {
     if (stage !== STAGE.APP || welcomeShown.current) return;
-    if (!employerName && !planData?.recordkeeperName) return;
     welcomeShown.current = true;
     let hidden = false;
     try { hidden = localStorage.getItem(welcomeKey) === '1'; } catch { /* storage blocked: just show it */ }
-    if (!hidden) setWelcomeOpen(true);
+    if (!hidden) { setWelcomeStep(hasWelcomeInfo ? 1 : 2); setWelcomeOpen(true); }
   }); // eslint-disable-line react-hooks/exhaustive-deps
   const closeWelcome = (dontShowAgain: boolean) => {
     setWelcomeOpen(false);
@@ -425,6 +431,24 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
     setOpenCardId(getOverview(planData, lang).topics[k][0]?.id ?? null);
   };
   const pickRow = (k, id) => { setTopic(k); setOpenCardId(id); scrollToCard(id); };
+  const hasWelcomeInfo = !!(employerName || planData?.recordkeeperName);
+  const openWelcome = (step: 1 | 2) => { setWelcomeStep(step === 1 && !hasWelcomeInfo ? 2 : step); setWelcomeOpen(true); };
+  // Take the person to the place a focus pick points at.
+  const goToFocus = (id: FocusId) => {
+    const place = focusPlace(id, planData);
+    if (place.kind === 'card') openCard(place.card);
+    else if (place.kind === 'investments') { setActiveTab("dashboard"); setPlanGuideTab("investments"); }
+    else setActiveTab("calculator");
+  };
+  const startFocus = (picks: FocusId[]) => { setFocus(picks); setFocusCur(0); if (picks[0]) goToFocus(picks[0]); };
+  const focusStrip = focus.length > 0 ? (
+    <FocusStrip
+      picks={focus} current={focusCur} lang={lang}
+      onChip={(i) => { setFocusCur(i); goToFocus(focus[i]); }}
+      onNext={() => { const n = Math.min(focusCur + 1, focus.length - 1); setFocusCur(n); goToFocus(focus[n]); }}
+      onChange={() => openWelcome(2)}
+    />
+  ) : null;
   const retryCard = (id) => setCardAI(prev => { const next = { ...prev }; delete next[cardKey(id)]; return next; });
 
   // Count opens of written answers (one log line with the card id, nothing else).
@@ -680,6 +704,9 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           employerName={employerName} planName={planData?.planName || ""}
           recordkeeperName={planData?.recordkeeperName || ""} recordkeeperUrl={typeof planData?.recordkeeperUrl === "string" ? planData.recordkeeperUrl : ""}
           team={team} lang={lang} t={t} onClose={closeWelcome} onOpenTeam={() => setActiveTab("team")}
+          initialStep={welcomeStep} initialPicks={focus}
+          onFocus={(picks, hide) => { closeWelcome(hide); startFocus(picks); }}
+          onSkip={(hide) => { closeWelcome(hide); setFocus([]); setFocusCur(0); }}
         />}
 
         <AppHeader accentColor={C.accent} title={planData?.planName || fileName || "Your Plan"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
@@ -701,13 +728,16 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
                 getWritten={(id) => getStockAnswer(id, planData, lang)} getAI={(id) => cardAI[cardKey(id)] || null} onRetry={retryCard}
                 onOpenCalculator={() => setActiveTab("calculator")} errorText={t.errorReply} footer={t.footerDisclaimer}
                 scrollRef={planScrollRef} headerRef={planHeaderRef} layoutRef={planLayoutRef} sticky={planSticky}
+                focusSlot={focusStrip} focusTopics={focusTopics(focus)}
               />
             )}
+            {planGuideTab === "investments" && focusStrip && <div style={{ padding: "12px 20px 0", flexShrink: 0 }}>{focusStrip}</div>}
             {planGuideTab === "investments" && (
               <InvestmentsPanel fundsData={planData?.fundsData || []} lang={lang} onAddDocument={() => addDocRef.current?.click()} fundsSource={fundsSource} fundsError={fundsError} />
             )}
           </>
         )}
+        {activeTab === "calculator" && focusStrip && <div style={{ padding: "12px 20px 0", flexShrink: 0 }}>{focusStrip}</div>}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openCard} onOpenCalculator={() => setActiveTab("calculator")} />}
         {activeTab === "team" && <TeamPanel team={team} planName={planData?.planName || ""} lang={lang} t={t} />}
@@ -717,7 +747,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           <div style={{ flexShrink: 0, padding: "8px 16px", background: C.surfaceAlt, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: 7 }}>
             <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textDim} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <p style={{ margin: 0, flex: 1, fontSize: 12, color: C.textDim, lineHeight: 1.6 }}>{t.planProvisionDisclaimer}</p>
-            {(employerName || planData?.recordkeeperName) && <button type="button" onClick={() => setWelcomeOpen(true)} style={{ ...btnBase, flexShrink: 0, minHeight: 36, padding: "3px 10px", fontSize: 12, fontWeight: 600, background: "transparent", color: C.accentText, border: `1px solid ${C.border}`, borderRadius: 8 }}>{t.welcomeInfo}</button>}
+            {<button type="button" onClick={() => openWelcome(1)} style={{ ...btnBase, flexShrink: 0, minHeight: 36, padding: "3px 10px", fontSize: 12, fontWeight: 600, background: "transparent", color: C.accentText, border: `1px solid ${C.border}`, borderRadius: 8 }}>{t.welcomeInfo}</button>}
             <button onClick={() => setShowClearConfirm(true)} style={{ ...btnBase, flexShrink: 0, minHeight: 36, padding: "3px 10px", fontSize: 12, background: "transparent", color: C.danger, border: `1px solid ${C.dangerDim}`, borderRadius: 8, opacity: .8 }}>{t.clearSession}</button>
           </div>
         )}

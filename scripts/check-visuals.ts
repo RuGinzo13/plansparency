@@ -3,6 +3,7 @@
 import { employerMoneyAt, employerTiers, vestingSteps, vestingWords, joinSteps, limitBars, rothRows } from '../lib/plan/visuals';
 import { IRS_LIMITS } from '../lib/plan/irs-limits';
 import { samples } from './samples';
+import { FOCUS_CHOICES, focusPlace, focusTopics, focusTitle } from '../lib/plan/focus';
 
 let pass = 0;
 let fail = 0;
@@ -105,6 +106,19 @@ check(rothRows(samples.rothOff)!.roth === false && rothRows(samples.rothOnly)!.p
 check(vestingSteps(samples.immediateMatch)!.immediate === true, 'immediate vesting');
 check(vestingSteps(samples.discretionaryTwoTiers) === null, 'unparseable vesting text: no picture');
 check(vestingSteps(samples.safeHarborPlusMatchPlusPS) === null || vestingSteps(samples.safeHarborPlusMatchPlusPS)!.sources.length === 2, 'safe harbor plus other money: two rows');
+
+// Guided start: six choices, each with EN + ES words, and a place to go.
+check(FOCUS_CHOICES.length === 6, 'six focus choices');
+for (const c of FOCUS_CHOICES) {
+  check(c.title.en.length > 0 && c.title.es.length > 0 && c.example.en.length > 0 && c.example.es.length > 0, `${c.id}: EN and ES words`);
+  check(!BAD.some((b) => (c.title.en + c.title.es + c.example.en + c.example.es).includes(b)), `${c.id}: bad text`);
+  for (const [name, pd] of Object.entries(samples)) check(focusPlace(c.id, pd).kind.length > 0, `${name}/${c.id}: place`);
+}
+check(focusPlace('employer', samples.basicSafeHarbor).kind === 'card' && (focusPlace('employer', samples.basicSafeHarbor) as any).card === 'safeHarbor', 'employer pick opens safe harbor first');
+check((focusPlace('employer', samples.discretionaryTwoTiers) as any).card === 'match', 'employer pick opens match when no safe harbor');
+check(focusTopics(['start', 'calc', 'leave', 'employer', 'start']).join() === 'you,employer', 'focus topics');
+check(focusTopics(['leave', 'invest']).length === 0, 'no topic picks: show everything');
+check(focusTitle('calc', 'es') === 'Ver cuánto podría ahorrar', 'ES title');
 
 console.log('\nShown / hidden by picture (EN):');
 for (const pic of Object.keys({ ...shown, ...hidden })) {
