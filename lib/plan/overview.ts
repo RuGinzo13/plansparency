@@ -341,8 +341,8 @@ export function getOverviewLegacy(
 // ── New shape: panel groups + one card per question (PHASE-16) ───────────────
 export type TopicKey = 'you' | 'employer' | 'access' | 'leave';
 export interface PanelRow { label: string; value: string; card: StockId; kind: CardKind }
-export interface PanelGroup { topic: 'you' | 'employer' | 'access'; label: string; rows: PanelRow[] }
-export interface PlanCard { id: StockId; question: string; fact: string; tone: 'good' | 'neutral'; stockId: StockId; kind: CardKind }
+export interface PanelGroup { topic: TopicKey; label: string; rows: PanelRow[] }
+export interface PlanCard { id: StockId; question: string; fact: string; stockId: StockId; kind: CardKind }
 export interface Overview {
   groups: PanelGroup[];
   topics: Record<TopicKey, PlanCard[]>;
@@ -375,11 +375,11 @@ export function getOverview(
     : tap;
 
   // Employer money, in plain words
-  const upTo = (x: number) => L(`Yes, up to ${num(x)}% of pay`, `Sí, hasta ${num(x)}% del salario`);
+  const upTo = (x: number) => L(`Adds up to ${num(x)}% of pay`, `Agrega hasta ${num(x)}% del salario`);
   let safeHarborValue = tap;
   if (pd && f && typeof pd.safeHarbor?.type === 'string') {
     if (f.type === 'basic_match' || f.type === 'enhanced_match') safeHarborValue = upTo(safeHarborAmount(f.type, 100, FULL_MATCH_PCT[f.type]));
-    else if (f.type === 'nonelective') safeHarborValue = L('Yes, 3% of pay', 'Sí, 3% del salario');
+    else if (f.type === 'nonelective') safeHarborValue = L('Adds 3% of pay', 'Agrega 3% del salario');
     else if (f.type === 'qaca') safeHarborValue = yes;
     else if (f.type === 'none') safeHarborValue = no;
   }
@@ -394,37 +394,7 @@ export function getOverview(
   const profitValue = unsure.has('profitSharing') ? askHr : bool(psAvail) ? (psAvail ? L('Yes, may be added yearly', 'Sí, puede agregarse cada año') : no) : tap;
 
   const req = pd && has(pd.contribEligibility?.requirement) ? pd.contribEligibility.requirement!.trim() : null;
-  const catchUp = pd && bool(pd.planAllowsCatchUp) ? pd.planAllowsCatchUp : null;
-  const catchUpValue = catchUp === true ? L(`Yes, up to ${fmtRounded(limits.catchUp50)} (${fmtRounded(limits.catchUp6063)} at ages 60 to 63)`, `Sí, hasta ${fmtRounded(limits.catchUp50)} (${fmtRounded(limits.catchUp6063)} entre los 60 y 63 años)`) : catchUp === false ? no : tap;
   const deferral = fmtRounded(limits.deferral);
-
-  const row = (label: string, value: string, card: StockId): PanelRow => ({ label, value, card, kind: pillKindFor(card, pd) });
-  const groups: PanelGroup[] = [
-    {
-      topic: 'you', label: L('Your money', 'Tu dinero'),
-      rows: [
-        row(L("When you're eligible", 'Cuándo eres elegible'), req ?? tap, 'elig'),
-        row(L(`${year} savings limit`, `Límite de ahorro de ${year}`), deferral, 'limit'),
-        row(L('Catch-up (age 50+)', 'Catch-up (50+ años)'), catchUpValue, 'limit'),
-      ],
-    },
-    {
-      topic: 'employer', label: L('Employer money', 'Dinero del empleador'),
-      rows: [
-        row('Safe harbor', safeHarborValue, 'safeHarbor'),
-        row(L('Employer match', 'Match del empleador'), matchValue, 'match'),
-        row('Profit sharing', profitValue, 'profit'),
-      ],
-    },
-    {
-      topic: 'access', label: L('Access my money', 'Acceso a tu dinero'),
-      rows: [
-        row(L('Loans', 'Préstamos'), yn(pd?.loanAvailable), 'loans'),
-        row(L('Hardships', 'Retiros por dificultad'), yn(pd?.hardshipAvailable), 'hardship'),
-        row(L('In-service withdrawal', 'Retiro en servicio'), inServiceValue, 'inService'),
-      ],
-    },
-  ];
 
   // Vesting wording (the old "the match is yours" headline value)
   const parsed = pd ? parseVesting(pd.vestingSchedule) : null;
@@ -445,15 +415,47 @@ export function getOverview(
   }
   const leaveFact = L('Your savings go with you', 'Tus ahorros se van contigo') + (f && f.safeHarbor ? L(', and your safe harbor money', ', y tu dinero safe harbor') : '');
 
-  const good = (v: string) => /^(Yes|Sí|Right away|De inmediato|Your plan offers both|Tu plan ofrece ambas|Your savings|Tus ahorros)/.test(v);
-  const card = (id: StockId, fact: string, tone?: 'good' | 'neutral'): PlanCard => ({ id, stockId: id, question: questionLabel(id, lang), fact, tone: tone ?? (good(fact) ? 'good' : 'neutral'), kind: pillKindFor(id, pd) });
+  const card = (id: StockId, fact: string): PlanCard => ({ id, stockId: id, question: questionLabel(id, lang), fact, kind: pillKindFor(id, pd) });
+
+  const row = (label: string, value: string, card: StockId): PanelRow => ({ label, value, card, kind: pillKindFor(card, pd) });
+  const groups: PanelGroup[] = [
+    {
+      topic: 'you', label: L('Your money', 'Tu dinero'),
+      rows: [
+        row(L('When you can join', 'Cuándo puedes unirte'), req ?? tap, 'elig'),
+        row(L(`${year} limit`, `Límite ${year}`), deferral, 'limit'),
+        row(L('Pre-tax or Roth', 'Antes de impuestos o Roth'), rothFact, 'roth'),
+      ],
+    },
+    {
+      topic: 'employer', label: L('Employer money', 'Dinero del empleador'),
+      rows: [
+        row('Safe harbor', safeHarborValue, 'safeHarbor'),
+        row(L('Employer match', 'Match del empleador'), matchValue, 'match'),
+        row('Profit sharing', profitValue, 'profit'),
+        row(L('Yours to keep', 'Tuyo para quedártelo'), vestingFact, 'vesting'),
+      ],
+    },
+    {
+      topic: 'access', label: L('Access my money', 'Acceso a tu dinero'),
+      rows: [
+        row(L('Loans', 'Préstamos'), yn(pd?.loanAvailable), 'loans'),
+        row(L('Hardship', 'Dificultad'), yn(pd?.hardshipAvailable), 'hardship'),
+        row(L('While you work', 'Mientras trabajas'), inServiceValue, 'inService'),
+      ],
+    },
+    {
+      topic: 'leave', label: L('Leaving your job', 'Si dejas tu trabajo'),
+      rows: [row(L('When you leave', 'Cuando te vas'), leaveFact, 'leave')],
+    },
+  ];
 
   // One card per question, in the order lib/plan/relevance.ts lists them.
   const byId: Record<StockId, PlanCard> = {
-    elig: card('elig', req ?? tap, 'neutral'), limit: card('limit', deferral, 'neutral'), roth: card('roth', rothFact),
+    elig: card('elig', req ?? tap), limit: card('limit', deferral), roth: card('roth', rothFact),
     safeHarbor: card('safeHarbor', safeHarborValue), match: card('match', matchValue), profit: card('profit', profitValue), vesting: card('vesting', vestingFact),
-    loans: card('loans', yn(pd?.loanAvailable)), hardship: card('hardship', yn(pd?.hardshipAvailable)), inService: card('inService', unsure.has('inService') ? askHr : tap, 'neutral'),
-    leave: card('leave', leaveFact, 'good'),
+    loans: card('loans', yn(pd?.loanAvailable)), hardship: card('hardship', yn(pd?.hardshipAvailable)), inService: card('inService', unsure.has('inService') ? askHr : tap),
+    leave: card('leave', leaveFact),
   };
   const topics = Object.fromEntries((Object.keys(TOPIC_CARDS) as TopicKey[]).map((k) => [k, TOPIC_CARDS[k].map((id) => byId[id])])) as Record<TopicKey, PlanCard[]>;
 

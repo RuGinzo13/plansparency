@@ -116,8 +116,8 @@ for (const c of FOCUS_CHOICES) {
 }
 check(focusPlace('employer', samples.basicSafeHarbor).kind === 'card' && (focusPlace('employer', samples.basicSafeHarbor) as any).card === 'safeHarbor', 'employer pick opens safe harbor first');
 check((focusPlace('employer', samples.discretionaryTwoTiers) as any).card === 'match', 'employer pick opens match when no safe harbor');
-check(focusTopics(['start', 'calc', 'leave', 'employer', 'start']).join() === 'you,employer', 'focus topics');
-check(focusTopics(['leave', 'invest']).length === 0, 'no topic picks: show everything');
+check(focusTopics(['start', 'calc', 'leave', 'employer', 'start']).join() === 'you,leave,employer', 'focus topics');
+check(focusTopics(['invest', 'calc']).length === 0, 'no topic picks: show everything');
 check(focusTitle('calc', 'es') === 'Ver cuánto podría ahorrar', 'ES title');
 
 console.log('\nShown / hidden by picture (EN):');

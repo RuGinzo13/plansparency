@@ -121,7 +121,7 @@ for (const [text, want] of vestCases) {
   check(getStockAnswer('inService', confirm(np('baers', { distributionInfo: { inServiceAvailable: true, inServiceAge: 59.5 } }), []), 'en')?.text.startsWith('**Yes.') === true, 'an explicit yes with an age gives the normal in-service answer');
   const ov = getOverview(np('tierraSur'), 'en');
   const val = (label: string) => ov.groups.flatMap((g) => g.rows).find((r) => r.label === label)?.value;
-  check(val('Employer match') === 'Ask HR' && val('In-service withdrawal') === 'Ask HR' && val('Safe harbor') !== 'Ask HR', 'Tierra Sur panel: match and in-service say Ask HR');
+  check(val('Employer match') === 'Ask HR' && val('While you work') === 'Ask HR' && val('Safe harbor') !== 'Ask HR', 'Tierra Sur panel: match and in-service say Ask HR');
   check(getOverview(np('tierraSur'), 'es').groups.flatMap((g) => g.rows).find((r) => r.card === 'match')?.value === 'Pregunta a RR. HH.', 'panel Ask HR in Spanish');
 }
 

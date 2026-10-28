@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { C } from './theme';
+import { Panel } from './Panel';
 import { focusTitle, type FocusId } from '@/lib/plan/focus';
 
 interface Props {
@@ -24,13 +25,13 @@ export function FocusStrip({ picks, current, lang, onChip, onNext, onChange, onH
   const next = picks[current + 1];
   const btn = { minHeight: 40, borderRadius: 100, padding: '0 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' } as const;
   return (
-    <section aria-label={es ? 'Tu enfoque' : 'Your focus'} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '12px 56px 12px 16px', position: 'relative', borderRadius: 14, background: C.highlight, border: `1px solid ${C.accentBorder}` }}>
+    <Panel aria-label={es ? 'Tu enfoque' : 'Your focus'} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '14px 60px 14px 16px', position: 'relative', border: `2px solid ${C.accent}` }}>
       <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.accentText }}>{es ? 'Tu enfoque' : 'Your focus'}</span>
       {picks.map((id, i) => {
         const on = i === current;
         return (
           <button key={id} type="button" aria-pressed={on} onClick={() => onChip(i)}
-            style={{ ...btn, background: on ? C.accent : C.surface, color: on ? C.onPrimary : C.accentText, border: `1px solid ${on ? C.accent : C.accentBorder}` }}>
+            style={{ ...btn, background: on ? C.bar : C.surface, color: on ? C.onPrimary : C.text, border: `2px solid ${C.bar}` }}>
             {focusTitle(id, lang)}
           </button>
         );
@@ -41,13 +42,13 @@ export function FocusStrip({ picks, current, lang, onChip, onNext, onChange, onH
           {es ? `Siguiente: ${focusTitle(next, lang)} →` : `Next: ${focusTitle(next, lang)} →`}
         </button>
       )}
-      <button type="button" onClick={onChange} style={{ ...btn, borderRadius: 12, marginLeft: 'auto', background: C.surface, color: C.accentText, border: `1px solid ${C.border}` }}>
+      <button type="button" onClick={onChange} style={{ ...btn, borderRadius: 12, marginLeft: 'auto', padding: '0 8px', background: 'none', color: C.accentText, border: 'none', textDecoration: 'underline' }}>
         {es ? 'Cambiar enfoque' : 'Change focus'}
       </button>
       <button type="button" onClick={onHide} aria-label={es ? 'Ocultar tu enfoque' : 'Hide your focus'}
         style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 40, height: 40, borderRadius: 10, border: 'none', background: 'transparent', color: C.textMuted, fontSize: 24, lineHeight: 1, cursor: 'pointer', fontFamily: 'inherit' }}>
         <span aria-hidden="true">×</span>
       </button>
-    </section>
+    </Panel>
   );
 }

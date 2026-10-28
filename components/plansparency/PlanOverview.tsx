@@ -8,7 +8,9 @@ import { AnswerBody, type CardAI } from './AnswerBody';
 import { PlanGlance } from './PlanGlance';
 import { CardVisual } from './visuals/CardVisual';
 import { LeaveChoicesVisual } from './visuals/LeaveChoicesVisual';
-import { PreferToWatch, WatchFirstRow } from './video/WatchFirstRow';
+import { VideoChip, WatchFirstRow } from './video/WatchFirstRow';
+import { Panel } from './Panel';
+import { Pill } from './Pill';
 import { cardExtras, topicVideos } from '@/lib/plan/relevance';
 import type { StockId } from '@/lib/answers/stockAnswers';
 
@@ -40,7 +42,7 @@ interface PlanOverviewProps {
   // The focus strip, shown above the topic tabs when the person picked a focus.
   focusSlot?: React.ReactNode;
   // Side panel groups to show first (empty: all).
-  focusTopics?: ('you' | 'employer' | 'access')[];
+  focusTopics?: TopicKey[];
 }
 
 // What "Watch first" calls each topic.
@@ -62,11 +64,11 @@ export function PlanOverview(p: PlanOverviewProps) {
   const rkName: string | undefined = planData?.recordkeeperName;
   const rkUrl: string | undefined = typeof planData?.recordkeeperUrl === 'string' && planData.recordkeeperUrl.startsWith('https://') ? planData.recordkeeperUrl : undefined;
 
-  const topics: { key: TopicKey; title: string; sub: string }[] = [
-    { key: 'you', title: L('Your money', 'Tu dinero'), sub: L('Saving from your pay', 'Lo que ahorras de tu pago') },
-    { key: 'employer', title: L('Employer money', 'Dinero del empleador'), sub: L('Match and profit sharing', 'Match y profit sharing') },
-    { key: 'access', title: L('Access my money', 'Acceso a tu dinero'), sub: L('Loans and withdrawals', 'Préstamos y retiros') },
-    { key: 'leave', title: L('When you leave', 'Cuando te vas'), sub: L('What goes with you', 'Lo que se va contigo') },
+  const topics: { key: TopicKey; title: string }[] = [
+    { key: 'you', title: L('Your money', 'Tu dinero') },
+    { key: 'employer', title: L('Employer money', 'Dinero del empleador') },
+    { key: 'access', title: L('Access my money', 'Acceso a tu dinero') },
+    { key: 'leave', title: L('When you leave', 'Cuando te vas') },
   ];
   const cards = o.topics[topic];
   return (
@@ -75,22 +77,19 @@ export function PlanOverview(p: PlanOverviewProps) {
         <main style={{ flex: '999 1 540px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {p.focusSlot}
 
-          {/* Topic tabs */}
-          <div role="tablist" aria-label={L('Plan topics', 'Temas del plan')} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8 }}>
+          {/* Topic tabs: one white bar */}
+          <Panel role="tablist" aria-label={L('Plan topics', 'Temas del plan')} style={{ padding: 6, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 6 }}>
             {topics.map((tp, i) => {
               const sel = topic === tp.key;
               return (
-                <button key={tp.key} role="tab" aria-selected={sel} onClick={() => p.onSelectTopic(tp.key)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 60, padding: '8px 12px', borderRadius: 14, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', background: sel ? C.surface : C.surfaceAlt, border: sel ? `2px solid ${C.accent}` : '2px solid transparent', boxShadow: sel ? `0 6px 18px ${C.shadow}` : 'none' }}>
-                  <span style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, background: sel ? C.text : C.surface, color: sel ? C.surface : C.accentText, border: sel ? 'none' : `1px solid ${C.accent}` }}>{i + 1}</span>
-                  <span style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{tp.title}</span>
-                    <span style={{ fontSize: 12, color: C.textMuted }}>{tp.sub}</span>
-                  </span>
+                <button key={tp.key} type="button" role="tab" aria-selected={sel} onClick={() => p.onSelectTopic(tp.key)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 52, padding: '8px 14px', borderRadius: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, border: 'none', background: sel ? C.bar : 'transparent', color: sel ? C.barText : C.text }}>
+                  <span aria-hidden="true" style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, background: sel ? C.surface : C.borderLight, color: sel ? C.bar : C.text }}>{i + 1}</span>
+                  {tp.title}
                 </button>
               );
             })}
-          </div>
+          </Panel>
 
           <WatchFirstRow ids={topicVideos(topic, planData)} topic={TOPIC_WORDS[topic]} />
 
@@ -100,37 +99,37 @@ export function PlanOverview(p: PlanOverviewProps) {
             const written = p.getWritten(c.id);
             const extras = cardExtras(c.id as StockId, planData);
             return (
-              <article key={c.id} id={`card-${c.id}`} style={{ borderRadius: 16, background: C.surface, border: open ? `2px solid ${C.accent}` : `1px solid ${C.border}`, scrollMarginTop: sticky.headerH + 12 }}>
-                <button type="button" aria-expanded={open} aria-controls={`card-body-${c.id}`} onClick={() => p.onToggleCard(c.id)}
-                  style={{ width: '100%', minHeight: 64, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
-                  <span style={{ flex: '1 1 240px', fontFamily: F.display, fontSize: 24, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{c.question}</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, padding: '5px 12px', borderRadius: 100, background: c.tone === 'good' ? C.greenSoft : C.accentSoft, color: c.tone === 'good' ? C.green : C.accentText }}>{c.fact}</span>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.accentText} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }}><polyline points="6 9 12 15 18 9" /></svg>
-                </button>
+              <Panel key={c.id} id={`card-${c.id}`} strong={open} style={{ padding: 0, overflow: 'hidden', scrollMarginTop: sticky.headerH + 12 }}>
+                {/* The toggle and the video chip are two buttons side by side, never one inside the other. */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px', padding: '4px 20px 4px 0' }}>
+                  <button type="button" aria-expanded={open} aria-controls={`card-body-${c.id}`} onClick={() => p.onToggleCard(c.id)}
+                    style={{ flex: '1 1 340px', minWidth: 0, minHeight: 64, padding: '14px 8px 14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+                    <span style={{ flex: '1 1 240px', fontFamily: F.display, fontSize: 24, fontWeight: 700, lineHeight: 1.15, color: C.text }}>{c.question}</span>
+                    <Pill kind={c.kind}>{c.fact}</Pill>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.accentText} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }}><polyline points="6 9 12 15 18 9" /></svg>
+                  </button>
+                  {extras.video && <div style={{ paddingLeft: 20 }}><VideoChip id={extras.video} /></div>}
+                </div>
                 {open && (
                   <div id={`card-body-${c.id}`} style={{ padding: '0 20px 20px' }}>
-                    {extras.video && <div style={{ marginBottom: 6 }}><PreferToWatch id={extras.video} /></div>}
                     <AnswerBody
-                      written={written} ai={p.getAI(c.id)} lang={lang} stockId={c.id} review={review}
+                      written={written} ai={p.getAI(c.id)} lang={lang} stockId={c.id} review={review} kind={c.kind}
+                      link={extras.link ? { text: extras.link.text[lang], onClick: () => p.onPickRow(topic, extras.link!.to) } : null}
                       recordkeeper={{ name: rkName, url: rkUrl }} advisorEmail={advisor?.email}
                       errorText={p.errorText} onOpenCalculator={p.onOpenCalculator} onRetry={() => p.onRetry(c.id)}
                     >
-                      {extras.link && (
-                        <button type="button" onClick={() => p.onPickRow(topic, extras.link!.to)}
-                          style={{ minHeight: 44, padding: 0, marginBottom: 8, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 16, fontWeight: 700, color: C.accentText, textDecoration: 'underline' }}>{extras.link.text[lang]}</button>
-                      )}
                       <CardVisual id={c.id} planData={planData} lang={lang} />
                     </AnswerBody>
                   </div>
                 )}
-              </article>
+              </Panel>
             );
           })}
 
           {/* Leave choices */}
           {topic === 'leave' && <LeaveChoicesVisual options={o.leaveOptions} lang={lang} />}
 
-          <div style={{ fontSize: 12, color: C.textDim, paddingTop: 16, borderTop: `1px solid ${C.borderLight}` }}>{p.footer}</div>
+          <div style={{ fontSize: 12, color: C.textDim, paddingTop: 16 }}>{p.footer}</div>
         </main>
 
         <div style={{ flex: '1 1 300px', maxWidth: 400, minWidth: 0, ...(sticky.twoCol ? { position: 'sticky', top: sticky.top, height: sticky.height, display: 'flex', alignItems: 'center' } : {}) }}>

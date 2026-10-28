@@ -14,8 +14,8 @@ const KIND: Record<PillKind, { background: string; color: string; border: string
   ask: { background: C.surface, color: C.accentText, border: `2px solid ${C.accent}` },
 };
 const SIZE = {
-  md: { fontSize: 15, padding: '4px 14px' },
-  sm: { fontSize: 13, padding: '1px 10px' },
+  md: { fontSize: 15, padding: '6px 14px' },
+  sm: { fontSize: 13, padding: '3px 10px' },
 };
 
 export function Pill({ kind, size = 'md', children, style }: { kind: PillKind; size?: 'md' | 'sm'; children: React.ReactNode; style?: React.CSSProperties }) {

@@ -59,11 +59,11 @@ export function focusPlace(id: FocusId, pd: PlanData | null): FocusPlace {
   }
 }
 
-// The side panel groups a pick makes first. Picks with no group (leave, invest, calc) add none.
-export function focusTopics(picks: FocusId[]): ('you' | 'employer' | 'access')[] {
-  const out: ('you' | 'employer' | 'access')[] = [];
+// The side panel groups a pick makes first. Picks with no group (invest, calc) add none.
+export function focusTopics(picks: FocusId[]): ('you' | 'employer' | 'access' | 'leave')[] {
+  const out: ('you' | 'employer' | 'access' | 'leave')[] = [];
   for (const p of picks) {
-    const t = p === 'start' ? 'you' : p === 'employer' ? 'employer' : p === 'access' ? 'access' : null;
+    const t = p === 'start' ? 'you' : p === 'employer' ? 'employer' : p === 'access' ? 'access' : p === 'leave' ? 'leave' : null;
     if (t && !out.includes(t)) out.push(t);
   }
   return out;

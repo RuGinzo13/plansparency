@@ -19,8 +19,8 @@ export function WatchFirstRow({ ids, topic, onBeforeOpen }: { ids: VideoId[]; to
   const n = list.length;
   const open = (id: VideoId, from: HTMLElement) => { onBeforeOpen?.(); c.openVideo(id, { from }); };
   return (
-    <section aria-labelledby={headingId} style={{ padding: 16, borderRadius: 16, background: C.panelSoft, border: `1px solid ${C.borderLight}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <h2 id={headingId} style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.text }}>
+    <section aria-labelledby={headingId} style={{ padding: 16, borderRadius: 16, background: C.bar, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <h2 id={headingId} style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.barText }}>
         {es ? `Mira primero: ${n} ${n === 1 ? 'video corto' : 'videos cortos'} sobre ${topic.es}` : `Watch first: ${n} short ${n === 1 ? 'video' : 'videos'} on ${topic.en}`}
       </h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: 12 }}>
@@ -51,6 +51,23 @@ export function PreferToWatch({ id }: { id: VideoId }) {
       style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 40, padding: 0, background: 'none', border: 'none', cursor: 'pointer', fontFamily: F.body, fontSize: 15, fontWeight: 700, color: C.accentText, textDecoration: 'underline' }}>
       <span aria-hidden="true" style={{ width: 26, height: 26, borderRadius: '50%', background: C.bar, color: C.onPrimary, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, textDecoration: 'none' }}>▶</span>
       <span>{c.lang === 'es' ? `¿Prefieres verlo? Video de ${s} segundos` : `Prefer to watch? ${s}-second video`}</span>
+    </button>
+  );
+}
+
+// The small dark chip in a card's header: "▶ 0:45". A button of its own, next to the card's toggle (never inside it).
+export function VideoChip({ id }: { id: VideoId }) {
+  const c = useVideoCtx();
+  const all = useVideos();
+  const v = all.find((x) => x.id === id);
+  if (!c || !v) return null;
+  const s = videoSeconds(v);
+  return (
+    <button type="button" onClick={(e) => c.openVideo(id, { from: e.currentTarget })}
+      aria-label={c.lang === 'es' ? `Ver: ${v.title}, ${s} segundos` : `Watch: ${v.title}, ${s} seconds`}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 40, padding: '0 14px 0 7px', borderRadius: 100, border: 'none', background: C.bar, color: C.barText, cursor: 'pointer', fontFamily: F.body, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+      <span aria-hidden="true" style={{ width: 26, height: 26, borderRadius: '50%', background: C.surface, color: C.bar, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, paddingLeft: 2 }}>▶</span>
+      <span aria-hidden="true">{fmtTime(s)}</span>
     </button>
   );
 }
