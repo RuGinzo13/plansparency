@@ -7,8 +7,7 @@ import { TeamAvatar } from './TeamAvatar';
 import type { TeamMember } from '@/lib/team';
 import { FOCUS_CHOICES, MAX_FOCUS, type FocusId } from '@/lib/plan/focus';
 import { FocusIcon } from './FocusIcon';
-import { useVideo, useVideoCtx } from './video/VideoContext';
-import { videoSeconds } from '@/lib/videos/build';
+import { WatchFirstRow } from './video/WatchFirstRow';
 
 interface Props {
   employerName: string;
@@ -43,8 +42,6 @@ export function WelcomeDialog({ employerName, planName, recordkeeperName, record
   const [hide, setHide] = useState(false);
   const [step, setStep] = useState<1 | 2>(initialStep);
   const [picks, setPicks] = useState<FocusId[]>(initialPicks);
-  const video = useVideo('welcome');
-  const vctx = useVideoCtx();
   const step2Heading = useRef<HTMLHeadingElement>(null);
   const moved = useRef(false);
   useEffect(() => { if (moved.current && step === 2) step2Heading.current?.focus(); }, [step]);
@@ -105,11 +102,7 @@ export function WelcomeDialog({ employerName, planName, recordkeeperName, record
           </dl>
         )}
 
-        {video && vctx && (
-          <button type="button" onClick={(e) => { onClose(false); vctx.openVideo('welcome', { from: e.currentTarget }); }} style={{ alignSelf: 'flex-start', minHeight: 40, borderRadius: 100, padding: '0 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: F.body, background: C.highlight, color: C.accentText, border: `1px solid ${C.accentBorder}` }}>
-            {L(`▶ Watch: your plan in ${videoSeconds(video)} seconds`, `▶ Ver: tu plan en ${videoSeconds(video)} segundos`)}
-          </button>
-        )}
+        <WatchFirstRow ids={['welcome']} topic={{ en: 'your plan', es: 'tu plan' }} onBeforeOpen={() => onClose(false)} />
 
         {first && (
           <button type="button" onClick={() => { onClose(hide); onOpenTeam(); }} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 44, padding: 0, background: 'none', border: 'none', textAlign: 'left', fontSize: 15, fontWeight: 600, color: C.accentText, cursor: 'pointer', fontFamily: F.body }}>

@@ -8,7 +8,7 @@ import { AnswerBody, type CardAI } from './AnswerBody';
 import { PlanGlance } from './PlanGlance';
 import { CardVisual } from './visuals/CardVisual';
 import { LeaveChoicesVisual } from './visuals/LeaveChoicesVisual';
-import { WatchVideo } from './video/WatchButton';
+import { PreferToWatch, WatchFirstRow } from './video/WatchFirstRow';
 import type { VideoId } from '@/lib/videos/types';
 
 export type { TopicKey };
@@ -43,7 +43,7 @@ interface PlanOverviewProps {
 }
 
 // The video that belongs at the top of each answer card.
-const CARD_VIDEO: Record<string, VideoId> = { safeHarbor: 'match', match: 'match', vesting: 'vesting', roth: 'taxes', limit: 'limits', elig: 'limits' };
+const CARD_VIDEO: Record<string, VideoId> = { safeHarbor: 'match', match: 'match', vesting: 'vesting', roth: 'taxes', limit: 'limits' };
 
 
 // "Your plan": topic tabs, question cards that open in place, and the grouped panel.
@@ -87,8 +87,9 @@ export function PlanOverview(p: PlanOverviewProps) {
             })}
           </div>
 
-          {topic === 'access' && <WatchVideo id="access" placeKey="topic:access" />}
-          {topic === 'leave' && <WatchVideo id="leave" placeKey="topic:leave" />}
+          {topic === 'you' && <WatchFirstRow ids={['limits', 'taxes']} topic={{ en: 'your money', es: 'tu dinero' }} />}
+          {topic === 'employer' && <WatchFirstRow ids={['match', 'vesting']} topic={{ en: 'employer money', es: 'el dinero del empleador' }} />}
+          {topic === 'access' && <WatchFirstRow ids={['access']} topic={{ en: 'getting to your money', es: 'cómo acceder a tu dinero' }} />}
 
           {/* Cards */}
           {cards.map((c) => {
@@ -104,7 +105,7 @@ export function PlanOverview(p: PlanOverviewProps) {
                 </button>
                 {open && (
                   <div id={`card-body-${c.id}`} style={{ padding: '0 20px 20px' }}>
-                    {CARD_VIDEO[c.id] && <div style={{ marginBottom: 14 }}><WatchVideo id={CARD_VIDEO[c.id]} placeKey={`card:${c.id}`} /></div>}
+                    {CARD_VIDEO[c.id] && <div style={{ marginBottom: 6 }}><PreferToWatch id={CARD_VIDEO[c.id]} /></div>}
                     <AnswerBody
                       written={written} ai={p.getAI(c.id)} lang={lang} stockId={c.id} review={review}
                       recordkeeper={{ name: rkName, url: rkUrl }} advisorEmail={advisor?.email}
@@ -119,6 +120,7 @@ export function PlanOverview(p: PlanOverviewProps) {
           })}
 
           {/* Leave choices */}
+          {topic === 'leave' && <WatchFirstRow ids={['leave']} topic={{ en: 'leaving a job', es: 'cuando te vas de un trabajo' }} />}
           {topic === 'leave' && <LeaveChoicesVisual options={o.leaveOptions} lang={lang} />}
 
           <div style={{ fontSize: 12, color: C.textDim, paddingTop: 16, borderTop: `1px solid ${C.borderLight}` }}>{p.footer}</div>

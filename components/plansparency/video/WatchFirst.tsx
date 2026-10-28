@@ -4,25 +4,24 @@ import React from 'react';
 import { C, F } from '../theme';
 import type { VideoId } from '@/lib/videos/types';
 import { videoSeconds } from '@/lib/videos/build';
-import { focusPlace, type FocusId } from '@/lib/plan/focus';
+import { type FocusId } from '@/lib/plan/focus';
 import { useVideo, useVideoCtx } from './VideoContext';
 
-// Which video each focus pick starts with, and which Watch button (placeKey) it opens at the place the pick goes to.
-export function focusVideo(pick: FocusId, planData: any): { id: VideoId; key: string } {
+// Which video each focus pick starts with.
+export function focusVideo(pick: FocusId): { id: VideoId } {
   switch (pick) {
-    case 'start': return { id: 'limits', key: 'card:elig' };
-    case 'employer': { const place = focusPlace('employer', planData); return { id: 'match', key: `card:${place.kind === 'card' ? place.card : 'match'}` }; }
-    case 'access': return { id: 'access', key: 'topic:access' };
-    case 'leave': return { id: 'leave', key: 'topic:leave' };
-    case 'invest': return { id: 'tdf', key: 'invest' };
-    case 'calc': return { id: 'limits', key: 'calc' };
+    case 'start': case 'calc': return { id: 'limits' };
+    case 'employer': return { id: 'match' };
+    case 'access': return { id: 'access' };
+    case 'leave': return { id: 'leave' };
+    case 'invest': return { id: 'tdf' };
   }
 }
 
 // "Watch first" on the focus strip: goes to the place the current pick points at and opens its video there.
 export function WatchFirst({ pick, lang, onGo }: { pick: FocusId; lang: 'en' | 'es'; onGo: (pick: FocusId) => void }) {
   const c = useVideoCtx();
-  const target = focusVideo(pick, c?.planData ?? null);
+  const target = focusVideo(pick);
   const video = useVideo(target.id);
   if (!video) return null;
   const es = lang === 'es';

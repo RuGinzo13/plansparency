@@ -39,7 +39,7 @@ import { PlanOverview } from '@/components/plansparency/PlanOverview';
 import { FocusStrip } from '@/components/plansparency/FocusStrip';
 import { VideoProvider, type TheaterState } from '@/components/plansparency/video/VideoContext';
 import { VideoTheater } from '@/components/plansparency/video/VideoTheater';
-import { WatchVideo } from '@/components/plansparency/video/WatchButton';
+import { WatchFirstRow } from '@/components/plansparency/video/WatchFirstRow';
 import { WatchFirst } from '@/components/plansparency/video/WatchFirst';
 import { focusPlace, focusTopics, type FocusId } from '@/lib/plan/focus';
 import { CalcPanel } from '@/components/plansparency/CalcPanel';
@@ -761,13 +761,13 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
                 focusSlot={focusStrip} focusTopics={focusTopics(focus)}
               />
             )}
-            {planGuideTab === "investments" && <div style={{ padding: "12px 20px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>{focusStrip}<WatchVideo id="tdf" placeKey="invest" /></div>}
+            {planGuideTab === "investments" && <div style={{ padding: "12px 20px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>{focusStrip}<WatchFirstRow ids={["tdf"]} topic={{ en: "investments", es: "inversiones" }} /></div>}
             {planGuideTab === "investments" && (
               <InvestmentsPanel fundsData={planData?.fundsData || []} lang={lang} onAddDocument={() => addDocRef.current?.click()} fundsSource={fundsSource} fundsError={fundsError} />
             )}
           </>
         )}
-        {activeTab === "calculator" && <div style={{ padding: "12px 20px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>{focusStrip}<WatchVideo id="limits" placeKey="calc" label={(s, title) => `${lang === "es" ? "¿Nuevo en esto? ▶ Ver" : "New to this? ▶ Watch"}: ${title} · ${s} s`} /></div>}
+        {activeTab === "calculator" && <div style={{ padding: "12px 20px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>{focusStrip}<WatchFirstRow ids={["limits"]} topic={{ en: "saving limits", es: "los límites de ahorro" }} /></div>}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openCard} onOpenCalculator={() => setActiveTab("calculator")} />}
         {activeTab === "videos" && <VideosPanel />}

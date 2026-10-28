@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { C, F, LAYOUT } from './theme';
-import { WatchVideo } from './video/WatchButton';
+import { PreferToWatch } from './video/WatchFirstRow';
 import { getKeyTerms, KEY_TERM_SECTION_NAMES, KEY_TERM_SUB_NAMES, type KeyTermSection, type KeyTerm } from '@/lib/glossary';
 
 const SECTIONS: KeyTermSection[] = ['start', 'employer', 'access', 'invest'];
@@ -119,8 +119,8 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
         ))}
       </ol>
 
-      {(sel.id === 'traditional' || sel.id === 'roth') && <WatchVideo id="taxes" placeKey={`term:${sel.id}`} />}
-      {sel.id === 'targetDate' && <WatchVideo id="tdf" placeKey="term:targetDate" />}
+      {(sel.id === 'traditional' || sel.id === 'roth') && <div><PreferToWatch id="taxes" /></div>}
+      {sel.id === 'targetDate' && <div><PreferToWatch id="tdf" /></div>}
 
       {sel.rows && sel.rows.length > 0 && (
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', background: C.surface }}>
