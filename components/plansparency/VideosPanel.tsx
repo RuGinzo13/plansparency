@@ -6,6 +6,8 @@ import { VIDEO_SECTIONS } from '@/lib/videos/scripts';
 import { videoSeconds } from '@/lib/videos/build';
 import { fmtTime, VideoThumb } from './video/VideoThumb';
 import { planLabel, useVideoCtx, useVideos } from './video/VideoContext';
+import { Panel } from './Panel';
+import { Pill } from './Pill';
 
 // The Videos tab: a table of contents. Contents list on the left, numbered sections of videos on the right.
 export function VideosPanel() {
@@ -45,11 +47,11 @@ export function VideosPanel() {
     <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
       <div style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '28px 20px 48px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 32 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 36, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{L('Videos', 'Videos')}</h1>
-          <p style={{ margin: 0, fontSize: 15, color: C.textMuted }}>{L('Short, under a minute each. Tap one to watch. Captions are always on.', 'Cortos, de menos de un minuto cada uno. Toca uno para verlo. Los subtítulos siempre están activos.')}</p>
+          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 40, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{L('Videos', 'Videos')}</h1>
+          <p style={{ margin: 0, fontSize: 17, lineHeight: 1.5, color: C.tabShadeText }}>{L('Short, under a minute each. Tap one to watch. Captions are always on.', 'Cortos, de menos de un minuto cada uno. Toca uno para verlo. Los subtítulos siempre están activos.')}</p>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px 24px', padding: '18px 20px', borderRadius: 16, background: C.highlight, border: `1px solid ${C.accentBorder}` }}>
+        <Panel strong style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px 24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: C.text }}>
               {es ? `${n} ${n === 1 ? 'video corto' : 'videos cortos'} · unos ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} en total` : `${n} short ${n === 1 ? 'video' : 'videos'} · about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'} in all`}
@@ -64,10 +66,10 @@ export function VideosPanel() {
             style={{ minHeight: 52, padding: '0 24px', border: 'none', borderRadius: 12, background: `linear-gradient(135deg,${C.accent},${C.primaryEnd})`, color: C.onPrimary, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: F.body }}>
             {L('▶ Play all in order', '▶ Ver todos en orden')}
           </button>
-        </div>
+        </Panel>
 
         <div className="vp-cols" style={{ gap: 36, alignItems: 'start' }}>
-          <nav aria-label={L('Video contents', 'Contenido de los videos')} className="vp-nav" style={{ padding: 16, border: `1px solid ${C.border}`, borderRadius: 16, boxSizing: 'border-box', background: C.surface }}>
+          <Panel aria-label={L('Video contents', 'Contenido de los videos')} className="vp-nav" style={{ padding: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: C.textMuted, marginBottom: 8 }}>{L('Contents', 'Contenido')}</div>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
               {sections.map((s, i) => {
@@ -79,20 +81,20 @@ export function VideosPanel() {
                     <button type="button" aria-current={on ? 'true' : undefined} onClick={() => goTo(k)}
                       style={{ width: '100%', minHeight: 52, padding: '6px 10px', borderRadius: 8, border: 'none', borderLeft: `4px solid ${on ? C.accent : 'transparent'}`, background: on ? C.highlight : 'transparent', textAlign: 'left', cursor: 'pointer', fontFamily: F.body, display: 'flex', flexDirection: 'column' }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{k}. {s.title[c.lang]}</span>
-                      <span style={{ fontSize: 13, color: C.textMuted }}>{es ? `${s.list.length} ${s.list.length === 1 ? 'video' : 'videos'}` : `${s.list.length} ${s.list.length === 1 ? 'video' : 'videos'}`} · {mmss(secs)}</span>
+                      <span style={{ fontSize: 13, color: C.textMuted, whiteSpace: 'nowrap' }}>{`${s.list.length} ${s.list.length === 1 ? 'video' : 'videos'}`} · {mmss(secs)}</span>
                     </button>
                   </li>
                 );
               })}
             </ul>
-          </nav>
+          </Panel>
 
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 32 }}>
             {sections.map((s, i) => {
               const k = i + 1;
               const secs = s.list.reduce((a, v) => a + videoSeconds(v), 0);
               return (
-                <section key={k} id={`vsec-${k}`} data-k={k} aria-labelledby={`vsec-h-${k}`} style={{ scrollMarginTop: 16 }}>
+                <Panel key={k} id={`vsec-${k}`} data-k={k} aria-labelledby={`vsec-h-${k}`} style={{ scrollMarginTop: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
                     <h2 id={`vsec-h-${k}`} style={{ margin: 0, fontFamily: F.display, fontSize: 30, fontWeight: 700, color: C.text }}><span style={{ color: C.accentText }}>{k}.</span> {s.title[c.lang]}</h2>
                     <span style={{ fontSize: 14, fontWeight: 600, color: C.textMuted }}>{mmss(secs)}</span>
@@ -109,18 +111,18 @@ export function VideosPanel() {
                             <p style={{ margin: 0, fontSize: 14, color: C.textMuted }}>{v.learn}</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{mmss(videoSeconds(v))}</span>
-                              {seen && <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 100, background: C.greenSoft, color: C.green }}>{L('Watched', 'Visto')}</span>}
+                              <Pill kind={seen ? 'yes' : 'info'} size="sm">{seen ? L('Watched', 'Visto') : L('New', 'Nuevo')}</Pill>
                             </div>
                           </div>
                           <button type="button" className="vp-btn" onClick={(e) => c.openVideo(v.id, { from: e.currentTarget })}
-                            style={{ minHeight: 44, padding: '0 18px', borderRadius: 12, border: `1px solid ${C.accent}`, background: C.surface, color: C.accentText, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: F.body }}>
+                            style={{ minHeight: 48, padding: '0 20px', borderRadius: 12, border: 'none', background: C.bar, color: C.barText, fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: F.body }}>
                             {L('▶ Watch', '▶ Ver')}<span className="sr-only">: {v.title}</span>
                           </button>
                         </li>
                       );
                     })}
                   </ol>
-                </section>
+                </Panel>
               );
             })}
           </div>

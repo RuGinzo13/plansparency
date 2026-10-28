@@ -79,17 +79,16 @@ export function WelcomeDialog({ employerName, planName, planData = null, recordk
         </div>
 
         {(employerName || recordkeeperName) && (
-          <dl style={{ margin: 0, border: `1px solid ${C.borderLight}`, borderRadius: 14 }}>
+          <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12 }}>
             {employerName && (
-              <div style={{ padding: '14px 16px' }}>
+              <div style={{ padding: '14px 16px', border: `2px solid ${C.borderLight}`, borderRadius: 14, minWidth: 0 }}>
                 <dt style={dt}>{t.welcomeEmployer}</dt>
                 <dd style={ddName}>{employerName}</dd>
                 {planName && <dd style={ddSub}>{planName}</dd>}
               </div>
             )}
-            {employerName && recordkeeperName && <div style={{ height: 1, background: C.borderLight }} />}
             {recordkeeperName && (
-              <div style={{ padding: '14px 16px' }}>
+              <div style={{ padding: '14px 16px', border: `2px solid ${C.borderLight}`, borderRadius: 14, minWidth: 0 }}>
                 <dt style={dt}>{t.welcomeRk}</dt>
                 <dd style={ddName}>{recordkeeperName}</dd>
                 <dd style={ddSub}>{t.welcomeRkBody}</dd>
@@ -140,13 +139,14 @@ export function WelcomeDialog({ employerName, planName, planData = null, recordk
               const on = picks.includes(c.id);
               const blocked = full && !on;
               return (
-                <label key={c.id} className="focus-wrap" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 14, borderRadius: 14, cursor: blocked ? 'default' : 'pointer', opacity: blocked ? 0.55 : 1, background: on ? C.highlight : C.surface, border: on ? `2px solid ${C.accent}` : `1px solid ${C.border}`, boxSizing: 'border-box' }}>
-                  <input type="checkbox" checked={on} aria-disabled={blocked ? 'true' : undefined} onChange={() => { if (!blocked) toggle(c.id); }} style={{ width: 22, height: 22, accentColor: C.accent, flexShrink: 0, marginTop: 2 }} />
-                  <span aria-hidden="true" style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? C.accent : C.surfaceAlt, color: on ? C.onPrimary : C.tabShadeText }}><FocusIcon name={c.icon} /></span>
-                  <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: C.text }}>{c.title[lang]}</span>
-                    <span style={{ fontSize: 13, lineHeight: 1.4, color: C.textMuted }}>{c.example[lang]}</span>
+                <label key={c.id} className="focus-wrap" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 16, borderRadius: 14, cursor: blocked ? 'default' : 'pointer', opacity: blocked ? 0.55 : 1, background: on ? C.bar : C.surface, border: `2px solid ${on ? C.bar : C.border}`, boxSizing: 'border-box', position: 'relative' }}>
+                  <input type="checkbox" className="sr-only" checked={on} aria-disabled={blocked ? 'true' : undefined} onChange={() => { if (!blocked) toggle(c.id); }} />
+                  <span aria-hidden="true" style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? C.surface : C.surfaceAlt, color: on ? C.bar : C.tabShadeText }}><FocusIcon name={c.icon} /></span>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: on ? C.barText : C.text }}>{c.title[lang]}</span>
+                    <span style={{ fontSize: 13, lineHeight: 1.4, color: on ? C.barMuted : C.textMuted }}>{c.example[lang]}</span>
                   </span>
+                  <span aria-hidden="true" style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, background: on ? C.surface : 'transparent', color: C.bar, border: on ? 'none' : `2px solid ${C.border}` }}>{on ? '✓' : ''}</span>
                 </label>
               );
             })}

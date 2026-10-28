@@ -236,8 +236,8 @@ export default function TeamEditorPage() {
               const isEditing = editingId === m.id;
               return (
                 <li key={m.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: C.surface,
-                  border: isEditing ? `2px solid ${C.text}` : `1px solid ${C.border}`, borderLeft: `6px solid ${ROLE[m.role].base}`,
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 16, background: C.surface, boxShadow: `0 1px 3px ${C.cardShadow}`,
+                  border: isEditing ? `2px solid ${C.text}` : 'none', borderLeft: `6px solid ${ROLE[m.role].base}`,
                 }}>
                   <TeamAvatar name={m.name} role={m.role} photo={m.photo} size={48} />
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
@@ -269,7 +269,7 @@ export default function TeamEditorPage() {
         </section>
 
         {/* ── Right: the form ── */}
-        <section aria-labelledby="team-form-title" style={{ flex: '1 1 420px', minWidth: 0, boxSizing: 'border-box', padding: 22, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surfaceAlt, display: editing ? 'flex' : 'none', flexDirection: 'column', gap: 16 }}>
+        <section aria-labelledby="team-form-title" style={{ flex: '1 1 420px', minWidth: 0, boxSizing: 'border-box', padding: 22, borderRadius: 16, border: `2px solid ${C.bar}`, boxShadow: `0 4px 14px ${C.cardShadow}`, background: C.surface, display: editing ? 'flex' : 'none', flexDirection: 'column', gap: 16 }}>
           <h2 id="team-form-title" style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{formTitle}</h2>
           <form noValidate onSubmit={(e) => { e.preventDefault(); submit(); }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Photo */}

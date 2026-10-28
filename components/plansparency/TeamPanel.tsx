@@ -3,6 +3,7 @@
 import React from 'react';
 import { C, F, ROLE, LAYOUT } from './theme';
 import { RoleChip } from './RoleChip';
+import { Panel } from './Panel';
 import { TeamAvatar } from './TeamAvatar';
 import { TEAM_ROLES, ROLE_TEXT, telHref, rolesOf, type TeamMember } from '@/lib/team';
 
@@ -41,19 +42,19 @@ export function TeamPanel({ team, planName, lang, t, onBack }: Props) {
       <div style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '28px 20px 48px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 20 }}>
         <button type="button" onClick={onBack} style={{ alignSelf: 'flex-start', minHeight: 44, padding: 0, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, color: C.accentText }}>{L('← Back to your plan', '← Volver a tu plan')}</button>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 36, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{t.teamTitle}</h1>
-          <p style={{ margin: 0, fontSize: 15, color: C.textMuted }}>
+          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 40, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{t.teamTitle}</h1>
+          <p style={{ margin: 0, fontSize: 17, lineHeight: 1.5, color: C.tabShadeText }}>
             {L(`The people who help with ${plan}. Reach out with questions about your plan.`, `Las personas que ayudan con ${plan}. Escríbeles si tienes preguntas sobre tu plan.`)}
           </p>
         </div>
         {team.length === 0 ? (
-          <section aria-labelledby="team-empty-title" style={{ maxWidth: 640, padding: 24, border: `1px dashed ${C.inputBorder}`, borderRadius: 16, boxSizing: 'border-box' }}>
+          <Panel aria-labelledby="team-empty-title" style={{ maxWidth: 640, padding: 24 }}>
             <h2 id="team-empty-title" style={{ margin: '0 0 10px', fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text }}>{t.teamEmptyTitle}</h2>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5, color: C.textMuted }}>{t.teamEmptyBody}</p>
-          </section>
+          </Panel>
         ) : (
           <>
-            <section aria-labelledby="team-who-title" style={{ padding: '16px 18px', borderRadius: 14, background: C.surfaceAlt }}>
+            <Panel aria-labelledby="team-who-title">
               <h2 id="team-who-title" style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: C.text }}>{t.teamWho}</h2>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px 20px' }}>
                 {rolesInUse.map((r) => (
@@ -63,11 +64,11 @@ export function TeamPanel({ team, planName, lang, t, onBack }: Props) {
                   </li>
                 ))}
               </ul>
-            </section>
+            </Panel>
 
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
               {team.map((m) => (
-                <li key={m.id} style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 20, border: `1px solid ${C.border}`, borderTop: `6px solid ${ROLE[m.role].base}`, borderRadius: 16, background: C.surface, minWidth: 0 }}>
+                <li key={m.id} style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 20, borderTop: `6px solid ${ROLE[m.role].base}`, borderRadius: 16, background: C.surface, boxShadow: `0 1px 3px ${C.cardShadow}`, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                     <TeamAvatar name={m.name} role={m.role} photo={m.photo} size={64} />
                     <div style={{ minWidth: 0 }}>

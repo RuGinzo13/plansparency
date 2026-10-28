@@ -203,7 +203,7 @@ export default function AdvisorPage() {
     return shell(
       <div style={{ maxWidth: 760 }}>
         {showWarning && <AccuracyDialog onClose={() => setShowWarning(false)} />}
-        <h1 style={{ fontFamily: F.display, fontSize: wide ? 40 : 30, fontWeight: 600, margin: '0 0 12px' }}>{draft.planName || employerName || 'Plan review'}</h1>
+        <h1 style={{ fontFamily: F.display, fontSize: wide ? 40 : 32, fontWeight: 700, margin: '0 0 12px' }}>{draft.planName || employerName || 'Plan review'}</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 700, padding: '5px 12px', borderRadius: 100, background: allChecked ? C.greenSoft : C.accentSoft, color: allChecked ? C.green : C.accentText }}>{checked.length} of {REVIEW_ROWS.length} checked</span>
         </div>
@@ -216,7 +216,7 @@ export default function AdvisorPage() {
           const isChecked = checked.includes(row.key);
           const isEditing = editingKey === row.key;
           return (
-            <div key={row.key} style={{ background: isChecked ? C.greenSoft : C.surface, border: `1px solid ${isChecked ? C.green : C.border}`, borderRadius: 14, padding: 18, marginBottom: 12, ...(isUnsure ? unsureBox : {}) }}>
+            <div key={row.key} style={{ background: isChecked ? C.greenSoft : C.surface, border: isChecked ? `2px solid ${C.green}` : 'none', boxShadow: `0 1px 3px ${C.cardShadow}`, borderRadius: 16, padding: 18, marginBottom: 12, ...(isUnsure ? unsureBox : {}) }}>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{row.label}</div>
               {isUnsure && <UnsureNote rowKey={row.key as UnsureKey} />}
               {row.fields.map(f => (
@@ -235,7 +235,7 @@ export default function AdvisorPage() {
             </div>
           );
         })}
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, marginTop: 20 }}>
+        <div style={{ background: C.surface, boxShadow: `0 4px 14px ${C.cardShadow}`, border: `2px solid ${C.bar}`, borderRadius: 16, padding: 18, marginTop: 20 }}>
           <label htmlFor="reviewer-name" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>Your name</label>
           <input id="reviewer-name" value={reviewerName} onChange={e => setReviewerName(e.target.value)} required style={{ width: '100%', height: 48, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, boxSizing: 'border-box', marginBottom: 12 }} />
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, fontSize: 14, lineHeight: 1.5, cursor: 'pointer' }}>
@@ -284,7 +284,7 @@ export default function AdvisorPage() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   ) : (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 22 }}>
+    <div style={{ background: C.surface, border: `2px solid ${C.bar}`, boxShadow: `0 4px 14px ${C.cardShadow}`, borderRadius: 16, padding: 22 }}>
       <label htmlFor="employer-name" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 6 }}>Plan / employer name (optional)</label>
       <input id="employer-name" value={employerName} onChange={e => setEmployerName(e.target.value)} style={{ width: '100%', height: 48, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, marginBottom: 16, boxSizing: 'border-box' }} />
         <input ref={fileRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />

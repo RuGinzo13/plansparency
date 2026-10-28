@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { C, F, LAYOUT } from './theme';
 import { PreferToWatch } from './video/WatchFirstRow';
+import { Panel } from './Panel';
+import { AnswerBand } from './AnswerBand';
 import { getKeyTerms, KEY_TERM_SECTION_NAMES, KEY_TERM_SUB_NAMES, type KeyTermSection, type KeyTerm } from '@/lib/glossary';
 
 const SECTIONS: KeyTermSection[] = ['start', 'employer', 'access', 'invest'];
@@ -62,7 +64,7 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
   const showArticle = wide || showEntry;
 
   const List = (
-    <nav aria-label={t.keyTermsTitle} style={{ flex: '1 1 260px', maxWidth: wide ? 300 : undefined, minWidth: 0 }}>
+    <Panel aria-label={t.keyTermsTitle} style={{ flex: '1 1 260px', maxWidth: wide ? 320 : undefined, minWidth: 0, padding: 8 }}>
       {searching && (
         <div style={{ fontSize: 13, color: C.textMuted, padding: '0 10px 8px' }}>
           {matches.length > 0 ? L(`${matches.length} terms match`, `${matches.length} términos coinciden`) : L('No terms match. Try a shorter word.', 'Ningún término coincide. Prueba con una palabra más corta.')}
@@ -78,9 +80,9 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
             <button
               type="button" aria-current={on ? 'true' : undefined} onClick={() => select(x.id)}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 10, minHeight: 52, padding: child ? '6px 10px 6px 30px' : '6px 10px', border: 'none', borderBottom: `1px solid ${C.borderLight}`, borderRadius: 0,
+                width: '100%', display: 'flex', alignItems: 'center', gap: 10, minHeight: 52, padding: child ? '6px 10px 6px 30px' : '6px 10px', border: 'none', borderRadius: 10,
                 fontFamily: F.display, fontSize: child ? 19 : 21, textAlign: 'left', cursor: 'pointer',
-                background: on ? C.highlight : 'transparent', fontWeight: on ? 700 : 600, color: on ? C.text : C.textMuted,
+                background: on ? C.highlight : 'transparent', fontWeight: on ? 700 : 600, color: on ? C.accentText : C.text,
               }}
             >
               <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: on ? C.accent : 'transparent' }} />
@@ -92,24 +94,24 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
           </React.Fragment>
         );
       })}
-    </nav>
+    </Panel>
   );
 
   const Entry = (
-    <article aria-live="polite" style={{ flex: '999 1 520px', minWidth: 0, borderTop: `3px double ${C.text}`, paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <Panel strong aria-live="polite" style={{ flex: '999 1 520px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
       {!wide && (
         <button type="button" onClick={() => setShowEntry(false)} style={{ ...textLink, fontSize: 15, fontWeight: 700, color: C.accentText }}>{L('← All terms', '← Todos los términos')}</button>
       )}
-      <div style={{ paddingTop: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <h2 style={{ margin: 0, fontFamily: F.display, fontSize: 'clamp(40px, 6vw, 56px)', fontWeight: 700, lineHeight: 1, color: C.text }}>{sel.term}</h2>
-        <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: C.accentText }}>{sectionName(sel.section)}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ ...label12, fontWeight: 700, color: C.textMuted }}>{sectionName(sel.section)}</div>
+        <h2 style={{ margin: 0, fontFamily: F.display, fontSize: 36, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{sel.term}</h2>
       </div>
+      <AnswerBand kind="info">{sel.short}</AnswerBand>
 
       <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
         {[
-          { n: 1, label: L('In a few words', 'En pocas palabras'), body: <div style={{ fontFamily: F.display, fontSize: 26, fontStyle: 'italic', fontWeight: 600, lineHeight: 1.25, color: C.text }}>{sel.short}</div> },
-          { n: 2, label: L('What it means', 'Qué significa'), body: <div style={{ fontSize: 17, lineHeight: 1.65, color: C.text }}>{sel.def}</div> },
-          ...(sel.example ? [{ n: 3, label: L('For example', 'Por ejemplo'), body: <div style={{ fontSize: 17, lineHeight: 1.6, color: C.text }}>{sel.example}</div> }] : []),
+          { n: 1, label: L('What it means', 'Qué significa'), body: <div style={{ fontSize: 17, lineHeight: 1.65, color: C.text }}>{sel.def}</div> },
+          ...(sel.example ? [{ n: 2, label: L('For example', 'Por ejemplo'), body: <div style={{ fontSize: 17, lineHeight: 1.6, color: C.text }}>{sel.example}</div> }] : []),
         ].map((item) => (
           <li key={item.n} style={{ display: 'grid', gridTemplateColumns: '32px minmax(0,1fr)', gap: '4px 12px' }}>
             <span style={{ fontFamily: F.display, fontSize: 24, fontWeight: 700, color: C.accentText, gridRow: '1 / span 2' }}>{item.n}</span>
@@ -162,7 +164,7 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
       )}
 
       {sel.ask && (
-        <button type="button" onClick={() => (sel.ask === 'calculator' ? onOpenCalculator() : openStock(sel.ask))} style={{ ...textLink, alignSelf: 'flex-start', fontSize: 15, fontWeight: 700, color: C.accentText }}>
+        <button type="button" onClick={() => (sel.ask === 'calculator' ? onOpenCalculator() : openStock(sel.ask))} style={{ alignSelf: 'flex-start', minHeight: 48, padding: '0 20px', borderRadius: 12, border: 'none', background: C.bar, color: C.barText, fontFamily: 'inherit', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
           {sel.ask === 'calculator' ? L('Try it in the calculator →', 'Pruébalo en la calculadora →') : L('How does my plan handle this? →', '¿Cómo lo maneja mi plan? →')}
         </button>
       )}
@@ -171,15 +173,15 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
         <button type="button" onClick={() => go(prev.id)} style={{ ...textLink, fontSize: 15, fontWeight: 600, color: C.textMuted }}>← {prev.term}</button>
         <button type="button" onClick={() => go(next.id)} style={{ ...textLink, fontSize: 15, fontWeight: 600, color: C.textMuted, textAlign: 'right' }}>{next.term} →</button>
       </div>
-    </article>
+    </Panel>
   );
 
   return (
     <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
       <div ref={layoutRef} style={{ maxWidth: LAYOUT.page, margin: '0 auto', padding: '28px 20px 48px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 36, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{t.keyTermsTitle}</h1>
-          <p style={{ margin: 0, fontSize: 15, color: C.textMuted }}>{t.keyTermsSubtitle}</p>
+          <h1 style={{ margin: 0, fontFamily: F.display, fontSize: 40, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{t.keyTermsTitle}</h1>
+          <p style={{ margin: 0, fontSize: 17, lineHeight: 1.5, color: C.tabShadeText }}>{t.keyTermsSubtitle}</p>
         </div>
         <div className="focus-wrap" style={{ maxWidth: 420, display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', border: `1px solid ${C.inputBorder}`, borderRadius: 14, background: C.aiBubble }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" /></svg>
@@ -190,13 +192,13 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
           />
         </div>
 
-        <div role="tablist" aria-label={t.keyTermsTitle} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, borderBottom: `1px solid ${C.borderLight}` }}>
+        <div role="tablist" aria-label={t.keyTermsTitle} style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {SECTIONS.map((s) => {
             const on = !searching && sel.section === s;
             return (
               <button
                 key={s} role="tab" aria-selected={on} onClick={() => pickTab(s)}
-                style={{ minHeight: 44, padding: '0 4px', marginRight: 14, background: 'none', border: 'none', borderBottom: `3px solid ${on ? C.accent : 'transparent'}`, fontSize: 15, fontFamily: F.body, cursor: 'pointer', fontWeight: on ? 700 : 600, color: on ? C.text : C.textMuted }}
+                style={{ minHeight: 44, padding: '0 18px', borderRadius: 100, background: on ? C.bar : C.surface, border: `2px solid ${on ? C.bar : C.border}`, fontSize: 15, fontFamily: F.body, cursor: 'pointer', fontWeight: 700, color: on ? C.barText : C.text }}
               >{sectionName(s)}</button>
             );
           })}
@@ -207,7 +209,7 @@ export function KeyTermsPanel({ t, lang, openStock, onOpenCalculator }: Props) {
           {showArticle && Entry}
         </div>
 
-        <div style={{ fontSize: 12, color: C.textDim, paddingTop: 16, borderTop: `1px solid ${C.borderLight}` }}>
+        <div style={{ fontSize: 12, color: C.textDim, paddingTop: 16 }}>
           {L("General education about 401(k) plans, not personalized financial advice. Your plan's own rules can differ, and the Your plan and Ask tabs show them.", 'Educación general sobre los planes 401(k), no asesoría financiera personalizada. Las reglas de tu plan pueden ser distintas, y las pestañas Tu plan y Preguntar las muestran.')}
         </div>
       </div>

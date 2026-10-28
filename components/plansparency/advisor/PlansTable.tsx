@@ -1,6 +1,8 @@
 'use client';
 import React, { useEffect, useMemo, useState } from 'react';
 import { C, F, btnBase } from '../theme';
+import { Panel } from '../Panel';
+import { Pill } from '../Pill';
 
 type PlanRow = {
   planId: string;
@@ -106,7 +108,7 @@ export function PlansTable({ onUpload }: { onUpload: () => void }) {
               style={{ border: 'none', outline: 'none', background: 'none', fontSize: 15, fontFamily: F.body, color: C.text, width: 180, minHeight: 40 }} // a11y-ok: wrapper shows focus
             />
           </label>
-          <button type="button" onClick={onUpload} style={{ ...btnBase, minHeight: 44, padding: '0 18px', fontSize: 15, fontWeight: 700, background: C.accentSoft, color: C.accentText, border: `1px solid ${C.accent}`, borderRadius: 10 }}>+ Upload another plan</button>
+          <button type="button" onClick={onUpload} style={{ ...btnBase, minHeight: 44, padding: '0 18px', fontSize: 15, fontWeight: 700, background: C.accent, color: C.onPrimary, border: 'none', borderRadius: 12 }}>+ Upload another plan</button>
         </div>
       </div>
 
@@ -122,7 +124,7 @@ export function PlansTable({ onUpload }: { onUpload: () => void }) {
       {plans && plans.length > 0 && rows.length === 0 && <p style={{ fontSize: 15, color: C.textMuted }}>No plans match “{query}”.</p>}
 
       {plans && rows.length > 0 && (
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden', background: C.surface }}>
+        <Panel strong style={{ padding: 0, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15 }}>
             <caption className="sr-only">Your plans. Use the column buttons to sort.</caption>
             <thead>
@@ -147,8 +149,8 @@ export function PlansTable({ onUpload }: { onUpload: () => void }) {
                     <td style={{ padding: '4px 8px', color: C.textMuted }}>{p.lastUpdated ? `${mdy(p.lastUpdated.at)}${p.lastUpdated.by ? ` · ${p.lastUpdated.by}` : ''}` : 'Not changed'}</td>
                     <td className="pt-hide-sm" style={{ padding: '4px 8px' }}>
                       {p.teamCount > 0
-                        ? <span style={{ fontWeight: 600 }}>{people(p.teamCount)}</span>
-                        : <span style={{ fontSize: 13, fontWeight: 600, padding: '3px 8px', borderRadius: 100, background: C.warningDim, color: C.warning }}>Not added</span>}
+                        ? <Pill kind="info" size="sm">{people(p.teamCount)}</Pill>
+                        : <Pill kind="ask" size="sm">Not added</Pill>}
                     </td>
                     <td style={{ padding: '4px 8px', textAlign: 'right' }}>
                       <button type="button" aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} actions for ${p.name}`} onClick={toggle} style={{ width: 40, height: 40, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 20, lineHeight: 1, color: C.text, cursor: 'pointer', fontFamily: F.body }}><span aria-hidden="true">{isOpen ? '−' : '+'}</span></button>
@@ -178,7 +180,7 @@ export function PlansTable({ onUpload }: { onUpload: () => void }) {
               );
             })}
           </table>
-        </div>
+        </Panel>
       )}
     </div>
   );

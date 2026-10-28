@@ -4,6 +4,7 @@ import { C, F, btnBase } from '../theme';
 import { getAt, triLabel, type FieldSpec } from '@/lib/plan/reviewRows';
 import { ageText, parseServiceAge } from '@/lib/plan/plandata';
 import { UNSURE_REASONS, type UnsureKey } from '@/lib/plan/unsure';
+import { Pill } from '../Pill';
 
 export const controlStyle = { width: '100%', minHeight: 44, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, boxSizing: 'border-box' } as const;
 
@@ -48,7 +49,7 @@ export function ReviewField({ field, draft, editing, onChange }: { field: FieldS
           ))}
         </div>
       )
-      : <div style={readStyle}>{triLabel(shown)}</div>);
+      : <div style={readStyle}><Pill kind={shown === true ? 'yes' : shown === false ? 'no' : 'ask'} size="sm">{triLabel(shown)}</Pill></div>);
   }
   // tiers
   const tiers: { pct: number; upTo: number }[] = Array.isArray(value) ? value : [];

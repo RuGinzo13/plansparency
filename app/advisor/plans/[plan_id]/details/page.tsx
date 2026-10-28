@@ -101,7 +101,7 @@ export default function EditDetailsPage() {
     return `${fmtDate(h.at)} · ${head}${h.note ? ` Note: ${h.note}` : ''}`;
   };
 
-  const rowBox = (changed: boolean) => ({ padding: '14px 16px', borderRadius: 14, background: C.surface, border: changed ? `2px solid ${C.accent}` : `1px solid ${C.border}` }) as const;
+  const rowBox = (changed: boolean) => ({ padding: '14px 16px', borderRadius: 16, background: C.surface, border: changed ? `2px solid ${C.accent}` : 'none', boxShadow: `0 1px 3px ${C.cardShadow}` }) as const;
   const editBtn = { minHeight: 40, padding: '0 14px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontWeight: 700, color: C.accentText, cursor: 'pointer', fontFamily: F.body, flexShrink: 0 } as const;
   const changedChip = <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: C.accentSoft, color: C.accentText, textTransform: 'none', letterSpacing: 0 }}>Changed</span>;
 
@@ -157,7 +157,7 @@ export default function EditDetailsPage() {
           </li>
         </ul>
 
-        <section aria-labelledby="save-title" style={{ flex: '1 1 320px', maxWidth: 420, boxSizing: 'border-box', padding: 22, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surfaceAlt, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <section aria-labelledby="save-title" style={{ flex: '1 1 320px', maxWidth: 420, boxSizing: 'border-box', padding: 22, borderRadius: 16, border: `2px solid ${C.bar}`, boxShadow: `0 4px 14px ${C.cardShadow}`, background: C.surface, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <h2 id="save-title" style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Save {changeCount} change{changeCount === 1 ? '' : 's'}</h2>
           <label style={labelStyle}>
             What changed and why (optional)

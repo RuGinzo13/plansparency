@@ -798,7 +798,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   }
 
   // ── Statement Dashboard ──
-  if (stage === "stmtDashboard") return <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
+  if (stage === "stmtDashboard") return <div style={{ height: "100vh", background: C.page, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
     <SkipLink lang={lang} />
         <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUploadStatement(e.target.files[0]); e.target.value = ""; }} />
 

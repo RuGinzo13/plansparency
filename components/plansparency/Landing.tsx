@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { C, F, btnBase, LAYOUT } from './theme';
+import { Panel } from './Panel';
 import { Logo, LangToggle, Shield, SkipLink } from './ui';
 import { IRS_LIMITS, getLimitYear } from '@/lib/plan/irs';
 import { fmtRounded } from '@/lib/format';
@@ -80,7 +81,7 @@ export function Landing({ allowUpload = false, t, lang, setLang, stage, setStage
 
   const Hero = (
     <div style={{ marginBottom: 28 }}>
-      <h1 style={{ fontFamily: F.display, fontSize: wide ? 76 : 44, fontWeight: 600, lineHeight: 1.04, margin: "0 0 16px", letterSpacing: "-.02em", color: C.text }}>
+      <h1 style={{ fontFamily: F.display, fontSize: wide ? 64 : 40, fontWeight: 700, lineHeight: 1.04, margin: "0 0 16px", letterSpacing: "-.02em", color: C.text }}>
         {t.landHero1}<br />
         <span style={{ fontStyle: "italic", color: C.accentText }}>{t.landHero2}</span>
       </h1>
@@ -174,28 +175,29 @@ export function Landing({ allowUpload = false, t, lang, setLang, stage, setStage
   // Participants (no upload) always see the plan-code card; it stays switched off until codes open.
   const codesOn = PLAN_CODES_ENABLED;
   const CodeBox = (PLAN_CODES_ENABLED || !allowUpload) && (
-    <div style={{ marginTop: 24, padding: 18, borderRadius: 14, background: C.surfaceAlt }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>{t.landCodeLabel}</div>
-      <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.45, marginBottom: 12 }}>{codesOn ? t.landCodeHelp : t.landCodeSoon}</div>
+    <Panel strong style={{ marginTop: allowUpload ? 24 : 0, padding: 24 }}>
+      <h2 style={{ margin: "0 0 6px", fontFamily: F.display, fontSize: 30, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{lang === "es" ? "Abre tu plan" : "Open your plan"}</h2>
+      <div style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 4 }}>{t.landCodeLabel}</div>
+      <div style={{ fontSize: 15, color: C.textMuted, lineHeight: 1.45, marginBottom: 14 }}>{codesOn ? t.landCodeHelp : t.landCodeSoon}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input
           value={planCode} onChange={(e) => setPlanCode(e.target.value)} placeholder={t.landCodePlaceholder} aria-label={t.landCodeLabel} disabled={!codesOn}
-          style={{ opacity: codesOn ? 1 : 0.6, cursor: codesOn ? "text" : "not-allowed", flex: 1, minWidth: 140, height: 48, background: C.aiBubble, border: `1px solid ${C.inputBorder}`, borderRadius: 8, padding: "0 12px", fontSize: 16, fontFamily: F.body, color: C.text, boxSizing: "border-box" }}
+          style={{ opacity: codesOn ? 1 : 0.6, cursor: codesOn ? "text" : "not-allowed", flex: 1, minWidth: 140, height: 48, background: C.aiBubble, border: `1px solid ${C.inputBorder}`, borderRadius: 12, padding: "0 12px", fontSize: 16, fontFamily: F.body, color: C.text, boxSizing: "border-box" }}
         />
-        <button type="button" disabled={!codesOn} style={{ ...btnBase, height: 48, padding: "0 20px", fontSize: 14, background: C.text, color: C.surface, opacity: codesOn ? 1 : 0.6, cursor: codesOn ? "pointer" : "not-allowed" }}>{t.landCodeButton}</button>
+        <button type="button" disabled={!codesOn} style={{ ...btnBase, minHeight: 48, padding: "0 24px", fontSize: 16, fontWeight: 700, borderRadius: 12, background: C.accent, color: C.onPrimary, opacity: codesOn ? 1 : 0.6, cursor: codesOn ? "pointer" : "not-allowed" }}>{t.landCodeButton}</button>
       </div>
       {codesOn && (
-        <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, minHeight: 44, fontSize: 13, color: C.textMuted, cursor: "pointer" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, minHeight: 44, fontSize: 14, color: C.textMuted, cursor: "pointer" }}>
           <input type="checkbox" checked={rememberPlan} onChange={(e) => setRememberPlan(e.target.checked)} style={{ width: 18, height: 18 }} />
           {t.landCodeRemember}
         </label>
       )}
-    </div>
+    </Panel>
   );
 
   const Example = (
-    <div style={{ borderRadius: 16, overflow: "hidden", border: `1px solid ${C.border}` }}>
-      <div style={{ background: C.surfaceAlt, padding: "20px 22px" }}>
+    <div style={{ borderRadius: 16, overflow: "hidden", boxShadow: `0 1px 3px ${C.cardShadow}` }}>
+      <div style={{ background: C.surface, padding: "20px 22px" }}>
         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: C.textMuted, marginBottom: 10 }}>{t.landExampleLabel}</div>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 14, lineHeight: 1.55, color: C.textMuted }}>“{EXAMPLE_QUOTE}”</div>
       </div>
@@ -236,7 +238,7 @@ export function Landing({ allowUpload = false, t, lang, setLang, stage, setStage
       {allowUpload && Cards}
       {allowUpload && uploadError && <p role="alert" style={{ fontSize: 14, color: C.danger, margin: "14px 0 0", fontWeight: 600 }}>{uploadError}</p>}
       {allowUpload && Staged}
-      {allowUpload ? CodeBox : <div style={{ marginTop: -4 }}>{CodeBox}</div>}
+      {CodeBox}
     </div>
   );
   const Right = (
@@ -247,7 +249,7 @@ export function Landing({ allowUpload = false, t, lang, setLang, stage, setStage
   );
 
   return (
-    <div ref={rootRef} style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: F.body }}>
+    <div ref={rootRef} style={{ minHeight: "100vh", background: C.page, color: C.text, fontFamily: F.body }}>
       <SkipLink lang={lang} />
       {allowUpload && <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => { if (e.target.files?.[0]) stageFile(e.target.files[0]); e.target.value = ""; }} />}
       <div style={{ maxWidth: LAYOUT.advisor, margin: "0 auto", padding: wide ? "28px 32px 40px" : "16px 16px 32px", boxSizing: "border-box" }}>

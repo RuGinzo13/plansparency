@@ -10,6 +10,7 @@ import { getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
 import { fmtRounded, fmtDollars } from '@/lib/format';
 import { getTerm } from '@/lib/glossary';
 import { announce } from './ui';
+import { Pill } from './Pill';
 
 const tpl = (s, vars) => Object.keys(vars).reduce((acc, k) => acc.split(`{${k}}`).join(String(vars[k])), s);
 
@@ -39,7 +40,8 @@ function shLabel(sh, lang) {
   return labels[sh?.type]?.[lang] || sh?.formula || "";
 }
 
-const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20 };
+const card = { background: C.surface, borderRadius: 16, padding: 20, boxShadow: `0 1px 3px ${C.cardShadow}` };
+const cardStrong = { ...card, border: `2px solid ${C.bar}`, boxShadow: `0 4px 14px ${C.cardShadow}` };
 const heading = { fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.text, margin: "0 0 16px" };
 const inputBase = {
   background: C.field, border: `1px solid ${C.inputBorder}`, borderRadius: 8,
@@ -149,13 +151,14 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     blocked: t.calc2ChipBlocked,
     notyourage: t.calc2ChipNotYourAge,
   };
-  const chipColor = {
-    applies: { bg: C.greenSoft, fg: C.green },
-    replaced: { bg: C.surfaceAlt, fg: C.textMuted },
-    notyet: { bg: C.surfaceAlt, fg: C.textMuted },
-    blocked: { bg: C.dangerSoft, fg: C.danger },
-    notyourage: { bg: C.surfaceAlt, fg: C.textMuted },
+  const chipKind = {
+    applies: "yes",
+    replaced: "no",
+    notyet: "no",
+    blocked: "no",
+    notyourage: "no",
   };
+
 
   // ── Match "tops out" hint (card 3) ──
   const topOutPct = sh?.type ? TOP_OUT_PCT[sh.type] : undefined;
@@ -298,9 +301,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <div style={{ fontSize: 12, color: C.textDim }}>{t.calc2CatchUpSub}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[catchUpChip].bg, color: chipColor[catchUpChip].fg }}>
-            {chipLabel[catchUpChip]}
-          </span>
+          <Pill kind={chipKind[catchUpChip]} size="sm">{chipLabel[catchUpChip]}</Pill>
           <span style={{
             fontSize: 14, fontWeight: 700, fontVariantNumeric: "tabular-nums",
             color: catchUpChip === "applies" ? C.green : C.textDim,
@@ -317,9 +318,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
           <div style={{ fontSize: 12, color: C.textDim }}>{t.calc2SuperCatchUpSub}</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: chipColor[superChip].bg, color: chipColor[superChip].fg }}>
-            {chipLabel[superChip]}
-          </span>
+          <Pill kind={chipKind[superChip]} size="sm">{chipLabel[superChip]}</Pill>
           <span style={{
             fontSize: 14, fontWeight: 700, fontVariantNumeric: "tabular-nums",
             color: superChip === "applies" ? C.green : C.textDim,
@@ -567,15 +566,15 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
 
   // ── Card 4, Result ──
   const ResultCard = (
-    <div style={card}>
+    <div style={cardStrong}>
       <ResultAnnouncer text={`${hasSH || hasDiscretionaryMatch ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly} ${fmtRounded(r.total)} ${t.calc2PerYear}. ${t.calc2PerPaycheckLabel} ${fmtDollars(r.perPaycheck)}`} />
       <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 4 }}>{hasSH || hasDiscretionaryMatch ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly}</div>
-      <div style={{ fontFamily: F.display, fontSize: wide ? 64 : 48, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ fontFamily: F.display, fontSize: wide ? 56 : 44, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums" }}>
         {fmtRounded(r.total)} <span style={{ fontSize: 16, fontWeight: 500, color: C.textMuted }}>{t.calc2PerYear}</span>
       </div>
 
       <div style={{ height: 10, borderRadius: 6, overflow: "hidden", display: "flex", marginTop: 12, marginBottom: 10 }}>
-        <div style={{ width: `${r.total > 0 ? (r.you / r.total) * 100 : 0}%`, background: C.accent }} />
+        <div style={{ width: `${r.total > 0 ? (r.you / r.total) * 100 : 0}%`, background: C.bar }} />
         <div style={{ width: `${r.total > 0 ? (r.employer / r.total) * 100 : 0}%`, background: C.green }} />
       </div>
 
@@ -608,7 +607,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
         <div style={{ fontSize: 12, color: C.danger, marginTop: 8, lineHeight: 1.4 }}>{getTerm("totalLimit", lang).def}</div>
       )}
 
-      <div style={{ marginTop: 16, padding: 14, borderRadius: 10, background: C.accentSoft, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+      <div style={{ marginTop: 16, padding: 14, borderRadius: 10, background: C.highlight, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
         <span style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{t.calc2PerPaycheckLabel}</span>
         <span style={{ fontSize: 18, fontWeight: 700, color: C.accentText, fontVariantNumeric: "tabular-nums" }}>{fmtDollars(r.perPaycheck)}</span>
       </div>
@@ -643,7 +642,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     infoRows.push({
       key: "safeHarbor",
       title: t.calc2RowGuaranteedTitle,
-      chip: { label: t.calc2ChipGuaranteed, bg: C.greenSoft, fg: C.green },
+      pill: "yes", pill_label: t.calc2ChipGuaranteed,
       body: `${shLabel(sh, lang)} ${t.calc2VestedNote}`,
     });
   }
@@ -651,7 +650,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     infoRows.push({
       key: "discretionary",
       title: t.calc2RowDiscretionaryTitle,
-      chip: { label: t.calc2ChipNotGuaranteed, bg: C.warningDim, fg: C.warning },
+      pill: "info", pill_label: t.calc2ChipNotGuaranteed,
       body: getTerm("discretionaryMatch", lang).def + (lastDayProvision ? " " + t.calc2LastDayNote : ""),
     });
   }
@@ -659,7 +658,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     infoRows.push({
       key: "matchUnsure",
       title: t.calc2RowDiscretionaryTitle,
-      chip: { label: t.calc2ChipAskHr, bg: C.warningDim, fg: C.warning },
+      pill: "ask", pill_label: t.calc2ChipAskHr,
       body: t.calc2AskHrMatch,
     });
   }
@@ -667,7 +666,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     infoRows.push({
       key: "none",
       title: t.calc2RowNoneTitle,
-      chip: { label: t.calc2ChipNone, bg: C.surfaceAlt, fg: C.textMuted },
+      pill: "no", pill_label: t.calc2ChipNone,
       body: "",
     });
   }
@@ -675,7 +674,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     infoRows.push({
       key: "payLimit",
       title: t.calc2RowPayLimitTitle,
-      chip: { label: fmtRounded(limits.compLimit), bg: C.accentSoft, fg: C.accentText },
+      pill: "info", pill_label: fmtRounded(limits.compLimit),
       body: getTerm("payLimit", lang).def,
     });
   }
@@ -683,7 +682,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     infoRows.push({
       key: "hce",
       title: t.calc2RowHceTitle,
-      chip: { label: t.calc2ChipMayApply, bg: C.warningDim, fg: C.warning },
+      pill: "info", pill_label: t.calc2ChipMayApply,
       body: getTerm("hce", lang).def,
     });
   }
@@ -692,7 +691,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     infoRows.push({
       key: "trueUp",
       title: t.calc2RowTrueUpTitle,
-      chip: { label: t.calc2ChipAskHr, bg: C.warningDim, fg: C.warning },
+      pill: "ask", pill_label: t.calc2ChipAskHr,
       body: getTerm("trueUp", lang).def,
     });
   }
@@ -716,7 +715,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
             >
               <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{row.title}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: row.chip.bg, color: row.chip.fg }}>{row.chip.label}</span>
+                <Pill kind={row.pill} size="sm">{row.pill_label}</Pill>
                 <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -739,28 +738,36 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     <div ref={rootRef} style={{ flex: 1, overflowY: "auto", background: C.page, padding: "20px 16px 40px" }}>
       <div style={{ maxWidth: LAYOUT.advisor, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-          <h1 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>{t.calc2Title}</h1>
+          <h1 style={{ fontFamily: F.display, fontSize: wide ? 40 : 32, fontWeight: 700, color: C.text, margin: 0 }}>{t.calc2Title}</h1>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 12, color: C.textDim }}>{tpl(t.calc2LimitsYear, { year: limitYear.year })}</div>
             {limitYear.isFallback && <div style={{ fontSize: 12, color: C.warning, marginTop: 2 }}>{tpl(t.calc2LimitsFallback, { currentYear })}</div>}
           </div>
         </div>
 
-        <div style={wide
-          ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }
-          : { display: "flex", flexDirection: "column", gap: 16 }
-        }>
+        {wide ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
+            <div style={{ flex: "1 1 420px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+              {StartWithYou}
+              {SaveCard}
+              {GoodToKnowCard}
+            </div>
+            <div style={{ flex: "1 1 420px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+              {ResultCard}
+              {LimitCard}
+              {Footer}
+            </div>
+          </div>
+        ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {StartWithYou}
-            {LimitCard}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {SaveCard}
             {ResultCard}
             {GoodToKnowCard}
+            {LimitCard}
             {Footer}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
