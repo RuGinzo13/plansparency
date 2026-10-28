@@ -2,7 +2,8 @@
 // Run with: npx --yes tsx scripts/check-answers.ts
 import { QUESTION_LABELS, getStockAnswer, type StockId } from '../lib/answers/stockAnswers';
 const STOCK_QUESTIONS = (Object.keys(QUESTION_LABELS) as StockId[]).map((id) => ({ id }));
-import { samples } from './samples';
+import { samples, mk } from './samples';
+import { getOverview } from '../lib/plan/overview';
 import { parseVesting } from '../lib/plan/planFacts';
 
 const BAD = ['undefined', 'null', 'NaN', '[object', '{', '—', '–'];
@@ -60,7 +61,21 @@ check(getStockAnswer('loans', samples.loansHardshipOff, 'en')?.text.includes("do
   check(!!A('profit', 'profitSharingOn')?.text.includes('Yes, your plan has profit sharing'), 'profit yes');
   check(!!A('profit', 'noMatch')?.text.includes("doesn't have profit sharing"), 'profit no');
   check(A('profit', 'allNull') === null, 'profit unknown is null');
-  for (const k of Object.keys(samples)) check(A('inService', k) === null, `${k}: inService is always null`);
+  for (const k of Object.keys(samples)) check(A('inService', k) === null, `${k}: inService is null when the plan doesn't say`);
+  // In-service withdrawals: from the plan's reviewed details.
+  const svc = (di: any, lang: 'en' | 'es' = 'en') => getStockAnswer('inService', mk({ distributionInfo: di }), lang)?.text ?? null;
+  const s595 = svc({ inServiceAvailable: true, inServiceAge: 59.5 })!;
+  check(s595.startsWith('**Yes. Once you’re 59½, you can take money out while you still work here.** Pre-tax money you take out is taxed as income.') && !s595.includes('10% extra tax') && s595.endsWith('If you move it straight to an IRA instead, it isn’t taxed now.'), `in-service 59.5: ${s595}`);
+  const s55 = svc({ inServiceAvailable: true, inServiceAge: 55 })!;
+  check(s55.includes('Once you’re 55,') && s55.includes('Before 59½, a 10% extra tax usually applies too.'), `in-service 55: ${s55}`);
+  check(svc({ inServiceAvailable: false, inServiceAge: null }) === '**No, your plan doesn’t allow taking money out while you still work here,** except for loans or hardship withdrawals if your plan offers them.', 'in-service no');
+  check(svc({ inServiceAvailable: null, inServiceAge: null }) === null && svc({ inServiceAvailable: true, inServiceAge: null }) === null && svc(undefined) === null, 'in-service unknown goes to the AI');
+  const e55 = svc({ inServiceAvailable: true, inServiceAge: 55 }, 'es')!;
+  check(e55.includes('Cuando cumplas 55 años') && e55.includes('impuesto extra del 10%') && !/[—–]/.test(e55), `in-service 55 ES: ${e55}`);
+  check(svc({ inServiceAvailable: true, inServiceAge: 59.5 }, 'es')!.includes('59½') && svc({ inServiceAvailable: false }, 'es')!.startsWith('**No, tu plan'), 'in-service ES 59.5 and no');
+  check(getStockAnswer('loans', samples.basicSafeHarbor, 'es') === null, 'other answers stay English only');
+  const row = (di: any, lang: 'en' | 'es') => getOverview(mk({ distributionInfo: di }), lang).groups[2].rows[2].value;
+  check(row({ inServiceAvailable: true, inServiceAge: 59.5 }, 'en') === 'Yes, at age 59½' && row({ inServiceAvailable: true, inServiceAge: 55 }, 'es') === 'Sí, a los 55 años' && row({ inServiceAvailable: false }, 'en') === 'No' && row(undefined, 'en') === 'Tap to see', 'in-service panel row');
   check(!!A('leave', 'basicSafeHarbor')?.text.includes('Roth money comes out tax-free if you\'re 59½ or older'), 'leave: new cash-out sentence');
   check(!!A('hardship', 'basicSafeHarbor')?.text.includes('extra 10% early withdrawal tax'), 'hardship: early withdrawal tax wording');
 }

@@ -3,7 +3,7 @@
 // plan details and returns plain-words text in English or Spanish. Anything
 // the plan details don't say is left out, never guessed.
 
-import type { PlanData } from './plandata';
+import { ageText, type PlanData } from './plandata';
 import { questionLabel, type StockId } from '../answers/stockAnswers';
 import { has, facts, tierText, vestingParts, parseVesting, FULL_MATCH_PCT, STANDARD_FORMULA } from './planFacts';
 import { safeHarborAmount } from './calc';
@@ -362,6 +362,8 @@ export function getOverview(
   const yes = L('Yes', 'Sí');
   const no = 'No';
   const yn = (v: unknown) => (bool(v) ? (v ? yes : no) : tap);
+  const svcAge = pd?.distributionInfo?.inServiceAge;
+  const inServiceValue = typeof svcAge === 'number' ? L(`Yes, at age ${ageText(svcAge)}`, `Sí, a los ${ageText(svcAge)} años`) : pd?.distributionInfo?.inServiceAvailable === false ? no : tap;
 
   // Employer money, in plain words
   const upTo = (x: number) => L(`Yes, up to ${num(x)}% of pay`, `Sí, hasta ${num(x)}% del salario`);
@@ -408,7 +410,7 @@ export function getOverview(
       rows: [
         { label: L('Loans', 'Préstamos'), value: yn(pd?.loanAvailable), card: 'loans' },
         { label: L('Hardships', 'Retiros por dificultad'), value: yn(pd?.hardshipAvailable), card: 'hardship' },
-        { label: L('In-service withdrawal', 'Retiro en servicio'), value: tap, card: 'inService' },
+        { label: L('In-service withdrawal', 'Retiro en servicio'), value: inServiceValue, card: 'inService' },
       ],
     },
   ];

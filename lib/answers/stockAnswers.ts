@@ -5,7 +5,7 @@
 // Definitions come from lib/glossary.ts and IRS numbers from lib/plan/irs-limits.ts,
 // so nothing here is typed in by hand twice.
 
-import type { PlanData } from '../plan/plandata';
+import { ageText, type PlanData } from '../plan/plandata';
 import { has, FULL_MATCH_PCT, STANDARD_FORMULA, tierText, facts, vestingParts, parseVesting } from '../plan/planFacts';
 import { getTerm } from '../glossary';
 import { IRS_LIMITS } from '../plan/irs-limits';
@@ -264,7 +264,28 @@ function limitAnswer(pd: PlanData): StockAnswer | null {
   return { text: join(out), link: 'calculator' };
 }
 
-const BUILDERS: Record<StockId, (pd: PlanData) => StockAnswer | null> = {
+// In-service withdrawals come from the plan's reviewed details; unknown goes to the AI. The only answer
+// that also has Spanish wording (DRAFT).
+function inServiceAnswer(pd: PlanData, lang: 'en' | 'es'): StockAnswer | null {
+  const di = pd.distributionInfo;
+  if (!di) return null;
+  const es = lang === 'es';
+  if (di.inServiceAvailable === false) {
+    return { text: es
+      ? '**No, tu plan no permite sacar dinero mientras sigues trabajando aquí,** salvo préstamos o retiros por dificultad si tu plan los ofrece.'
+      : '**No, your plan doesn’t allow taking money out while you still work here,** except for loans or hardship withdrawals if your plan offers them.' };
+  }
+  const age = di.inServiceAge;
+  if (di.inServiceAvailable !== true || typeof age !== 'number') return null;
+  const a = ageText(age);
+  const early = age < 59.5;
+  const text = es
+    ? `**Sí. Cuando cumplas ${a} años, puedes sacar dinero mientras sigues trabajando aquí.** El dinero antes de impuestos que saques se grava como ingreso.${early ? ' Antes de los 59½, normalmente también se aplica un impuesto extra del 10%.' : ''}\n\nSi lo mueves directamente a una IRA, no se grava ahora.`
+    : `**Yes. Once you’re ${a}, you can take money out while you still work here.** Pre-tax money you take out is taxed as income.${early ? ' Before 59½, a 10% extra tax usually applies too.' : ''}\n\nIf you move it straight to an IRA instead, it isn’t taxed now.`;
+  return { text };
+}
+
+const BUILDERS: Record<StockId, (pd: PlanData, lang: 'en' | 'es') => StockAnswer | null> = {
   elig: eligAnswer,
   limit: limitAnswer,
   roth: rothAnswer,
@@ -274,16 +295,15 @@ const BUILDERS: Record<StockId, (pd: PlanData) => StockAnswer | null> = {
   vesting: vestingAnswer,
   loans: loansAnswer,
   hardship: hardshipAnswer,
-  // The plan reader doesn't collect in-service withdrawals, so this always goes to the AI.
-  inService: () => null,
+  inService: inServiceAnswer,
   leave: leaveAnswer,
 };
 
 // null means "send this question to the AI instead".
 export function getStockAnswer(id: StockId, planData: PlanData | null, lang: 'en' | 'es'): StockAnswer | null {
-  if (lang !== 'en' || !planData || typeof planData !== 'object') return null;
+  if ((lang !== 'en' && id !== 'inService') || !planData || typeof planData !== 'object') return null;
   try {
-    return BUILDERS[id](planData);
+    return BUILDERS[id](planData, lang);
   } catch {
     return null;
   }

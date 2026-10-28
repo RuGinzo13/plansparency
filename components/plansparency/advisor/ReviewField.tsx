@@ -2,8 +2,15 @@
 import React from 'react';
 import { C, F, btnBase } from '../theme';
 import { getAt, triLabel, type FieldSpec } from '@/lib/plan/reviewRows';
+import { ageText, parseServiceAge } from '@/lib/plan/plandata';
 
 export const controlStyle = { width: '100%', minHeight: 44, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, boxSizing: 'border-box' } as const;
+
+// The age box: shows what is typed, stores a number (or null when it is empty or not an age).
+function AgeInput({ value, label, onChange }: { value: unknown; label: string; onChange: (v: number | null) => void }) {
+  const [text, setText] = React.useState(typeof value === 'number' ? ageText(value) : '');
+  return <input value={text} inputMode="decimal" placeholder="59½" onChange={e => { setText(e.target.value); onChange(parseServiceAge(e.target.value)); }} aria-label={label} style={controlStyle} />;
+}
 
 export function ReviewField({ field, draft, editing, onChange }: { field: FieldSpec; draft: any; editing: boolean; onChange: (path: string[], value: any, mirror?: string[]) => void }) {
   const value = getAt(draft, field.path);
@@ -11,6 +18,11 @@ export function ReviewField({ field, draft, editing, onChange }: { field: FieldS
   const wrap = (children: React.ReactNode) => <div style={{ marginBottom: 10 }}>{caption}{children}</div>;
   const readStyle = { fontSize: 15, lineHeight: 1.5, color: C.text } as const;
 
+  if (field.kind === 'text' && field.numeric === 'age') {
+    return wrap(editing
+      ? <AgeInput value={value} label={field.label} onChange={v => onChange(field.path, v)} />
+      : <div style={readStyle}>{typeof value === 'number' ? ageText(value) : 'Not stated'}</div>);
+  }
   if (field.kind === 'text') {
     return wrap(editing
       ? <input value={typeof value === 'string' ? value : ''} onChange={e => onChange(field.path, e.target.value)} aria-label={field.label} style={controlStyle} />

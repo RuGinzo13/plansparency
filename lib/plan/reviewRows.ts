@@ -1,7 +1,9 @@
+import { ageText } from './plandata';
+
 // The plan details an advisor checks before a plan is shared, and edits later.
 // Shared by the new-plan review, Edit plan details, Upload additional plan doc, and the AI prompt.
 
-export type FieldSpec = { path: string[]; kind: 'text' | 'select' | 'tri' | 'triInvert' | 'tiers'; label: string; options?: [string, string][]; mirror?: string[] };
+export type FieldSpec = { path: string[]; kind: 'text' | 'select' | 'tri' | 'triInvert' | 'tiers'; label: string; options?: [string, string][]; mirror?: string[]; numeric?: 'age' };
 export type ReviewRow = { key: string; label: string; fields: FieldSpec[] };
 
 export const SAFE_HARBOR_OPTIONS: [string, string][] = [['none', 'None'], ['nonelective', 'Nonelective (3% of pay)'], ['basic_match', 'Basic match'], ['enhanced_match', 'Enhanced match'], ['qaca', 'QACA']];
@@ -44,6 +46,10 @@ export const REVIEW_ROWS: ReviewRow[] = [
   { key: 'catchUp', label: 'Catch-up allowed', fields: [{ path: ['planAllowsCatchUp'], kind: 'tri', label: 'Allowed' }] },
   { key: 'loans', label: 'Loans', fields: [{ path: ['loanAvailable'], kind: 'tri', label: 'Offered' }] },
   { key: 'hardship', label: 'Hardship withdrawals', fields: [{ path: ['hardshipAvailable'], kind: 'tri', label: 'Offered' }] },
+  { key: 'inService', label: 'In-service withdrawals (taking money out while still working)', fields: [
+    { path: ['distributionInfo', 'inServiceAvailable'], kind: 'tri', label: 'Offered' },
+    { path: ['distributionInfo', 'inServiceAge'], kind: 'text', label: 'Starting at age', numeric: 'age' },
+  ] },
 ];
 
 export const getAt = (o: any, path: string[]) => path.reduce((a, k) => (a == null ? undefined : a[k]), o);
@@ -60,7 +66,7 @@ export const triLabel = (v: any) => (v === true ? 'Yes' : v === false ? 'No' : '
 // What one field says in plain English (the same wording the review screen shows).
 export function fieldText(field: FieldSpec, data: any): string {
   const value = getAt(data, field.path);
-  if (field.kind === 'text') return typeof value === 'string' && value ? value : 'Not stated';
+  if (field.kind === 'text') return typeof value === 'number' ? ageText(value) : typeof value === 'string' && value ? value : 'Not stated';
   if (field.kind === 'select') return (field.options || []).find(([v]) => v === value)?.[1] ?? 'Not stated';
   if (field.kind === 'tri' || field.kind === 'triInvert') {
     const shown = value === true || value === false ? (field.kind === 'triInvert' ? !value : value) : null;

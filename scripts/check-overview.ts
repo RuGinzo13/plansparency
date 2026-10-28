@@ -27,7 +27,7 @@ for (const [name, pd] of Object.entries(samples)) {
     check(o.groups.length === 3 && o.groups.every((g) => g.rows.length === 3), `${name}/${lang}: 3 groups x 3 rows`);
     check(o.groups.map((g) => g.topic).join() === 'you,employer,access', `${name}/${lang}: group order`);
     const inService = o.groups[2].rows[2];
-    check(inService.card === 'inService' && /^(Tap to see|Toca para ver)$/.test(inService.value), `${name}/${lang}: in-service always "Tap to see"`);
+    check(inService.card === 'inService' && /^(Tap to see|Toca para ver)$/.test(inService.value), `${name}/${lang}: in-service says Tap to see when the plan doesn't say`);
     // Yes/no rows never show a bare description.
     for (const row of [...o.groups[1].rows, o.groups[2].rows[0], o.groups[2].rows[1], o.groups[0].rows[2]]) {
       check(YES_NO_START.test(row.value), `${name}/${lang}: "${row.label}" value "${row.value}" must start with Yes/No/Tap`);

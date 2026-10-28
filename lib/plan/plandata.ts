@@ -55,7 +55,7 @@ export interface PlanData {
   planAllowsCatchUp: boolean | null;
   vestingSchedule?: string;
   investmentOptions?: string;
-  distributionInfo?: any;
+  distributionInfo?: DistributionInfo;
   fundsData: any[];
   // Only when the document names the advisor (never guessed)
   advisorName?: string;
@@ -63,7 +63,43 @@ export interface PlanData {
   advisorEmail?: string;
 }
 
+export interface DistributionInfo {
+  inServiceAge?: number | null;
+  inServiceAvailable?: boolean | null;
+  rmdAge?: number | null;
+  rolloversIn?: boolean | null;
+  separationOptions?: string | string[];
+}
+
+// An in-service withdrawal age: a number from 50 to 75 in half steps. Reads 59.5, "59.5" and "59½".
+export function parseServiceAge(v: unknown): number | null {
+  let n: number;
+  if (typeof v === 'number') n = v;
+  else if (typeof v === 'string') {
+    const t = v.trim().replace(/\s*½/, '.5').replace(/\s+1\/2$/, '.5').replace(/\s*(years?|yrs?)$/i, '').replace(',', '.');
+    if (!/^\d{2}(\.\d+)?$/.test(t)) return null;
+    n = Number(t);
+  } else return null;
+  if (!Number.isFinite(n) || n < 50 || n > 75 || (n * 2) % 1 !== 0) return null;
+  return n;
+}
+
+// 59.5 reads "59½", 55 reads "55".
+export const ageText = (n: number) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)}½`);
+
 // Extract the hidden <!--PLANDATA:{…}--> block from a Claude reply.
+function normalizeDistribution(raw: any, toBool: (v: any, f?: boolean | null) => boolean | null): DistributionInfo | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const asked = toBool(raw.inServiceAvailable, null);
+  const found = parseServiceAge(raw.inServiceAge);
+  // The plan document says no: no age. An age found means yes. Otherwise unknown.
+  const inServiceAge = asked === false ? null : found;
+  const inServiceAvailable = asked === false ? false : found !== null ? true : asked === true ? true : null;
+  const rmd = typeof raw.rmdAge === 'number' && raw.rmdAge >= 70 && raw.rmdAge <= 80 ? raw.rmdAge : null;
+  const sep = typeof raw.separationOptions === 'string' ? raw.separationOptions.trim() : Array.isArray(raw.separationOptions) ? raw.separationOptions.filter((x: unknown) => typeof x === 'string') : undefined;
+  return { inServiceAge, inServiceAvailable, rmdAge: rmd, rolloversIn: toBool(raw.rolloversIn, null), ...(sep && sep.length ? { separationOptions: sep } : {}) };
+}
+
 export function parsePlanData(text: string): any | null {
   const m = text.match(/<!--PLANDATA:(.*?)-->/s);
   if (!m) return null;
@@ -194,7 +230,7 @@ export function normalizePlanData(raw: any): PlanData | null {
     vestingSchedule: normalizeVesting(raw.vestingSchedule),
     // text fields
     investmentOptions: typeof raw.investmentOptions === 'string' ? raw.investmentOptions.trim() : undefined,
-    distributionInfo: raw.distributionInfo ?? undefined,
+    distributionInfo: normalizeDistribution(raw.distributionInfo, toBool),
     // funds — must be an array
     fundsData: Array.isArray(raw.fundsData) ? raw.fundsData : [],
     // advisor named in the document
