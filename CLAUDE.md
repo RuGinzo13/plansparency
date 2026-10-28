@@ -24,8 +24,51 @@ Read these files in this exact order before doing or saying anything:
 1. **MEMORY.md** — All logged decisions. Never contradict a logged decision without explicitly flagging it first.
 2. **ERRORS.md** — All logged failures. Never repeat a failed approach.
 3. **CONTEXT.md** — Current state of the project. Single source of truth.
+4. **OPEN-ITEMS.md** START HERE, then check `git log -1` against CONTEXT's "Verified State" hash. If they differ, update the docs first (Gate 5).
+5. The **Cowork Quality Gates** below.
 
 If any of these files conflict with each other, flag the conflict before proceeding. Do not silently pick a side.
+
+---
+
+## Cowork Quality Gates — Ross is never the one who finds Cowork's mistakes
+*Ross, Oct 28, 2026: "it should not be my job to fix your mistake." These gates are mandatory. Skipping one is a logged error.*
+
+**Why these exist.** In one month Ross caught four Cowork mistakes that Cowork should have caught first: `globals.css` never loaded while Cowork marked PHASE-18 "verified" (Oct 14); videos hidden behind small pills (Oct 27); the employer money slider and match video on a "No" safe harbor card (Oct 28); Play on the canvas showing 5 different designs page to page (Oct 28). Every time, a check passed or one board looked fine on its own, and nobody looked at the whole thing the way Ross does. On Oct 28 all six check scripts passed while the safe harbor bug was live.
+
+**Gate 0: before Ross sees anything, Cowork does what Ross would do.** Open it, click through every screen it touches, look at it, and fix what's wrong. Scripts are necessary, never enough. Ross's standing instruction (Oct 28): Cowork always verifies its own work rendered, which overrides the Design skill's "never verify unless asked".
+
+**Gate 1: Design canvas (one design, always).**
+- Only the boards on the canvas page "Current site" are current. They are generated from `Plansparency/Design canvas source/` (`ds.css` = the look, `site.html` + `site.js`, `landing.html`, `advisor.html`, `build.py`). Never hand-style one board.
+- A redesign = change `ds.css` or a template, rebuild ALL current boards, publish them together. Never add a board for one screen in a new style next to screens in the old style.
+- New ideas go on a page called "Draft", labeled as a draft. When Ross approves, they replace the current boards everywhere the same day and the draft moves to "Archive".
+- Before publishing: link check (every link on a Current site board points only to Current site boards) and a check that no board holds a color or font outside `ds.css`.
+- Before telling Ross: render the boards locally (`Design canvas source/click-through.js`, no sign-in needed), start from 1. Landing, click every tab, open a Yes card and a No card, flip the plan switch, open the video player and the welcome. Look at the screenshots. Fix, then report.
+- Every board shows the "with and without" case for anything that depends on the plan (safe harbor yes/no, loans yes/no, Roth yes/no).
+
+**Gate 2: Relevance (every picture, tool, video, chip, number).**
+- A spec says, per card, exactly when each picture, slider, video or chip appears, and what a "No" or unknown card shows instead (a link to where the money does come from, never the tool).
+- The same number means the same thing on every screen: card, side panel, calculator, video. "Adds up to X% of pay" = what the employer adds.
+- Run the relevance audit (4 real plans in Supabase + `scripts/samples.ts`) before writing a phase and again after it's built. Every phase that adds or moves a picture, tool or video adds a case to `scripts/check-relevance.ts` (PHASE-23 creates it).
+- Facts the plan reader wasn't sure of show "Ask HR" until the advisor confirms them. Never show a guess as a fact.
+
+**Gate 3: Phase prompts.**
+- List every screen the change touches AND answer "where else on the site does this same thing appear?" Apply it there too, or say in the prompt why not.
+- Copy values from the Current site boards only. Never from an Archive board.
+- End with the checklist, the check scripts to run, and a new check for any new rule.
+
+**Gate 4: After Claude Code builds a phase (Cowork, before Ross looks).**
+1. `git log` shows every step's commit; Vercel shows each one Ready.
+2. Run every check script in `scripts/`.
+3. Open the live site and click through (local Playwright render or the built-in browser; never open a page that makes Ross sign in or import cookies without asking him first in chat, Oct 28) the changed screens with a plan that has safe harbor and one that doesn't. Compare to the Current site boards. Write down mismatches.
+4. Fix or write the follow-up first. Then tell Ross what Cowork saw, with screenshots, and what's left for his eyes only.
+
+**Gate 5: Docs are updated the same day, after every phase and every decision (not only at /close).**
+- OPEN-ITEMS (status + commit hashes, START HERE rewritten, not stacked), CONTEXT "Verified State" (HEAD hash, phases, check results), MEMORY (decisions), ERRORS (mistakes), CLAUDE.md (new rules). Mirror all five to the claude.ai project.
+- Session start: if CONTEXT's verified hash isn't `git HEAD`, update the docs before doing anything else.
+
+**Gate 6: When Ross finds a mistake anyway.**
+Fix it, then search the WHOLE site for the same kind of mistake without being asked, log it in ERRORS with a rule, and turn the rule into a gate here or a check script so it can't happen twice. Own it in one sentence; no long apologies.
 
 ---
 
@@ -135,6 +178,8 @@ These were learned through failures. Do not revisit or suggest exceptions.
 
 Plus one working folder: `PHASE PROMPTS/` (phase prompt files for Claude Code, see above). It is an execution log, not context.
 
+Design source (outside the repo, Oct 28, 2026): `Plansparency/Design canvas source/` builds the 3 "Current site" boards on the Landing Redesign canvas from one stylesheet (Gate 1).
+
 `Project-Execution-Plan.md` is a legacy planning doc (last updated May 28, 2026). OPEN-ITEMS.md wins wherever they disagree.
 
 If a new file is ever proposed, ask: "Does this replace one of the existing files, or is it truly additive?" If additive, reject it. File proliferation caused multiple prior sessions to operate on stale or conflicting information.
@@ -164,7 +209,7 @@ If a new file is ever proposed, ask: "Does this replace one of the existing file
 When Ross types /close in Cowork:
 
 1. Re-read the repo (`git log`, `git --no-optional-locks status`, changed files) so nothing is recorded from memory alone. Cowork uses read-only git only; a plain `git status` from Cowork can leave `.git/index.lock` behind and block Claude Code commits (Oct 4, 2026).
-2. Edit the files in place in the repo: CONTEXT.md (merge facts), MEMORY.md (session summary + decision entries), ERRORS.md (session summary + any new failures), OPEN-ITEMS.md (check off, add, re-rank).
+2. Edit the files in place in the repo (this also happens after every phase, Gate 5; /close is the catch-all): CONTEXT.md (merge facts), MEMORY.md (session summary + decision entries), ERRORS.md (session summary + any new failures), OPEN-ITEMS.md (check off, add, re-rank).
 3. Mirror the same five files to the claude.ai project docs so project chats see current state.
 4. If .md files changed, the next prompt file (or a small docs-commit step in the next phase file) commits them. Cowork does not run git commits itself.
 

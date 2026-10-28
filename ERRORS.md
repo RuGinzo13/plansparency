@@ -373,3 +373,48 @@ Three new failures, all logged above with fixes: (1) PHASE-07 claimed done items
 - **What happened:** Cowork put 6 visuals inside one canvas board and then referred to "1, 2 and 6" and to card headings. Ross navigates the canvas by board titles, which only said "Visual library", so the numbers and names meant nothing to him.
 - **Fix:** each visual is now its own board titled "Visual N: name".
 - **Rule:** anything Ross must pick from gets its own board, and Cowork refers to it by the exact board title.
+
+## Oct 28, 2026: Employer money picture shown on a "No" safe harbor card
+- **What happened:** Ross saw "No, your plan doesn't use a safe harbor contribution" with a slider, bars, "You're getting $1,500" and a match video under it. Cowork's PHASE-21 prompt told Claude Code to put the same combined employer money picture in both the safe harbor and the match card, and PHASE-22 mapped the safe harbor card to the match video, without saying "only when this card's answer is yes".
+- **Fix:** PHASE-23 rules (#74): a picture, tool or video only on a card whose own answer is yes, using only that card's own numbers; a check script enforces it for every sample plan.
+- **Rule:** every picture, tool and video spec in a prompt states the exact condition it appears under, per card, including what a "No" or unknown card shows instead.
+
+## Oct 28, 2026: Play showed 5 different designs from page to page
+- **What happened:** Ross hit Play on the design canvas and clicked around. Every page looked different. Cause: each redesign round (gold originals, Sunrise, visuals, video overhaul, clarity draft) was drawn as new boards, while the tabs on those boards still linked to boards from earlier rounds. 35 boards, 5 looks, all reachable from Play.
+- **Fix:** canvas now has a "Current site" page with 3 boards (Landing, Participant site, Advisor side). Every participant tab, the team view, the welcome pop-up and the video player live inside ONE board, so they share one set of styles. Everything older moved to an "Archive" page that Play can't reach. All 3 boards are generated from one stylesheet (`Design canvas source/ds.css`).
+- **Rule:** a redesign is not done until every board on "Current site" shows it. Drafts go on their own page until Ross approves, then get merged into the current boards the same day. Never add a board whose links point at an older round.
+
+
+## Oct 27, 2026: Videos built where nobody could find them (Cowork)
+- **What happened:** PHASE-21 put the 8 videos behind small "▶ Watch" text pills inside answers that only appear after a card is opened. Ross: "I don't even see some of the videos." All 8 built fine; the design hid them.
+- **Fix:** PHASE-22 (thumbnails, one big player, Watch first rows, Videos tab).
+- **Rule:** a new thing must be findable without opening anything. Cowork clicks through as a first-time user before a prompt is written (Quality Gate 0).
+
+## Oct 28, 2026: Every check passed while the site was wrong (Cowork)
+- **What happened:** check-theme, check-a11y, check-visuals, check-videos, check-overview and check-answers all passed while a "No" card showed a slider and video, and Tierra Sur's employer money disagreed in 4 places.
+- **Why:** the checks test code rules (colors, labels, that a builder returns something), not whether a picture belongs on that card or numbers agree across screens.
+- **Rule:** "checks pass" is never "verified". Cowork also runs the relevance audit on the real plans and clicks through the rendered screens (Quality Gates 2 and 4). PHASE-23 adds `check-relevance.ts`.
+
+## Oct 28, 2026: Docs went stale for two weeks (Cowork)
+- **What happened:** CONTEXT.md still said "Verified State Oct 4, phases 01 to 10" after 12 more phases shipped; OPEN-ITEMS header said Oct 12 and START HERE had a stack of old "0." items from five sessions; MEMORY had no decision entries from Oct 12 to Oct 27. Ross had to ask for the update.
+- **Why:** docs were only fully updated at /close, and /close wasn't run between phases.
+- **Fix:** all five files rewritten against `18be65e` on Oct 28.
+- **Rule:** docs are updated the same day after every phase and every decision (Quality Gate 5). Session start compares CONTEXT's verified hash with `git log -1`.
+
+## Oct 28, 2026: Ross had to say "across the entire site" (Cowork)
+- **What happened:** after Ross reported the safe harbor slider, Cowork's first answer looked at that card. Ross had to add that the problem was site-wide.
+- **Rule:** when Ross reports one mistake, Cowork searches the whole site for the same kind of mistake before answering (Quality Gate 6).
+
+## Session Summary, October 27–28, 2026
+Five Cowork misses: videos hidden (PHASE-21 design), pictures on "No" cards (PHASE-21/22 spec), five designs on the canvas, checks trusted as proof, docs stale. All logged above with rules; the rules are now CLAUDE.md "Cowork Quality Gates".
+
+## Oct 28, 2026: First Gate 0 click-through caught 4 problems in Cowork's own boards before Ross saw them
+- **Found by rendering and clicking the 3 Current site boards (Cowork):** (1) the Landing board still offered employee upload, which contradicts the Oct 4 advisor-only decision; (2) the Advisor board had one team for "every plan you share", which contradicts the Oct 14 per-plan team decision, and free-text roles instead of the fixed role list; (3) on a phone the sticky plan bar covered almost half the screen; (4) small things: "Scene1of3" with no spaces, side panel pills running off the edge, the preview switch covering content.
+- **Fix:** all four fixed and republished the same day. Correction while writing PHASE-23: the live app already has a compact phone bar (PHASE-22); the board was the one out of line, now fixed to match.
+- **Rule:** before publishing, check every board against MEMORY decisions, not only against the last board (Gate 1). The click-through script is saved in `Design canvas source/click-through.js`.
+
+## Oct 28, 2026: Cowork opened the canvas in the built-in browser, which asked Ross to sign in
+- **What happened:** to click through the boards, Cowork opened the canvas link in the Claude app's built-in browser. That browser has its own profile and isn't signed in to claude.ai, so Ross got "Sign in to view this page" and a pop-up offering to copy cookies for 411 sites (banks included) from his Chrome profile, all pre-checked.
+- **Fix:** none needed; the click-through was done with a local render instead. Ross closes the pop-up without importing.
+- **Rule:** never open anything that needs Ross to sign in or share browser data without asking him in chat first. Canvas checks use the local render (`click-through.js`).
+

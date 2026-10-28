@@ -1,5 +1,5 @@
 # Plansparency — CONTEXT.md (Single Source of Truth)
-*Last updated: October 4, 2026 — Founder: Ross Ginsberg*
+*Last updated: October 28, 2026 (verified against repo `18be65e` = GitHub `main` = Vercel production) — Founder: Ross Ginsberg*
 
 ---
 
@@ -12,26 +12,30 @@ Full rules live in CLAUDE.md. Key rules for every session:
 - Never contradict a logged decision without flagging it first
 - Workflow (Sept 27, 2026): Cowork = talk it out + keep .md files + write `PHASE PROMPTS/PHASE-NN-name.md`; Claude Code in VS Code = run one prompt file at a time. `/close` edits the 5 .md files in the repo directly (no download/re-upload)
 - The to-do list lives in **OPEN-ITEMS.md** only
+- **Cowork Quality Gates (CLAUDE.md, Oct 28):** Cowork clicks through its own work (canvas and live site) before Ross sees it; one design source; relevance audit on real plans; docs updated after every phase
 - **Proof a code change shipped = a Ready deployment in Vercel with the expected commit message + live behavior change. Never an agent saying "done." (June 11, 2026)**
 
 ---
 
-## Verified State — October 4, 2026 (read from repo + Vercel, not from memory)
-- **Repo `main` = `origin/main` = production.** Last commit `27e6f7e` (PHASE-10 docs). All PHASE-10 deployments READY in Vercel.
-- **Phases done:** 01 to 10. Latest: PHASE-07 calculator redesign (Sept 30), PHASE-08 calculator follow-ups (Oct 3), PHASE-09 landing + advisor review step (Oct 4), PHASE-10 prompt caching + token logging + stock answers (Oct 4).
-- **Not yet tested by Ross:** PHASE-09 and PHASE-10 click-through (see OPEN-ITEMS "START HERE"). No `chat_usage` / `stock_answer` log lines in Vercel yet.
-- **Uncommitted:** Cowork doc edits from the Oct 4 /close only.
-- **Invite links (`/p/...`) stay off** until the 🔴 security section in OPEN-ITEMS closes. Plan-code box on the landing page is built but hidden (`PLAN_CODES_ENABLED = false`).
-- **Cowork git rule (Oct 4):** Cowork runs only read-only git (`git --no-optional-locks status`, `git log`). A plain `git status` from Cowork once left `.git/index.lock` behind.
+## Verified State — October 28, 2026 (read from repo + Vercel + check scripts, not from memory)
+- **Repo `main` = `origin/main` = production.** HEAD `18be65e` (PHASE-22 docs). Every production deploy from `affa7ac` to `18be65e` is READY in Vercel (checked Oct 28).
+- **Phases built:** 01 to 22. Recent: PHASE-17 Sunrise theme + PHASE-18 accessibility (Oct 12), PHASE-19 advisor team + Welcome and PHASE-20 plan admin, roles, width, globals.css fix (Oct 14), PHASE-21 guided focus, 6 visuals, 8 videos (Oct 27), PHASE-22 video overhaul, plan bar, Videos tab, in-service, AI text cleanup, "helps with" line (Oct 27).
+- **Checks Oct 28 (Cowork, on Ross's computer):** check-theme PASS 12034 / FAIL 0, check-a11y 755 / 0, check-visuals 1514 / 0, check-videos 6544 / 0, check-overview 3980 / 0, check-answers 433 / 0. **These passed while known bugs were live** (picture on "No" cards, wrong Tierra Sur numbers): the checks test code rules, not whether something makes sense for the plan (OPEN-ITEMS #74, #76; CLAUDE.md Quality Gates).
+- **Known wrong on the live site (Oct 28 audit):** pictures/videos on cards whose answer is No (#74); Tierra Sur employer money numbers disagree in 4 places, Conflict QNEC shown as profit sharing, in-service "Yes at 59½" with no answer behind it (#76); calculator ignores non safe harbor matches; target date video shown with no funds loaded; focus choices not filtered by the plan. Fix = PHASE-23, written Oct 28 (`PHASE PROMPTS/PHASE-23-relevance-facts-clarity.md`), not run yet. Detail found while writing it: `normalizePlanData` turns any in-service age into "allowed", and `/p/[plan_id]` doesn't run the normalizer on stored plans.
+- **Not yet clicked through by Ross:** PHASE-09 to PHASE-22 (list in OPEN-ITEMS START HERE).
+- **Uncommitted:** Cowork doc edits (CLAUDE.md, CONTEXT.md, MEMORY.md, ERRORS.md, OPEN-ITEMS.md) since `18be65e`. The next phase's docs step commits them.
+- **Invite links (`/p/...`) stay off for real employees** until the 🔴 security section in OPEN-ITEMS closes. Plan-code box on the landing page is built but hidden (`PLAN_CODES_ENABLED = false` in `components/plansparency/Landing.tsx`).
+- **Site lock:** `middleware.ts` keeps the whole site behind the advisor password until `SITE_PUBLIC=true` (OBA approval). Always private: `/advisor*`, `/api/save-plan`, `/api/plan-team`, `/api/plan-details`, `/api/plans-list`.
+- **Cowork git rule:** read-only git only (`git --no-optional-locks status`, `git log`).
 
 ---
 
 ## What It Is
-AI-powered 401(k) plan document interpreter. Participant uploads their SPD or enrollment booklet. Claude reads it and answers questions in plain English — education only, never advice. Auto-populates a contribution/match calculator via PLANDATA extraction. Bilingual EN/ES. Sessionless — no data stored.
+AI-powered 401(k) plan explainer sold to advisors. The advisor uploads a client's plan document once, checks what the plan reader found (review screen), adds their team, and shares the plan by plan code or invite link. Employees open their plan and get plain-English answers (EN/ES), pictures built from their plan's numbers, short videos, a savings calculator and general 401(k) terms. Education only, never advice. Since Oct 4, 2026 there is no employee self-upload: upload exists only for advisors and at `/advisor/preview` for previewing.
 
 ---
 
-## Current Build — Live as of June 2026
+## Current Build — Live as of October 28, 2026 (`18be65e`)
 
 - **Framework**: Next.js (App Router) — migration completed May 3–5, 2026
 - **Repo**: `RuGinzo13/plansparency` (GitHub, private)
@@ -49,7 +53,7 @@ AI-powered 401(k) plan document interpreter. Participant uploads their SPD or en
 - **advisor_token**: Generated (`crypto.randomUUID`) and stored in the advisor's localStorage, but **no server code validates it anywhere** — it is currently decorative, not an auth mechanism (verified June 11, 2026). Must be given real server-side validation before any plan-management features (edit/delete) are built.
 - **plan_id**: `crypto.randomUUID()` — UUIDv4, ~122 bits of entropy, not enumerable. `/p/` links are safe to share.
 - **Code quality (June 4, 2026)**: 6-phase cleanup completed — (1) dead-code removal, (2) Upstash rate limiting, (3) dependency prune, (4) collapsed upload paths, (5) extracted `lib/` modules, (6) restored type safety. `next.config.mjs` now has `typescript.ignoreBuildErrors: false`; all TS typechecks except `components/PlansparencyApp.tsx`, which keeps a documented `@ts-nocheck` (pure-UI monolith, ~193 deferred errors) pending future decomposition. `tsconfig.json` target `ES2018`. No functional behavior changed in any phase.
-- **Features built**: PDF upload → SSE streaming → Claude, PLANDATA auto-extraction, calculator (PLANDATA-populated), EN/ES toggle, SECURE 2.0 IRS limits (⚠️ hardcoded to 2025 values in `lib/plan/irs.ts`: $23,500 / $7,500 / $11,250), safe harbor vs. discretionary match distinction, recordkeeper URL extraction + redirect, sessionless/no-storage, privacy consent gate, quick-ask chips, topic dashboard (12 sections), last-day provision detection, static Key Terms accordion tab, static top nav TabBar (Plan Guide | Calculator | Key Terms | Ask), advisor upload page + plan storage, participant shareable plan page, Basic Auth gate on advisor surface
+- **Features built (Oct 28, 2026)**: participant screens: 4 tabs (Your plan, Calculator, 401(k) terms, Videos) under a dark plan bar that stays on screen (recordkeeper card, plan name + "reviewed" chip, "Meet your advisor's team" card); Your plan = 4 topics (Your money, Employer money, Access my money, When you leave) with answer cards from the reviewed plan details (stock answers, no AI call), "at a glance" side panel, 6 pictures inside the answers, "Watch first" video rows; Welcome pop-up with "pick your focus" step 2 (picks never saved) and a focus strip with ×; Team page; 8 data-driven animated videos with one player (chapters, captions, up next, play all); Investments (fund lineup from an enrollment booklet); statement dashboard; calculator with 2026 limits incl. catch-up, super catch-up and the Roth catch-up rule; EN/ES. Advisor screens: upload + accuracy review, plans table (sortable, expandable), edit plan details with change history, add a document and approve changes, team editor (main role + other roles + "helps with" line), preview. Sunrise theme from `theme.ts` only; WCAG 2.2 AA rules with check scripts.
 - **Test SPDs**: Principal/Baer's Rug (EIN: 11-2570999), Transamerica/Conflict International, EQ/Tierra Sur (EIN: 20-3525109, PN: 001)
 - **Test enrollment booklets**: Equitable (fund lineup on pages 13–14 — ~30 funds), Voya (no fund lineup), Transamerica (no fund lineup)
 
@@ -202,7 +206,7 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | ✅ Done | SSE streaming | Eliminates Vercel Edge timeout |
 | ✅ Done | Next.js migration | GitHub → Vercel auto-deploy |
 | ✅ Done | Direct FormData upload to /api/ingest | Single upload path since June 4 Phase 4; tested clean at 5.9 MB (June 11) |
-| ✅ Done | Static top nav TabBar | Plan Guide, Calculator, Key Terms, Ask |
+| ✅ Done | Tab bar | Your plan, Calculator, 401(k) terms, Videos (Oct 27); team reached from the plan bar |
 | ✅ Done | Supabase backend — plans table + plan_sessions + storage bucket | Tables live, env vars set in Vercel, schema in repo |
 | ✅ Done | Advisor upload page (`/advisor`) | Drag-drop PDF → /api/ingest → /api/chat → /api/save-plan → shareable link |
 | ✅ Done | Participant plan page (`/p/[plan_id]`) | Server component — fetches plan + PDF from Supabase, renders pre-loaded PlansparencyApp |
@@ -214,11 +218,22 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | ✅ Done | Advisor review step (PHASE-09) | Accuracy pop-up + 12-row review screen; saves `review` inside planData |
 | ✅ Done | Prompt caching + token logging (PHASE-10) | `app/api/chat/route.ts`; log line `chat_usage` (numbers only) |
 | ✅ Done (wording DRAFT) | Stock answers (PHASE-10) | 8 English buttons answered from planData with no AI call (`lib/answers/stockAnswers.ts`); Spanish buttons still go to the AI; taps logged via `/api/track` (`stock_answer`) |
+| ✅ Done | Quick buttons + Ask tab styling (PHASE-11, 12) | Ask tab later removed in PHASE-16 |
+| ✅ Done | Your plan redesign + General 401(k) terms (PHASE-13, 14) | Terms definitions still DRAFT (#48) |
+| ✅ Done | Advisor-only access (PHASE-15) | Upload moved to `/advisor/preview`; `/` = plan-code start |
+| ✅ Done | Your plan merge (PHASE-16) | Ask tab and participant typing box removed; answers inside cards |
+| ✅ Done | Sunrise theme (PHASE-17) | Every color in `theme.ts`; `check-theme.ts` |
+| ✅ Done | Accessibility WCAG 2.2 AA (PHASE-18) | `check-a11y.ts`; Ross's keyboard + VoiceOver test still owed |
+| ✅ Done | Advisor team + Welcome pop-up (PHASE-19) | `plans.team_json`, `/api/plan-team`, RLS on |
+| ✅ Done | Plan admin (PHASE-20) | globals.css import fixed, wider pages (`LAYOUT`), roles, edit details, add document, plans table |
+| ✅ Done | Guided focus, 6 visuals, 8 videos (PHASE-21) | `lib/plan/focus.ts`, `lib/plan/visuals.ts`, `lib/videos/*` |
+| ✅ Done | Video overhaul + plan bar (PHASE-22) | Videos tab, theater, watch-first rows, in-service answer, AI text cleanup, "helps with" |
+| 🔴 Fix | Relevance + wrong plan facts (PHASE-23) | OPEN-ITEMS #74, #76, #77 |
+| ⏸ On hold | ElevenLabs narration | #68: Ross's account + key first; hook is `lib/videos/narration.ts` |
 | ⚠️ Partial | Upload: Vercel platform payload cap | 5.9 MB confirmed working in production (June 11). >5.9 MB untested; client limit 25 MB. Test a 15–20 MB scanned booklet when available |
 | ⚠️ Partial | Upload: server timeout vs client timeout | `/api/ingest` maxDuration raised 60 → 120 (commit `273ef03`, May 26). Client timeout is still 180s and there is still no "Failed to fetch" → friendly message mapping |
 | ✅ Done | Upload: AbortSignal.any fallback | Fixed in `273ef03` (May 26): caller abort is forwarded into the local controller when `AbortSignal.any` is missing |
-| ⚠️ Fix | IRS limits stale | `lib/plan/irs.ts` uses 2025 limits. 2026 base limit is $24,500 per IRS |
-| ⚠️ Fix | Upload copy contradicts code | `lib/i18n/index.ts` `dropSub` says "4.5 MB max per doc" (EN + ES); code allows 25 MB |
+| ✅ Done | Upload copy vs code | Oct 28 check: no "4.5 MB" text left in `lib/i18n/index.ts` or components |
 | ⚠️ Fix | Privacy policy | Termly.io before Version A launch |
 | ⚠️ Fix | ERISA disclaimer | Attorney review before Investments tab goes live |
 | ⚠️ Fix | EIN + Plan Number in PLANDATA | 15-min Claude Code update before Version B |
@@ -350,21 +365,27 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 ---
 
 ## Component Map — Reference for All Future Sessions
-*Use these names to scope any feature request, fix, or change. Line numbers re-checked Sept 27, 2026; they move, so prompts should find components by name, not line.*
+*Re-checked Oct 28, 2026 against `18be65e`. Find things by name, not line number.*
 
-| # | Name | Files / Location | Scope |
-|---|------|-----------------|-------|
-| 1 | **Upload Flow** | `app/api/ingest/route.ts`, `uploadFile()` in PlansparencyApp.tsx | File size limits, supported types, upload errors, Anthropic handoff. (`app/api/upload` was deleted in June 4 Phase 4) |
-| 2 | **AI / Chat Engine** | `app/api/chat/route.ts` | System prompt, guardrails, answer tone, new topics, streaming |
-| 3 | **Plan Dashboard** | `PlanDashboard` (~line 860), PlansparencyApp.tsx | Tile cards after SPD upload — eligibility, match, vesting, loans, etc. |
-| 4 | **Contribution Calculator** | `CalcPanel` (~line 1241), PlansparencyApp.tsx | Salary/match/IRS limit math, SECURE 2.0 catch-up logic |
-| 5 | **Statement Dashboard** | `StatementDashboard` (~line 1545), PlansparencyApp.tsx | Account statement view — balance, money in/out, fees, charts |
-| 6 | **Chat Interface** | `Plansparency` main fn (~line 1749), PlansparencyApp.tsx | Conversation UI, message bubbles, quick-ask chips, streaming display |
-| 7 | **Privacy & Consent Screen** | `STAGE.PRIVACY` ~line 1976, PlansparencyApp.tsx | Pre-upload privacy disclosure and consent gate |
-| 8 | **Investments Panel** | `InvestmentsPanel` (~line 526) + `FundRow` (~line 401), PlansparencyApp.tsx | Fund lineup — categories, expense ratios, risk labels, fact sheet links |
-| 9 | **Key Terms** | `KeyTermsPanel` (~line 309), `i18n` in `lib/i18n/index.ts` | Glossary accordion — EN/ES 401(k) definitions |
-| 10 | **Advisor & Participant Pages** | `app/advisor/page.tsx`, `app/advisor/layout.tsx`, `app/p/[plan_id]/page.tsx`, `app/api/save-plan/route.ts`, `lib/supabase-server.ts` | Advisor upload + plan list, shareable participant plan pages, Supabase plan storage. (`lib/supabase.ts` does not exist — June 11 correction) |
-| 11 | **Access Gate** | `middleware.ts` (repo root) | Basic Auth on `/advisor/:path*` + `/api/save-plan`; fail-closed on missing `ADVISOR_ACCESS_PASSWORD` |
+| # | Name | Files | Scope |
+|---|------|-------|-------|
+| 1 | **App shell + stages + tabs** | `components/PlansparencyApp.tsx` (~900 lines, `@ts-nocheck`) | Stage machine, `activeTab` (`dashboard`, `calculator`, `keyterms`, `videos`, `team`), upload, chat calls |
+| 2 | **Plan bar + tabs** | `components/plansparency/PlanBar.tsx`, `nav.tsx` | Dark sticky bar (recordkeeper, plan, team card), 4 tabs |
+| 3 | **Your plan** | `PlanOverview.tsx`, `PlanGlance.tsx`, `AnswerBody.tsx`, `lib/plan/overview.ts`, `lib/answers/stockAnswers.ts`, `lib/plan/planFacts.ts` | Topics, answer cards, side panel |
+| 4 | **Pictures** | `components/plansparency/visuals/*` (`CardVisual.tsx` decides which card gets which picture), `lib/plan/visuals.ts` | Employer money, vesting, joining, taxes, limits, leaving |
+| 5 | **Videos** | `components/plansparency/video/*` (`VideoTheater`, `VideoThumb`, `WatchFirstRow`, scenes kit), `VideosPanel.tsx`, `lib/videos/*` | 8 videos built from plan data; narration hook for ElevenLabs |
+| 6 | **Welcome + focus** | `WelcomeDialog.tsx`, `FocusStrip.tsx`, `lib/plan/focus.ts` | Pop-up, pick up to 3, focus strip |
+| 7 | **Calculator** | `CalcPanel.tsx`, `lib/plan/calc.ts`, `lib/plan/irs-limits.ts` | Limits, catch-up, Roth catch-up rule, safe harbor money only |
+| 8 | **401(k) terms** | `KeyTermsPanel.tsx`, `lib/glossary.ts` | One place for every definition |
+| 9 | **Team** | `TeamPanel.tsx`, `TeamAvatar.tsx`, `RoleChip.tsx`, `lib/team.ts`, `app/advisor/plans/[plan_id]/team` | Participant team page + advisor editor |
+| 10 | **Investments / statements** | `InvestmentsPanel.tsx`, `StatementDashboard.tsx` | Fund lineup; statement view |
+| 11 | **Landing** | `Landing.tsx`, `app/page.tsx` | Plan-code start (box hidden), advisor preview upload |
+| 12 | **Advisor** | `app/advisor/*`, `components/plansparency/advisor/*` (`AdvisorShell`, `PlansTable`, `ReviewField`), `lib/plan/reviewRows.ts`, `lib/plan/readPlanDocument.ts` | Upload + review, plans table, edit details, add document, preview |
+| 13 | **AI / upload routes** | `app/api/chat`, `app/api/ingest`, `app/api/session/end`, `app/api/track`, `lib/text/clean.ts` | Streaming chat, Files API upload + deletion, usage logging, AI text cleanup |
+| 14 | **Data routes** | `app/api/save-plan`, `plan-details`, `plan-team`, `plans-list`, `lib/supabase-server.ts` | Supabase, always behind the advisor password |
+| 15 | **Access gate** | `middleware.ts` | Site lock until `SITE_PUBLIC=true`; always-private paths |
+| 16 | **Theme + layout** | `components/plansparency/theme.ts` (`C`, `CHART`, `ROLE`, `LAYOUT`), `app/globals.css` | Only place colors/widths live |
+| 17 | **Checks** | `scripts/check-*.ts`, `scripts/samples.ts` | Run with `npx --yes tsx scripts/<name>.ts` |
 
 ---
 
@@ -400,6 +421,12 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 | `lib/anthropic/client.ts` | Anthropic client setup |
 | `lib/ratelimit.ts` | Upstash rate limiting — fails open |
 | `supabase/schema.sql` | Table definitions for plans + plan_sessions — re-runnable (IF NOT EXISTS) |
+| `components/plansparency/theme.ts` | Every color, role color and page width (`C`, `CHART`, `ROLE`, `LAYOUT`) |
+| `lib/plan/overview.ts` + `lib/answers/stockAnswers.ts` | Your plan topics, side panel values and the written answers |
+| `lib/plan/visuals.ts` + `components/plansparency/visuals/CardVisual.tsx` | Picture numbers and which card shows which picture (bug source for #74) |
+| `lib/videos/*` | The 8 videos: scripts, scene builder, narration hook |
+| `scripts/` | Check scripts + `samples.ts` (sample plans) |
+| `Plansparency/Design canvas source/` (outside the repo) | Builds the 3 "Current site" canvas boards from one stylesheet (`build.py`) |
 | `401k_Education_Project_Knowledge_Base.md` | Research foundation |
 | `Plansparency-Project-Brief.docx` | Formal project spec v3 |
 | `EQ_SPD_Test.pdf` | Test doc — Tierra Sur (EIN: 20-3525109, PN: 001) |
@@ -418,7 +445,7 @@ Model per-advisor, not aggregate. Large advisors (30 plans × 150 employees × 3
 - **Design canvas "Calculator Redesign"** (claude.ai artifact): approved clickable mockup, phone + web boards. Source for PHASE-07 Step 6. Revisit per OPEN-ITEMS #23.
 - **Definitions:** after PHASE-07, `lib/glossary.ts` is the only place a term is defined (Key Terms, calculator bubbles, Plan Guide wording). IRS amounts in definitions come from `lib/plan/irs-limits.ts`.
 
-## Design and accessibility baseline (Oct 12, 2026)
+## Design and accessibility baseline (Oct 12, 2026; updated Oct 28)
 - **Theme:** Sunrise. White pages, light gray panels (`#F3F4F6`), coral accent (`#C2410C`), charcoal pinned bars (`#1F2937`). Every color lives in `components/plansparency/theme.ts` (`C`, `CHART`); nothing else may hold a color (`scripts/check-theme.ts`). Built in PHASE-17.
 - **Accessibility:** target WCAG 2.2 AA, the benchmark used for "ADA compliant" websites. Rules in CLAUDE.md "Accessibility Rules"; guardrail `scripts/check-a11y.ts`. Built in PHASE-18. Code checks are not proof of compliance: Ross's manual test per screen-changing phase, and an outside audit before public launch (#53).
-- **Design source:** the "Sunrise on every page" row on the Landing Redesign canvas (#55).
+- **Design source (Oct 28):** the "Current site" page of the Landing Redesign canvas (3 boards: Landing, Participant site, Advisor side), generated from `Plansparency/Design canvas source/` (one stylesheet `ds.css`). Every older board is on the "Archive" page and is history, not a source. The current boards show the clarity look Ross asked for Oct 28 (gray page, white cards, solid pills: green yes, gray no, white with dark border = fact, coral outline = ask HR). The live app gets it in PHASE-23.

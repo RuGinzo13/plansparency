@@ -602,3 +602,74 @@ The addressable sections of the app — superseded by the updated Component Map 
 - **Oct 14, 2026: PHASE-20.** `globals.css` was never loaded (fixed). Widths in `LAYOUT`. Team members have `role` + `also`. Plan details editable after save with `review.history`; additional documents are read once, compared, approved per detail, then deleted. The AI gets the reviewed details and prefers them over the document. The advisor plans list reads `/api/plans-list` (all plans), not localStorage.
 - **Oct 27, 2026: Welcome has 2 steps (info, pick your focus). Focus picks live only in React state.** Pictures live in `components/plansparency/visuals/`, built from `lib/plan/visuals.ts`, each with an 'In words' text version. Videos are data (`lib/videos/`), built from plan data, silent with captions; `narration.ts` is where ElevenLabs plugs in. The catch-up row now shows the age 50+ amount first (PHASE-21, `affa7ac`).
 - **Oct 27, 2026: plan bar sits above the tabs on every tab (recordkeeper, plan, advisor team card). 4 tabs: Your plan, Calculator, 401(k) terms, Videos. One app-wide video theater (`video/VideoTheater.tsx`, opened with `openVideo(id, { from })` from `VideoContext`); thumbnails everywhere; Videos tab is a table of contents. AI text is cleaned at display (`lib/text/clean.ts`, used in `Md`).** In-service withdrawals live in `distributionInfo.inServiceAvailable/inServiceAge` with an advisor review row. Team members have an optional `helps` line (PHASE-22).
+
+## Oct 28, 2026 — One design on the canvas, always
+- The design canvas has a "Current site" page (Landing, Participant site, Advisor side) and an "Archive" page. Play starts on Current site.
+- All current boards come from one stylesheet and one generator kept in `Plansparency/Design canvas source/` (ds.css + site/landing/advisor templates). Change the look there, regenerate all 3 boards, publish all 3.
+- Proposals for a new look go on a separate draft page. Once Ross approves, they replace the current boards everywhere in the same publish. Nothing half-applied.
+- The live app follows the same rule: PHASE-23 applies the clarity look to every tab (Your plan, Calculator, 401(k) terms, Videos, Team, Welcome, Advisor), not only the Your plan cards.
+- Shared meaning on every screen: green pill = yes, gray = no, white with dark border = a fact, coral outline = ask HR. "Adds up to X% of pay" always means what the employer adds.
+
+
+## Decisions Oct 12 to Oct 28, 2026 (backfilled Oct 28 from OPEN-ITEMS and the repo; the original entries were never written)
+
+## Oct 12, 2026 — Sunrise theme (#51)
+**What was decided:** white pages, light gray panels `#F3F4F6`, coral accent `#C2410C`, charcoal pinned bars `#1F2937`. Every color lives in `theme.ts`; `check-theme.ts` blocks colors anywhere else and checks contrast.
+**Why:** Ross picked it from the Color theme lab; the ecru/gold look read dated and had contrast problems.
+**What was rejected:** the other theme lab options; patching colors file by file without a token file.
+
+## Oct 12, 2026 — Accessibility target WCAG 2.2 AA (#52)
+**What was decided:** WCAG 2.2 AA is the bar for every screen and every board; rules live in CLAUDE.md; `check-a11y.ts` guards code; Ross does a 10-minute keyboard + VoiceOver test per screen-changing phase; outside audit before launch (#53).
+**Why:** Ross: "make sure the pages are ADA compliant." AA is the standard courts and buyers point to.
+**What was rejected:** relying on code checks alone (they catch only part of it).
+
+## Oct 14, 2026 — Advisor team + Welcome pop-up (#56, #60)
+**What was decided:** team saved per plan in `plans.team_json` (no advisor accounts yet), edited by the advisor; color comes from a fixed Role list, never the free-text title; a person can have a main role plus other roles and (Oct 27) a "helps with" line. Welcome pop-up shows every visit unless "Don't show this again on this device" is checked; Esc, × or outside click closes it; footer link reopens it. RLS turned on for `plans` and `plan_sessions` first (#57).
+**Why:** employees should know who to call; the data had to be protected before phones, emails and photos were stored.
+**What was rejected:** team stored on an advisor account (doesn't exist yet); colors from job titles (too varied).
+
+## Oct 14, 2026 — Plan admin (#59, #61, #62, #63)
+**What was decided:** pages wider (participant 1360, advisor 1280, one `LAYOUT` value); advisors can edit plan details with a change history; an additional document is read once, compared, approved detail by detail, then deleted, and a blank never erases a saved value; the plans list is one sortable table read from the database, not this browser.
+**Why:** plan rules change; the old list showed 3 of the 4 plans because it read localStorage.
+**What was rejected:** storing the additional documents (#32 direction is to keep no PDFs).
+
+## Oct 27, 2026 — Guided start and visuals (#65, #66)
+**What was decided:** "pick your focus" is step 2 of the same Welcome, up to 3 goals in plain words, "Skip, show me everything" always there, nothing hidden for good. **Picks are never remembered** (not on the device, not per person). Six pictures built from the plan's own numbers, each inside the answer it explains, each with a words version.
+**Why:** new employees get overwhelmed; most people learn visually.
+**What was rejected:** a second pop-up; choices named with plan terms ("vesting"); remembering picks.
+
+## Oct 27, 2026 — Videos: animated explainers, AI voice later (#67, #68)
+**What was decided:** animated explainer style built from plan data (no AI presenter), v2 style approved (jar that fills, counting numbers, one idea per scene). ElevenLabs AI voice for every video, generated automatically from the scripts and cached until the words change; on hold until Ross sets up the account and key.
+**Why:** plan-specific numbers make it personal; nothing should ever be re-recorded by hand.
+**What was rejected:** HeyGen/Synthesia presenters; human voice actors; the browser voice as the final voice.
+
+## Oct 27, 2026 — Video overhaul and the plan bar (#69, #70, #71)
+**What was decided:** real thumbnails and one big player over the page (chapters, captions, up next, play all); "Watch first" row at the top of each topic; still 4 tabs: Your plan, Calculator, 401(k) terms, Videos (table of contents in learning order); "Meet your advisor's team" moves out of the tab bar into a white card in a dark plan bar that sits above the tabs, stays on screen, 3 equal centered columns; × hides the focus strip for this visit.
+**Why:** Ross: "I hate how you implemented the videos. It's not intuitive at all." Videos sat behind small text pills inside closed cards.
+**What was rejected:** a 5th tab; inline players that push the page around.
+
+## Oct 28, 2026 — Relevance rule (#74)
+**What was decided:** a picture, slider, tool or video appears only on a card whose own answer is Yes (or a plain fact) for this plan, using only that card's own money. A "No" or unknown card gets no picture or video, only a link to where the money does come from. Applies to every screen: cards, side panel, calculator, focus choices, Videos tab, Welcome. Same number means the same thing everywhere.
+**Why:** Ross saw the employer money slider and match video under "No safe harbor"; the audit found the same kind of problem across the site.
+**What was rejected:** fixing only the safe harbor card.
+
+## Oct 28, 2026 — Unsure plan facts show "Ask HR" (#76)
+**What was decided:** facts the plan reader wasn't sure of (QNEC vs profit sharing, in-service age with no "allowed", a match tier that doesn't fit the safe harbor) show "Ask HR" until the advisor confirms them on the review screen. The plan reader learns fixed vs discretionary match and QNEC.
+**Why:** Tierra Sur and Conflict International showed wrong facts as if they were true.
+**What was rejected:** guessing a default.
+
+## Oct 28, 2026 — Clarity look (#75)
+**What was decided (draft, applied to the canvas Current site, awaiting Ross's reaction):** gray page, white cards with shadows, one strong topic bar, solid pills (green yes, gray no, white with dark border = fact, coral outline = ask HR), answer first in one colored line, one source line per card, video button on the closed card only where it applies, thin slider.
+**Why:** Ross: "way too cluttered and not enough color contrast to easily find and navigate."
+
+## Oct 28, 2026 — Cowork Quality Gates
+**What was decided:** CLAUDE.md now has mandatory gates: Cowork clicks through its own work (canvas and live site) before Ross sees it, one design source for the canvas, relevance audit on real plans before and after every phase, every phase prompt answers "where else does this appear?", docs updated the same day after every phase, and every mistake Ross finds becomes a rule or a check.
+**Why:** Ross, Oct 28: "it should not be my job to fix your mistake." Four Cowork misses in a month were found by Ross first.
+**What was rejected:** relying on check scripts (all passed while the bugs were live) and on reviewing boards one at a time.
+
+## Session Summary, October 27–28, 2026
+**Worked on:** PHASE-21 and PHASE-22 (written by Cowork, built by Claude Code, all Vercel Ready through `18be65e`); Ross's feedback on clutter, contrast and confusing pictures; site-wide relevance audit on the 4 real plans + 14 samples; canvas rebuilt as one design.
+**Completed:** PHASE-21 (focus, visuals, videos) and PHASE-22 (video overhaul, plan bar, Videos tab, in-service, AI text cleanup, helps-with); relevance audit (#74 expanded, #76 new); canvas "Current site" page with 3 boards built from `Design canvas source/`, old rounds archived; docs brought current; Quality Gates added to CLAUDE.md.
+**In progress:** PHASE-23 (clarity look on every tab + relevance fixes + plan-fact fixes), waiting on Ross's reaction to the Current site boards and the Tierra Sur match answer.
+**Decisions made:** see the Oct 12 to Oct 28 entries above.
+**Next session:** read CLAUDE.md Quality Gates first. Then Ross's reaction to Current site → write PHASE-23 with `check-relevance.ts`. Ross's click-through backlog is in OPEN-ITEMS START HERE.

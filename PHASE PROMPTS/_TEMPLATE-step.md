@@ -28,6 +28,17 @@ Run `git status` and `git log --oneline -3`. Run `ls app/ components/ lib/` plus
 - Type check: ...
 - Search to confirm: ...
 
+## Same thing elsewhere on the site (Cowork fills this in; never leave blank)
+- Every other screen that shows this same picture, tool, video, number or wording: ...
+- What changes there too, or why it doesn't: ...
+- Design values copied from the canvas "Current site" boards only (never an Archive board): ...
+
+## Relevance (any step that shows a picture, tool, video, chip or number)
+- When it shows, per card: ...
+- What a "No" or unknown card shows instead: a link to where the money comes from, never the tool.
+- Same meaning on card, side panel, calculator and video.
+- Add a case to `scripts/check-relevance.ts` and run it (all sample plans + the 4 real plans).
+
 ## Accessibility (any step that changes a screen)
 - Follow CLAUDE.md "Accessibility Rules". Run `npx --yes tsx scripts/check-a11y.ts` and `npx --yes tsx scripts/check-theme.ts`; both must pass.
 - Checklist lines: keyboard path works, focus visible, labels and states named, 12px minimum, EN + ES, `lang` correct.
@@ -41,6 +52,6 @@ Push to `main`. Never force-push.
 - Files changed
 - Anything unexpected
 
-## Done when (Ross checks)
+## Done when (Cowork checks first, CLAUDE.md Quality Gate 4; then Ross)
 - Vercel deployment Ready with the commit message above
 - Live: ...
