@@ -3,9 +3,12 @@
 
 import React from 'react';
 import { C, F } from './theme';
+import { cleanAiText } from '@/lib/text/clean';
 
 // ── Markdown ──
-export function Md({ text }) {
+// Md only shows AI-written text, so it cleans it here: the stream arrives in pieces, this sees the joined text.
+export function Md({ text: raw }) {
+  const text = cleanAiText(raw);
   const lines = text.split("\n"), els = []; let li = [];
   const flush = () => { if (li.length) { els.push(<ul key={`u${els.length}`} style={{ margin: "8px 0", paddingLeft: 20 }}>{li.map((x, i) => <li key={i} style={{ marginBottom: 4, color: C.text }}><Fm t={x} /></li>)}</ul>); li = []; } };
   lines.forEach((l, i) => { const b = l.match(/^[\-\*•]\s+(.*)/), n = l.match(/^\d+[\.\)]\s+(.*)/); if (b) { li.push(b[1]); return; } if (n) { li.push(n[1]); return; } flush(); if (!l.trim()) els.push(<div key={i} style={{ height: 8 }} />); else els.push(<p key={i} style={{ margin: "4px 0", lineHeight: 1.6, color: C.text }}><Fm t={l} /></p>); }); flush(); return <>{els}</>;
