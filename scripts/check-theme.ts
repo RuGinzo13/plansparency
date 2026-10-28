@@ -65,6 +65,7 @@ const PAIRS: [keyof typeof C, keyof typeof C][] = [
   ['text', 'bg'], ['textMuted', 'surface'], ['textMuted', 'surfaceAlt'], ['textDim', 'surface'], ['textDim', 'surfaceAlt'],
   ['accent', 'surface'], ['accent', 'accentSoft'], ['accentText', 'surface'], ['accentText', 'accentSoft'], ['accentText', 'highlight'],
   ['onPrimary', 'accent'], ['onPrimary', 'primaryEnd'], ['onDanger', 'danger'], ['green', 'greenSoft'], ['green', 'surface'],
+  ['text', 'page'], ['textMuted', 'page'], ['textDim', 'page'], ['accentText', 'page'], ['onPrimary', 'green'], ['onPrimary', 'textMuted'], ['text', 'highlight'], ['text', 'greenSoft'],
   ['warning', 'warningDim'], ['danger', 'dangerSoft'], ['danger', 'surface'], ['barText', 'bar'], ['barMuted', 'bar'], ['barLink', 'bar'],
 ];
 let lowest = { name: '', value: Infinity };

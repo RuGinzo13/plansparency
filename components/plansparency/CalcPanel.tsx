@@ -81,7 +81,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
 
   if (!planData) {
     return (
-      <div style={{ flex: 1, overflowY: "auto", background: C.bg, padding: "20px 16px 40px" }}>
+      <div style={{ flex: 1, overflowY: "auto", background: C.page, padding: "20px 16px 40px" }}>
         <div style={{ maxWidth: LAYOUT.advisor, margin: "0 auto", padding: 24, textAlign: "center", color: C.textMuted, fontSize: 13, background: C.surface, borderRadius: 14, border: `1px dashed ${C.border}` }}>
           {t.calcWaiting}
         </div>
@@ -736,7 +736,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   );
 
   return (
-    <div ref={rootRef} style={{ flex: 1, overflowY: "auto", background: C.bg, padding: "20px 16px 40px" }}>
+    <div ref={rootRef} style={{ flex: 1, overflowY: "auto", background: C.page, padding: "20px 16px 40px" }}>
       <div style={{ maxWidth: LAYOUT.advisor, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
           <h1 style={{ fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>{t.calc2Title}</h1>

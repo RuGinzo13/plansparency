@@ -717,7 +717,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   if (stage === STAGE.APP) {
     return (
       <VideoProvider value={videoCtx}>
-      <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
+      <div style={{ height: "100vh", background: C.page, color: C.text, fontFamily: F.body, display: "flex", flexDirection: "column" }}>
         <SkipLink lang={lang} />
         <input ref={addDocRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) supplementalUpload(e.target.files[0]); e.target.value = ""; }} />
 

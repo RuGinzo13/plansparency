@@ -177,7 +177,7 @@ export default function TeamEditorPage() {
 
   // ── Shared page frame (same look as /advisor) ──
   const frame = (children: React.ReactNode) => (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: F.body }}>
+    <div style={{ minHeight: '100vh', background: C.page, color: C.text, fontFamily: F.body }}>
       <SkipLink lang="en" />
       <div style={{ maxWidth: LAYOUT.advisor, margin: '0 auto', padding: '20px 16px 48px', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>

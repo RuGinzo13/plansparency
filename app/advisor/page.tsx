@@ -173,7 +173,7 @@ export default function AdvisorPage() {
     </div>
   );
   const shell = (children: React.ReactNode) => (
-    <div ref={rootRef} style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: F.body }}>
+    <div ref={rootRef} style={{ minHeight: '100vh', background: C.page, color: C.text, fontFamily: F.body }}>
       <SkipLink lang="en" />
       <div style={{ maxWidth: LAYOUT.advisor, margin: '0 auto', padding: wide ? '28px 32px 48px' : '16px 16px 32px', boxSizing: 'border-box' }}>
         {Header}
