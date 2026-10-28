@@ -124,3 +124,14 @@ body {
   .vid-a, .vid-g { animation: none !important; }
   .vid-fall { transform: translate(80px, 150px) rotate(24deg); opacity: 0; }
 }
+/* Thumbnails: the finished picture, no motion */
+.vid-still .vid-a, .vid-still .vid-g { animation: none !important; }
+.vid-still .vid-fall { transform: translate(80px, 150px) rotate(24deg); opacity: 0; }
+
+/* Video theater: stage and controls on the left, chapters on the right; one column under 900px */
+.vt-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; }
+.vt-side { border-left-width: 1px; }
+@media (max-width: 899px) {
+  .vt-grid { grid-template-columns: minmax(0, 1fr); }
+  .vt-side { border-left-width: 0; border-top-width: 1px; }
+}

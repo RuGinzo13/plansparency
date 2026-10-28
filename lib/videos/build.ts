@@ -9,10 +9,15 @@ import {
   employerMoneyAt, employerTiers, matchPhrases, rateMoney, vestingSteps, vestingWords, limitBars, rothRows, EXAMPLE_PAY,
 } from '../plan/visuals';
 import type { Scene, SceneKind, Video, VideoContextInfo, VideoId } from './types';
-import { ART, CAPTIONS, NEXT, NEXT_HARDSHIP, TITLES } from './scripts';
+import { ART, CAPTIONS, CHAPTERS, LEARN, NEXT, NEXT_HARDSHIP, TITLES, VIDEO_ORDER } from './scripts';
 
 type Lang = 'en' | 'es';
 export const VIDEO_IDS: VideoId[] = ['welcome', 'match', 'vesting', 'taxes', 'limits', 'access', 'leave', 'tdf'];
+
+// The videos that exist for this plan, in the order they are listed and played.
+export function availableVideos(planData: PlanData | null, ctx: VideoContextInfo, lang: Lang): Video[] {
+  return VIDEO_ORDER.map((id) => buildVideo(id, planData, ctx, lang)).filter((v): v is Video => v !== null);
+}
 
 // Reading speed: about 2.6 words a second plus a beat, never under 5 seconds.
 export function sceneSeconds(caption: string): number {
@@ -47,12 +52,12 @@ function make(id: VideoId, pd: PlanData | null, ctx: VideoContextInfo, lang: Lan
     });
   };
   const add = (kind: SceneKind, props: Record<string, unknown>, key: string, vars?: Record<string, string | number | undefined>) => {
-    scenes.push({ kind, props, caption: cap(key, vars) });
+    scenes.push({ kind, props, caption: cap(key, vars), chapter: CHAPTERS[key]?.[lang] ?? '' });
   };
   const end = (nextLabel: string, action: Video['next']['action']): Video => {
     const endCap = cap(`${id}.end`);
-    scenes.push({ kind: 'end', props: { line: endCap, button: nextLabel }, caption: endCap });
-    return { id, title: TITLES[id][lang], scenes, next: { label: nextLabel, action } };
+    scenes.push({ kind: 'end', props: { line: endCap, button: nextLabel }, caption: endCap, chapter: CHAPTERS[`${id}.end`]?.[lang] ?? '' });
+    return { id, title: TITLES[id][lang], learn: LEARN[id][lang], scenes, next: { label: nextLabel, action } };
   };
   const planLabel = (ctx.planName || pd?.planName || '').trim() || L('401(k) plan', 'plan 401(k)');
   const employer = (ctx.employerName || '').trim();

@@ -1,7 +1,7 @@
 // Sanity script for lib/videos (the data behind the 8 explainer videos).
 // Run with: npx --yes tsx scripts/check-videos.ts
 import { buildVideo, sceneSeconds, videoSeconds, VIDEO_IDS } from '../lib/videos/build';
-import { CAPTIONS, TITLES } from '../lib/videos/scripts';
+import { CAPTIONS, CHAPTERS, LEARN, TITLES, VIDEO_ORDER, VIDEO_SECTIONS } from '../lib/videos/scripts';
 import { employerMoneyAt, employerTiers, limitBars, rothRows, vestingSteps } from '../lib/plan/visuals';
 import { IRS_LIMITS } from '../lib/plan/irs-limits';
 import { getLimitYear } from '../lib/plan/irs';
@@ -98,6 +98,27 @@ check(buildVideo('tdf', null, ctxNone, 'en') !== null && buildVideo('leave', nul
 check(buildVideo('match', null, ctxFull, 'en') === null, 'no plan: match hidden');
 check(Object.keys(CAPTIONS).every((k) => CAPTIONS[k].en && CAPTIONS[k].es && !BAD.some((b) => k !== 'x' && b !== '{' && b !== '}' && (CAPTIONS[k].en + CAPTIONS[k].es).includes(b))), 'every caption has EN and ES, no dashes');
 check(sceneSeconds('one two three') === 5 && sceneSeconds(Array(26).fill('w').join(' ')) === 12, 'scene duration rule');
+
+// Chapters, learn lines, order and sections.
+for (const k of Object.keys(CAPTIONS)) check(!!CHAPTERS[k], `chapter for ${k}`);
+for (const [k, c] of Object.entries(CHAPTERS)) {
+  for (const lang of ['en', 'es'] as const) {
+    const n = c[lang].trim().split(/\s+/).length;
+    check(n >= 2 && n <= 5, `chapter ${k}/${lang} "${c[lang]}" has ${n} words`);
+    check(!BAD.some((b) => c[lang].includes(b)), `chapter ${k}/${lang} has a bad character`);
+  }
+}
+for (const id of VIDEO_IDS) {
+  check(!!LEARN[id].en && !!LEARN[id].es && !/[—–]/.test(LEARN[id].en + LEARN[id].es), `learn line ${id}`);
+  check(VIDEO_ORDER.filter((x) => x === id).length === 1, `${id} once in VIDEO_ORDER`);
+  check(VIDEO_SECTIONS.flatMap((s) => s.videos).filter((x) => x === id).length === 1, `${id} in exactly one section`);
+}
+check(VIDEO_ORDER.join() === 'welcome,limits,taxes,match,vesting,access,leave,tdf', 'VIDEO_ORDER');
+check(VIDEO_SECTIONS.map((s) => s.videos.join('+')).join('|') === 'welcome|limits+taxes|match+vesting|access|leave|tdf', 'VIDEO_SECTIONS');
+for (const lang of ['en', 'es'] as const) {
+  const v = buildVideo('limits', samples.basicSafeHarbor, ctxFull, lang)!;
+  check(v.learn === LEARN.limits[lang] && v.scenes.every((x) => x.chapter.length > 0), `${lang} video has learn line and a chapter on every scene`);
+}
 
 getNarration(basic, 'en').then((n) => {
   check(n === null, 'narration returns null until ElevenLabs is plugged in');

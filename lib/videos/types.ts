@@ -16,11 +16,15 @@ export interface Scene {
   kind: SceneKind;
   props: Record<string, unknown>;
   caption: string;
+  // Short chapter label (2 to 5 words) shown in the player's chapter list.
+  chapter: string;
 }
 
 export interface Video {
   id: VideoId;
   title: string;
+  // One line: what you'll learn.
+  learn: string;
   scenes: Scene[];
   next: { label: string; action: NextAction };
 }

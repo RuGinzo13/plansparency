@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { C, ROLE } from '../../theme';
-import { Badge, Building, Clock, Coin, Count, d, Frame, H, Jar, Lock, prefersReducedMotion, T, TONE, W, wrap, type LayerKind, type Tone } from './kit';
+import { useStill, Badge, Building, Clock, Coin, Count, d, Frame, H, Jar, Lock, prefersReducedMotion, T, TONE, W, wrap, type LayerKind, type Tone } from './kit';
 import type { SceneKind } from '@/lib/videos/types';
 
 export interface SceneProps { p: Record<string, any>; planName: string; lang: 'en' | 'es' }
@@ -298,9 +298,10 @@ export function CalendarScene({ p, planName }: SceneProps) {
 export function MixScene({ p, planName, lang }: SceneProps) {
   const from = Number(p.stocks);
   const to = p.to === undefined ? from : Number(p.to);
-  const [pct, setPct] = useState(prefersReducedMotion() ? to : from);
+  const still = useStill();
+  const [pct, setPct] = useState(prefersReducedMotion() || still ? to : from);
   useEffect(() => {
-    if (prefersReducedMotion() || to === from) return;
+    if (prefersReducedMotion() || still || to === from) return;
     const t = setTimeout(() => setPct(to), 1200);
     return () => clearTimeout(t);
   }, [from, to]);

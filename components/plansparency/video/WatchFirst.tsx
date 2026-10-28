@@ -5,7 +5,7 @@ import { C, F } from '../theme';
 import type { VideoId } from '@/lib/videos/types';
 import { videoSeconds } from '@/lib/videos/build';
 import { focusPlace, type FocusId } from '@/lib/plan/focus';
-import { setOpenVideo, useVideo, useVideoCtx } from './VideoContext';
+import { useVideo, useVideoCtx } from './VideoContext';
 
 // Which video each focus pick starts with, and which Watch button (placeKey) it opens at the place the pick goes to.
 export function focusVideo(pick: FocusId, planData: any): { id: VideoId; key: string } {
@@ -27,7 +27,7 @@ export function WatchFirst({ pick, lang, onGo }: { pick: FocusId; lang: 'en' | '
   if (!video) return null;
   const es = lang === 'es';
   return (
-    <button type="button" onClick={() => { onGo(pick); setOpenVideo(target.key); }}
+    <button type="button" onClick={(e) => { onGo(pick); c?.openVideo(target.id, { from: e.currentTarget }); }}
       style={{ minHeight: 40, borderRadius: 100, padding: '0 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: F.body, background: C.surface, color: C.accentText, border: `1px solid ${C.accentBorder}` }}>
       {es ? `▶ Ver primero · ${videoSeconds(video)} s` : `▶ Watch first · ${videoSeconds(video)} s`}
     </button>

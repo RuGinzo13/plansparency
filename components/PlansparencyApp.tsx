@@ -36,7 +36,8 @@ import type { TeamMember } from '@/lib/team';
 import { InvestmentsPanel } from '@/components/plansparency/InvestmentsPanel';
 import { PlanOverview } from '@/components/plansparency/PlanOverview';
 import { FocusStrip } from '@/components/plansparency/FocusStrip';
-import { VideoProvider } from '@/components/plansparency/video/VideoContext';
+import { VideoProvider, type TheaterState } from '@/components/plansparency/video/VideoContext';
+import { VideoTheater } from '@/components/plansparency/video/VideoTheater';
 import { WatchVideo } from '@/components/plansparency/video/WatchButton';
 import { WatchFirst } from '@/components/plansparency/video/WatchFirst';
 import { focusPlace, focusTopics, type FocusId } from '@/lib/plan/focus';
@@ -446,14 +447,24 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // What the end card button of a video does.
   const scrollToId = (id: string) => setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
   const videoAction = (action: string) => {
-    if (action === "calculator") setActiveTab("calculator");
+    if (action === "welcomeStep2") openWelcome(2);
+    else if (action === "calculator") setActiveTab("calculator");
     else if (action === "scrollVesting") { openCard("vesting"); scrollToId("visual-vesting"); }
     else if (action === "scrollLeave") { setActiveTab("dashboard"); setPlanGuideTab("guide"); setTopic("leave"); setOpenCardId("leave"); scrollToId("visual-leave"); }
     else if (action === "openLoans") openCard("loans");
     else if (action === "openHardship") openCard("hardship");
     else if (action === "investments") { setActiveTab("dashboard"); setPlanGuideTab("investments"); }
   };
-  const videoCtx = { planData, lang, info: { employerName, planName: planData?.planName, recordkeeperName: planData?.recordkeeperName, hasTeam: team.length > 0 }, onAction: (a) => videoAction(a) };
+  const [theater, setTheater] = useState<TheaterState | null>(null);
+  const [watched, setWatched] = useState<ReadonlySet<string>>(() => new Set());
+  const openVideo = (id, opts = {}) => setTheater({ id, playAll: !!opts.playAll, from: opts.from ?? null });
+  const closeVideo = () => {
+    const from = theater?.from;
+    setTheater(null);
+    setTimeout(() => { if (from && from.isConnected) from.focus(); }, 0);
+  };
+  const markWatched = (id) => setWatched((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+  const videoCtx = { planData, lang, info: { employerName, planName: planData?.planName, recordkeeperName: planData?.recordkeeperName, hasTeam: team.length > 0 }, onAction: (a) => videoAction(a), theater, openVideo, closeVideo, watched, markWatched };
   const startFocus = (picks: FocusId[]) => { setFocus(picks); setFocusCur(0); if (picks[0]) goToFocus(picks[0]); };
   const focusStrip = focus.length > 0 ? (
     <FocusStrip
@@ -771,6 +782,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           </div>
         )}
 
+        <VideoTheater />
         <style>{globalCss()}</style>
       </div>
       </VideoProvider>

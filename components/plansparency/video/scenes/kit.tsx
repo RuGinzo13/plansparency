@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { C, F } from '../../theme';
 
 // Drawing pieces shared by the scenes. Everything is drawn on a 960 x 540 stage.
@@ -13,6 +13,10 @@ export const TONE: Record<Tone, { bg: string; fg: string }> = {
   red: { bg: C.dangerSoft, fg: C.danger },
   yellow: { bg: C.warningDim, fg: C.warning },
 };
+
+// Thumbnails draw a scene in its finished state: no animation, numbers already counted.
+export const StillCtx = createContext(false);
+export const useStill = () => useContext(StillCtx);
 
 export const prefersReducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -134,9 +138,10 @@ export function Building({ x, y }: { x: number; y: number }) {
 export function Count({ value, x, y, size = 44, fill = C.text, anchor = 'start', suffix }: { value: string; x: number; y: number; size?: number; fill?: string; anchor?: 'start' | 'middle' | 'end'; suffix?: string }) {
   const m = value.match(/^(\$?)([\d,]+)(.*)$/);
   const target = m ? Number(m[2].replace(/,/g, '')) : NaN;
-  const [now, setNow] = useState(prefersReducedMotion() || !m ? target : 0);
+  const still = useStill();
+  const [now, setNow] = useState(prefersReducedMotion() || still || !m ? target : 0);
   useEffect(() => {
-    if (!m || prefersReducedMotion()) return;
+    if (!m || still || prefersReducedMotion()) return;
     const start = performance.now();
     let raf = 0;
     const tick = (t: number) => {
