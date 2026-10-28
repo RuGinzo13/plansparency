@@ -9,7 +9,8 @@ import { PlanGlance } from './PlanGlance';
 import { CardVisual } from './visuals/CardVisual';
 import { LeaveChoicesVisual } from './visuals/LeaveChoicesVisual';
 import { PreferToWatch, WatchFirstRow } from './video/WatchFirstRow';
-import type { VideoId } from '@/lib/videos/types';
+import { cardExtras, topicVideos } from '@/lib/plan/relevance';
+import type { StockId } from '@/lib/answers/stockAnswers';
 
 export type { TopicKey };
 
@@ -42,9 +43,13 @@ interface PlanOverviewProps {
   focusTopics?: ('you' | 'employer' | 'access')[];
 }
 
-// The video that belongs at the top of each answer card.
-const CARD_VIDEO: Record<string, VideoId> = { safeHarbor: 'match', match: 'match', vesting: 'vesting', roth: 'taxes', limit: 'limits' };
-
+// What "Watch first" calls each topic.
+const TOPIC_WORDS: Record<TopicKey, { en: string; es: string }> = {
+  you: { en: 'your money', es: 'tu dinero' },
+  employer: { en: 'employer money', es: 'el dinero del empleador' },
+  access: { en: 'getting to your money', es: 'cómo acceder a tu dinero' },
+  leave: { en: 'leaving a job', es: 'cuando te vas de un trabajo' },
+};
 
 // "Your plan": topic tabs, question cards that open in place, and the grouped panel.
 export function PlanOverview(p: PlanOverviewProps) {
@@ -87,14 +92,13 @@ export function PlanOverview(p: PlanOverviewProps) {
             })}
           </div>
 
-          {topic === 'you' && <WatchFirstRow ids={['limits', 'taxes']} topic={{ en: 'your money', es: 'tu dinero' }} />}
-          {topic === 'employer' && <WatchFirstRow ids={['match', 'vesting']} topic={{ en: 'employer money', es: 'el dinero del empleador' }} />}
-          {topic === 'access' && <WatchFirstRow ids={['access']} topic={{ en: 'getting to your money', es: 'cómo acceder a tu dinero' }} />}
+          <WatchFirstRow ids={topicVideos(topic, planData)} topic={TOPIC_WORDS[topic]} />
 
           {/* Cards */}
           {cards.map((c) => {
             const open = openCardId === c.id;
             const written = p.getWritten(c.id);
+            const extras = cardExtras(c.id as StockId, planData);
             return (
               <article key={c.id} id={`card-${c.id}`} style={{ borderRadius: 16, background: C.surface, border: open ? `2px solid ${C.accent}` : `1px solid ${C.border}`, scrollMarginTop: sticky.headerH + 12 }}>
                 <button type="button" aria-expanded={open} aria-controls={`card-body-${c.id}`} onClick={() => p.onToggleCard(c.id)}
@@ -105,12 +109,16 @@ export function PlanOverview(p: PlanOverviewProps) {
                 </button>
                 {open && (
                   <div id={`card-body-${c.id}`} style={{ padding: '0 20px 20px' }}>
-                    {CARD_VIDEO[c.id] && <div style={{ marginBottom: 6 }}><PreferToWatch id={CARD_VIDEO[c.id]} /></div>}
+                    {extras.video && <div style={{ marginBottom: 6 }}><PreferToWatch id={extras.video} /></div>}
                     <AnswerBody
                       written={written} ai={p.getAI(c.id)} lang={lang} stockId={c.id} review={review}
                       recordkeeper={{ name: rkName, url: rkUrl }} advisorEmail={advisor?.email}
                       errorText={p.errorText} onOpenCalculator={p.onOpenCalculator} onRetry={() => p.onRetry(c.id)}
                     >
+                      {extras.link && (
+                        <button type="button" onClick={() => p.onPickRow(topic, extras.link!.to)}
+                          style={{ minHeight: 44, padding: 0, marginBottom: 8, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 16, fontWeight: 700, color: C.accentText, textDecoration: 'underline' }}>{extras.link.text[lang]}</button>
+                      )}
                       <CardVisual id={c.id} planData={planData} lang={lang} />
                     </AnswerBody>
                   </div>
@@ -120,7 +128,6 @@ export function PlanOverview(p: PlanOverviewProps) {
           })}
 
           {/* Leave choices */}
-          {topic === 'leave' && <WatchFirstRow ids={['leave']} topic={{ en: 'leaving a job', es: 'cuando te vas de un trabajo' }} />}
           {topic === 'leave' && <LeaveChoicesVisual options={o.leaveOptions} lang={lang} />}
 
           <div style={{ fontSize: 12, color: C.textDim, paddingTop: 16, borderTop: `1px solid ${C.borderLight}` }}>{p.footer}</div>

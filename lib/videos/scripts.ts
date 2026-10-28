@@ -35,7 +35,7 @@ export const CAPTIONS: Record<string, Pair> = {
   'welcome.1': { en: 'Welcome! This is your {planName}, explained in plain words.', es: '¡Bienvenido! Este es tu {planName}, explicado en palabras simples.' },
   'welcome.2': { en: 'Your employer, {employerName}, offers this plan to help you save for later in life.', es: 'Tu empleador, {employerName}, ofrece este plan para ayudarte a ahorrar para el futuro.' },
   'welcome.3': { en: '{recordkeeperName} holds your account. That’s where you log in to see your balance or change how much you save.', es: '{recordkeeperName} guarda tu cuenta. Ahí entras para ver tu saldo o cambiar cuánto ahorras.' },
-  'welcome.4': { en: 'Pick what you want to learn first. Each topic has a short video, a picture and plain answers.', es: 'Elige qué quieres aprender primero. Cada tema tiene un video corto, una imagen y respuestas simples.' },
+  'welcome.4': { en: 'Pick what you want to learn first. Each topic has plain answers, with pictures and short videos where they help.', es: 'Elige qué quieres aprender primero. Cada tema tiene respuestas claras, con imágenes y videos cortos donde ayudan.' },
   'welcome.end': { en: 'Ready? Pick what to learn first.', es: '¿Listo? Elige qué aprender primero.' },
   // 2. Free money from your employer
   'match.1': { en: 'Your employer can add free money to your 401(k). Here’s how.', es: 'Tu empleador puede agregar dinero gratis a tu 401(k). Así funciona.' },
@@ -48,6 +48,8 @@ export const CAPTIONS: Record<string, Pair> = {
   'match.5flat': { en: 'That’s {fullEmployer} a year on $50,000 pay. You can still save more on top.', es: 'Son {fullEmployer} al año con un salario de $50,000. Aún puedes ahorrar más por tu cuenta.' },
   'match.6': { en: 'Save less, and some of that money stays on the table. You can change how much you save anytime.', es: 'Si ahorras menos, parte de ese dinero se queda sin tomar. Puedes cambiar cuánto ahorras en cualquier momento.' },
   'match.6flat': { en: 'You can add more on top. Your own savings are always yours. You can change how much you save anytime.', es: 'Puedes agregar más por tu cuenta. Tus propios ahorros siempre son tuyos. Puedes cambiar cuánto ahorras en cualquier momento.' },
+  'match.extra': { en: 'Your employer may also add an extra match. It isn’t guaranteed, so it isn’t counted here.', es: 'Tu empleador también puede agregar un match adicional. No está garantizado, así que no se cuenta aquí.' },
+  'match.extraAsk': { en: 'Ask HR about an extra match.', es: 'Pregunta a RR. HH. sobre un match adicional.' },
   'match.end': { en: 'Ready to try it with your pay?', es: '¿Listo para probarlo con tu salario?' },
   // 3. Vesting
   'vesting.1': { en: 'Is the money your employer adds yours to keep? It depends on how long you work there.', es: '¿Es tuyo el dinero que agrega tu empleador? Depende de cuánto tiempo trabajes ahí.' },
@@ -156,6 +158,8 @@ export const CHAPTERS: Record<string, Pair> = {
   'match.5flat': { en: 'What you get each year', es: 'Lo que recibes al año' },
   'match.6': { en: 'Save less, miss out', es: 'Ahorra menos, pierdes' },
   'match.6flat': { en: 'Add more on top', es: 'Agrega más por tu cuenta' },
+  'match.extra': { en: 'An extra match', es: 'Un match adicional' },
+  'match.extraAsk': { en: 'Ask about an extra match', es: 'Pregunta por un match extra' },
   'match.end': { en: 'Try it with your pay', es: 'Pruébalo con tu salario' },
   'vesting.1': { en: 'Is it yours to keep?', es: '¿Es tuyo?' },
   'vesting.2': { en: 'Your savings are yours', es: 'Tus ahorros son tuyos' },

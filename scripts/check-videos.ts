@@ -39,7 +39,7 @@ for (const [name, pd] of Object.entries(samples)) {
         limits: limitBars(pd) === null,
         access: !(pd.loanAvailable === true || pd.hardshipAvailable === true),
         leave: false,
-        tdf: false,
+        tdf: !(pd.fundsData ?? []).some((f: any) => f?.category === 'Target Date'),
       };
       check((v === null) === expectHidden[id], `${name}/${lang}/${id}: hidden=${v === null}, storyboard says hidden=${expectHidden[id]}`);
       if (!v) continue;
@@ -94,7 +94,9 @@ const graded = mk({ vestingSchedule: '0% at 0-1 year, 20% after 2 years, 40% aft
 const gv = buildVideo('vesting', graded, ctxFull, 'en');
 check(!!gv && gv.scenes.length === 6 && gv.scenes[3].kind === 'steps' && /^You own 20% more each year from year 2/.test(gv.scenes[3].caption) && /^Leave after 3 years, and you keep 40% /.test(gv.scenes[4].caption), `graded vesting video: ${gv?.scenes.map((x) => x.caption).join(' | ')}`);
 check(buildVideo('vesting', samples.immediateMatch, ctxFull, 'en')!.scenes.some((s) => s.caption.includes('100% yours right away')), 'immediate vesting video');
-check(buildVideo('tdf', null, ctxNone, 'en') !== null && buildVideo('leave', null, ctxNone, 'es') !== null, 'general videos need no plan data');
+check(buildVideo('welcome', null, ctxNone, 'en') !== null && buildVideo('leave', null, ctxNone, 'es') !== null, 'general videos need no plan data');
+check(buildVideo('tdf', null, ctxNone, 'en') === null && buildVideo('tdf', samples.noMatch, ctxFull, 'en') === null, 'tdf is hidden without a Target Date fund');
+check(buildVideo('tdf', { ...samples.noMatch, fundsData: [{ name: 'Target 2060', category: 'Target Date' }] as any }, ctxFull, 'en') !== null, 'tdf shows with a Target Date fund');
 check(buildVideo('match', null, ctxFull, 'en') === null, 'no plan: match hidden');
 check(Object.keys(CAPTIONS).every((k) => CAPTIONS[k].en && CAPTIONS[k].es && !BAD.some((b) => k !== 'x' && b !== '{' && b !== '}' && (CAPTIONS[k].en + CAPTIONS[k].es).includes(b))), 'every caption has EN and ES, no dashes');
 check(sceneSeconds('one two three') === 5 && sceneSeconds(Array(26).fill('w').join(' ')) === 12, 'scene duration rule');

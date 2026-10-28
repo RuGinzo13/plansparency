@@ -5,12 +5,13 @@
 
 import { ageText, type PlanData } from './plandata';
 import { questionLabel, type StockId } from '../answers/stockAnswers';
-import { has, facts, tierText, vestingParts, parseVesting, FULL_MATCH_PCT, STANDARD_FORMULA } from './planFacts';
+import { has, facts, tierText, vestingParts, parseVesting, matchMaxPct, FULL_MATCH_PCT, STANDARD_FORMULA } from './planFacts';
 import { safeHarborAmount } from './calc';
 import { IRS_LIMITS } from './irs-limits';
 import { getLimitYear } from './irs';
 import { fmtRounded } from '../format';
 import { unsureKeys } from './unsure';
+import { pillKindFor, TOPIC_CARDS, type CardKind } from './relevance';
 
 type Lang = 'en' | 'es';
 
@@ -81,7 +82,7 @@ export function getOverviewLegacy(
       employer = { key: 'employer', label, value: L('3% of pay', '3% del salario'), sub: L("Guaranteed, even if you don't save", 'Garantizado, aunque no ahorres') };
     } else if (f.type !== 'qaca' && f.type === 'none') {
       if (f.disc) {
-        const x = f.tiers.reduce((sum, t) => sum + (t.pct * t.upTo) / 100, 0);
+        const x = matchMaxPct(f.tiers);
         employer = { key: 'employer', label, value: L(`Up to ${num(x)}% of pay`, `Hasta ${num(x)}% del salario`), sub: L('Not guaranteed. Your employer decides each year.', 'No está garantizado. Tu empleador decide cada año.') };
       } else if (pd.noMatch === true) {
         employer = { key: 'employer', label, value: L('No match', 'Sin match'), sub: L('Your savings still get tax benefits', 'Tus ahorros igual tienen beneficios fiscales') };
@@ -339,9 +340,9 @@ export function getOverviewLegacy(
 
 // ── New shape: panel groups + one card per question (PHASE-16) ───────────────
 export type TopicKey = 'you' | 'employer' | 'access' | 'leave';
-export interface PanelRow { label: string; value: string; card: StockId }
+export interface PanelRow { label: string; value: string; card: StockId; kind: CardKind }
 export interface PanelGroup { topic: 'you' | 'employer' | 'access'; label: string; rows: PanelRow[] }
-export interface PlanCard { id: StockId; question: string; fact: string; tone: 'good' | 'neutral'; stockId: StockId }
+export interface PlanCard { id: StockId; question: string; fact: string; tone: 'good' | 'neutral'; stockId: StockId; kind: CardKind }
 export interface Overview {
   groups: PanelGroup[];
   topics: Record<TopicKey, PlanCard[]>;
@@ -385,7 +386,7 @@ export function getOverview(
   let matchValue = tap;
   if (pd && f && unsure.has('match')) matchValue = askHr;
   else if (pd && f) {
-    if (f.disc) matchValue = upTo(f.tiers.reduce((sum, t) => sum + (t.pct * t.upTo) / 100, 0));
+    if (f.disc) matchValue = upTo(matchMaxPct(f.tiers));
     else if (f.safeHarbor) matchValue = L('No, safe harbor only', 'No, solo safe harbor');
     else if (pd.noMatch === true) matchValue = no;
   }
@@ -397,29 +398,30 @@ export function getOverview(
   const catchUpValue = catchUp === true ? L(`Yes, up to ${fmtRounded(limits.catchUp50)} (${fmtRounded(limits.catchUp6063)} at ages 60 to 63)`, `Sí, hasta ${fmtRounded(limits.catchUp50)} (${fmtRounded(limits.catchUp6063)} entre los 60 y 63 años)`) : catchUp === false ? no : tap;
   const deferral = fmtRounded(limits.deferral);
 
+  const row = (label: string, value: string, card: StockId): PanelRow => ({ label, value, card, kind: pillKindFor(card, pd) });
   const groups: PanelGroup[] = [
     {
       topic: 'you', label: L('Your money', 'Tu dinero'),
       rows: [
-        { label: L("When you're eligible", 'Cuándo eres elegible'), value: req ?? tap, card: 'elig' },
-        { label: L(`${year} savings limit`, `Límite de ahorro de ${year}`), value: deferral, card: 'limit' },
-        { label: L('Catch-up (age 50+)', 'Catch-up (50+ años)'), value: catchUpValue, card: 'limit' },
+        row(L("When you're eligible", 'Cuándo eres elegible'), req ?? tap, 'elig'),
+        row(L(`${year} savings limit`, `Límite de ahorro de ${year}`), deferral, 'limit'),
+        row(L('Catch-up (age 50+)', 'Catch-up (50+ años)'), catchUpValue, 'limit'),
       ],
     },
     {
       topic: 'employer', label: L('Employer money', 'Dinero del empleador'),
       rows: [
-        { label: 'Safe harbor', value: safeHarborValue, card: 'safeHarbor' },
-        { label: L('Employer match', 'Match del empleador'), value: matchValue, card: 'match' },
-        { label: 'Profit sharing', value: profitValue, card: 'profit' },
+        row('Safe harbor', safeHarborValue, 'safeHarbor'),
+        row(L('Employer match', 'Match del empleador'), matchValue, 'match'),
+        row('Profit sharing', profitValue, 'profit'),
       ],
     },
     {
       topic: 'access', label: L('Access my money', 'Acceso a tu dinero'),
       rows: [
-        { label: L('Loans', 'Préstamos'), value: yn(pd?.loanAvailable), card: 'loans' },
-        { label: L('Hardships', 'Retiros por dificultad'), value: yn(pd?.hardshipAvailable), card: 'hardship' },
-        { label: L('In-service withdrawal', 'Retiro en servicio'), value: inServiceValue, card: 'inService' },
+        row(L('Loans', 'Préstamos'), yn(pd?.loanAvailable), 'loans'),
+        row(L('Hardships', 'Retiros por dificultad'), yn(pd?.hardshipAvailable), 'hardship'),
+        row(L('In-service withdrawal', 'Retiro en servicio'), inServiceValue, 'inService'),
       ],
     },
   ];
@@ -429,7 +431,7 @@ export function getOverview(
   const yearsToFull = parsed && parsed.kind === 'schedule' ? parsed.byYear.length - 1 : null;
   const shImmediate = !!f && f.safeHarbor && pd!.safeHarbor.vestingImmediate !== false;
   let vestingFact = tap;
-  if (pd && f && (f.safeHarbor || f.disc || f.profit)) {
+  if (pd && f && pillKindFor('vesting', pd) === 'yes') {
     if (shImmediate) vestingFact = L('Right away', 'De inmediato');
     else if (parsed?.kind === 'schedule') vestingFact = L(`After ${yearsToFull} years`, `Después de ${yearsToFull} años`);
     else if (parsed?.kind === 'immediate') vestingFact = L('Right away', 'De inmediato');
@@ -444,14 +446,16 @@ export function getOverview(
   const leaveFact = L('Your savings go with you', 'Tus ahorros se van contigo') + (f && f.safeHarbor ? L(', and your safe harbor money', ', y tu dinero safe harbor') : '');
 
   const good = (v: string) => /^(Yes|Sí|Right away|De inmediato|Your plan offers both|Tu plan ofrece ambas|Your savings|Tus ahorros)/.test(v);
-  const card = (id: StockId, fact: string, tone?: 'good' | 'neutral'): PlanCard => ({ id, stockId: id, question: questionLabel(id, lang), fact, tone: tone ?? (good(fact) ? 'good' : 'neutral') });
+  const card = (id: StockId, fact: string, tone?: 'good' | 'neutral'): PlanCard => ({ id, stockId: id, question: questionLabel(id, lang), fact, tone: tone ?? (good(fact) ? 'good' : 'neutral'), kind: pillKindFor(id, pd) });
 
-  const topics: Record<TopicKey, PlanCard[]> = {
-    you: [card('elig', req ?? tap, 'neutral'), card('limit', deferral, 'neutral'), card('roth', rothFact)],
-    employer: [card('safeHarbor', safeHarborValue), card('match', matchValue), card('profit', profitValue), card('vesting', vestingFact)],
-    access: [card('loans', yn(pd?.loanAvailable)), card('hardship', yn(pd?.hardshipAvailable)), card('inService', unsure.has('inService') ? askHr : tap, 'neutral')],
-    leave: [card('leave', leaveFact, 'good')],
+  // One card per question, in the order lib/plan/relevance.ts lists them.
+  const byId: Record<StockId, PlanCard> = {
+    elig: card('elig', req ?? tap, 'neutral'), limit: card('limit', deferral, 'neutral'), roth: card('roth', rothFact),
+    safeHarbor: card('safeHarbor', safeHarborValue), match: card('match', matchValue), profit: card('profit', profitValue), vesting: card('vesting', vestingFact),
+    loans: card('loans', yn(pd?.loanAvailable)), hardship: card('hardship', yn(pd?.hardshipAvailable)), inService: card('inService', unsure.has('inService') ? askHr : tap, 'neutral'),
+    leave: card('leave', leaveFact, 'good'),
   };
+  const topics = Object.fromEntries((Object.keys(TOPIC_CARDS) as TopicKey[]).map((k) => [k, TOPIC_CARDS[k].map((id) => byId[id])])) as Record<TopicKey, PlanCard[]>;
 
   // Vesting bars and leave choices come from the same builder as before.
   const base = getOverviewLegacy(pdIn, lang, { hasFunds: false });

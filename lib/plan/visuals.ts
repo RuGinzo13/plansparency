@@ -4,7 +4,7 @@
 // picture ("In words") are built here too, from the same numbers.
 
 import type { PlanData } from './plandata';
-import { has, facts, vestingParts, parseVesting } from './planFacts';
+import { has, facts, vestingParts, parseVesting, matchCounts, matchAmount } from './planFacts';
 import { safeHarborAmount } from './calc';
 import { IRS_LIMITS } from './irs-limits';
 import { getLimitYear } from './irs';
@@ -22,48 +22,46 @@ export interface EmployerTier {
   to: number; // percent of pay where this tier stops
 }
 
-// The match steps of the plan's main match (safe harbor match first, else the discretionary tiers).
+// Which employer money a picture, video or total is about. 'all' is for the calculator only.
+export type MoneySource = 'safeHarbor' | 'match' | 'all';
+
+const FIXED_TIERS: Record<string, EmployerTier[]> = {
+  basic_match: [{ rate: 100, from: 0, to: 3 }, { rate: 50, from: 3, to: 5 }],
+  enhanced_match: [{ rate: 100, from: 0, to: 4 }],
+  qaca: [{ rate: 100, from: 0, to: 1 }, { rate: 50, from: 1, to: 6 }],
+};
+
+function matchSteps(pd: PlanData): EmployerTier[] {
+  const tiers: EmployerTier[] = [];
+  if (!matchCounts(pd)) return tiers;
+  let at = 0;
+  for (const t of facts(pd).tiers) {
+    if (!Number.isFinite(t.pct) || !Number.isFinite(t.upTo) || t.upTo <= 0 || t.pct < 0) continue;
+    tiers.push({ rate: t.pct, from: at, to: at + t.upTo });
+    at += t.upTo;
+  }
+  return tiers;
+}
+
+// The match steps of one money source. 'safeHarbor' = the guaranteed money only, 'match' = the extra match only
+// (skipped when the plan reader wasn't sure of it). 'all' = the safe harbor match if there is one, else the extra match.
 // A nonelective safe harbor has no steps: flatPct is the percent of pay added whatever you save.
-export function employerTiers(pd: PlanData): { tiers: EmployerTier[]; flatPct: number } | null {
+export function employerTiers(pd: PlanData, source: MoneySource = 'all'): { tiers: EmployerTier[]; flatPct: number } | null {
   if (!pd || typeof pd !== 'object') return null;
   const f = facts(pd);
-  const fixed: Record<string, EmployerTier[]> = {
-    basic_match: [{ rate: 100, from: 0, to: 3 }, { rate: 50, from: 3, to: 5 }],
-    enhanced_match: [{ rate: 100, from: 0, to: 4 }],
-    qaca: [{ rate: 100, from: 0, to: 1 }, { rate: 50, from: 1, to: 6 }],
-  };
-  if (f.shMatch && fixed[f.type]) return { tiers: fixed[f.type], flatPct: f.nonelective ? 3 : 0 };
-  const tiers: EmployerTier[] = [];
-  if (f.disc) {
-    let at = 0;
-    for (const t of f.tiers) {
-      if (!Number.isFinite(t.pct) || !Number.isFinite(t.upTo) || t.upTo <= 0 || t.pct < 0) continue;
-      tiers.push({ rate: t.pct, from: at, to: at + t.upTo });
-      at += t.upTo;
-    }
-  }
-  if (f.nonelective) return { tiers, flatPct: 3 };
+  const sh = source !== 'match';
+  const mt = source !== 'safeHarbor';
+  if (sh && f.shMatch && FIXED_TIERS[f.type]) return { tiers: FIXED_TIERS[f.type], flatPct: 0 };
+  const tiers = mt ? matchSteps(pd) : [];
+  if (sh && f.nonelective) return { tiers, flatPct: 3 };
   return tiers.length > 0 ? { tiers, flatPct: 0 } : null;
 }
 
-function discretionaryAt(pd: PlanData, pay: number, pct: number): number {
+function employerOnly(pd: PlanData, pay: number, pct: number, source: MoneySource): number {
   const f = facts(pd);
-  if (!f.disc) return 0;
-  let at = 0;
-  let sum = 0;
-  for (const t of f.tiers) {
-    if (!Number.isFinite(t.pct) || !Number.isFinite(t.upTo) || t.upTo <= 0 || t.pct < 0) continue;
-    const inTier = Math.max(0, Math.min(pct - at, t.upTo));
-    sum += (pay * inTier / 100) * (t.pct / 100);
-    at += t.upTo;
-  }
-  return sum;
-}
-
-function employerOnly(pd: PlanData, pay: number, pct: number): number {
-  const f = facts(pd);
-  const sh = f.safeHarbor ? safeHarborAmount(f.type, pay, pct) : 0;
-  return sh + discretionaryAt(pd, pay, pct);
+  const sh = source !== 'match' && f.safeHarbor ? safeHarborAmount(f.type, pay, pct) : 0;
+  const mt = source !== 'safeHarbor' && matchCounts(pd) ? matchAmount(f.tiers, pay, pct) : 0;
+  return sh + mt;
 }
 
 export interface EmployerMoney {
@@ -73,20 +71,19 @@ export interface EmployerMoney {
   pctForFull: number;
 }
 
-// Yearly employer money at `pct`% of pay. Safe harbor uses the calculator's own safeHarborAmount;
-// the extra match adds up the plan's tiers. Profit sharing is left out (it isn't tied to what you save).
-export function employerMoneyAt(pd: PlanData | null, pct: number, pay: number = EXAMPLE_PAY): EmployerMoney | null {
+// Yearly employer money at `pct`% of pay, for one source. Safe harbor uses the calculator's own safeHarborAmount;
+// the extra match uses the same matchAmount the calculator uses, so both screens show the same dollars.
+// Profit sharing is left out (it isn't tied to what you save).
+export function employerMoneyAt(pd: PlanData | null, pct: number, pay: number = EXAMPLE_PAY, source: MoneySource = 'all'): EmployerMoney | null {
   if (!pd || typeof pd !== 'object' || !Number.isFinite(pct) || !Number.isFinite(pay) || pay <= 0) return null;
-  const f = facts(pd);
-  if (!f.safeHarbor && !f.disc) return null;
-  const fullEmployer = employerOnly(pd, pay, 100);
+  const fullEmployer = employerOnly(pd, pay, 100, source);
   if (!(fullEmployer > 0)) return null;
   let pctForFull = 100;
   for (let p = 0; p <= 100; p++) {
-    if (employerOnly(pd, pay, p) >= fullEmployer - 1e-6) { pctForFull = p; break; }
+    if (employerOnly(pd, pay, p, source) >= fullEmployer - 1e-6) { pctForFull = p; break; }
   }
   const p = Math.max(0, pct);
-  const employer = Math.min(employerOnly(pd, pay, p), fullEmployer);
+  const employer = Math.min(employerOnly(pd, pay, p, source), fullEmployer);
   return { you: (pay * p) / 100, employer, fullEmployer, pctForFull };
 }
 
@@ -96,8 +93,8 @@ export function rateMoney(rate: number): string {
 }
 
 // The match in plain words, one phrase per step ("$1 for every $1 you save, up to 3% of your pay").
-export function matchPhrases(pd: PlanData | null, lang: Lang = 'en'): { phrases: string[]; flat: string | null } | null {
-  const t = pd ? employerTiers(pd) : null;
+export function matchPhrases(pd: PlanData | null, lang: Lang = 'en', source: MoneySource = 'all'): { phrases: string[]; flat: string | null } | null {
+  const t = pd ? employerTiers(pd, source) : null;
   if (!t) return null;
   const L = pick(lang);
   const money = rateMoney;

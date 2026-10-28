@@ -4,6 +4,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { C, F, LAYOUT } from './theme';
 import { calculatorResult } from '@/lib/plan/calc';
+import { matchCounts } from '@/lib/plan/planFacts';
+import { unsureKeys } from '@/lib/plan/unsure';
 import { getLimitYear, IRS_LIMITS } from '@/lib/plan/irs';
 import { fmtRounded, fmtDollars } from '@/lib/format';
 import { getTerm } from '@/lib/glossary';
@@ -93,7 +95,9 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
 
   const sh = planData?.safeHarbor;
   const hasSH = sh && sh.type !== "none";
-  const hasDiscretionaryMatch = !(planData?.noMatch ?? true);
+  // The extra match counts only when the plan has one we are sure about (same rule as the Your plan cards).
+  const hasDiscretionaryMatch = matchCounts(planData);
+  const matchUnsure = unsureKeys(planData).has("match");
   const hasRoth = planData?.hasRoth ?? planData?.rothAvailable ?? false;
   const hasPreTax = planData?.hasPreTax ?? null;
   const planAllowsCatchUp = planData?.planAllowsCatchUp ?? true;
@@ -117,6 +121,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     plan: {
       safeHarborType: sh?.type || "none",
       hasDiscretionaryMatch,
+      matchTiers: hasDiscretionaryMatch ? planData.matchTiers : [],
       hasRoth,
       hasPreTax,
       planAllowsCatchUp,
@@ -159,7 +164,7 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
     matchHint = pct < topOutPct
       ? tpl(t.calc2MatchStopsHint, { x: topOutPct, pct })
       : tpl(t.calc2MatchFullHint, { x: topOutPct });
-  } else if (hasDiscretionaryMatch) {
+  } else if (hasDiscretionaryMatch || matchUnsure) {
     matchHint = t.calc2MatchDiscretionaryHint;
   } else {
     matchHint = t.calc2MatchNoneHint;
@@ -563,8 +568,8 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
   // ── Card 4, Result ──
   const ResultCard = (
     <div style={card}>
-      <ResultAnnouncer text={`${hasSH ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly} ${fmtRounded(r.total)} ${t.calc2PerYear}. ${t.calc2PerPaycheckLabel} ${fmtDollars(r.perPaycheck)}`} />
-      <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 4 }}>{hasSH ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly}</div>
+      <ResultAnnouncer text={`${hasSH || hasDiscretionaryMatch ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly} ${fmtRounded(r.total)} ${t.calc2PerYear}. ${t.calc2PerPaycheckLabel} ${fmtDollars(r.perPaycheck)}`} />
+      <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 4 }}>{hasSH || hasDiscretionaryMatch ? t.calc2ResultLabelBoth : t.calc2ResultLabelYouOnly}</div>
       <div style={{ fontFamily: F.display, fontSize: wide ? 64 : 48, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums" }}>
         {fmtRounded(r.total)} <span style={{ fontSize: 16, fontWeight: 500, color: C.textMuted }}>{t.calc2PerYear}</span>
       </div>
@@ -580,14 +585,23 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
       </div>
       {hasSH && (
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginBottom: 4 }}>
-          <span>{t.calc2FromEmployer}</span>
-          <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtRounded(r.employer)}</span>
+          <span>{t.calc2FromSafeHarbor}</span>
+          <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtRounded(r.safeHarbor)}</span>
         </div>
       )}
       {hasDiscretionaryMatch && (
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.text, marginBottom: 4 }}>
+          <span>{t.calc2FromMatch}</span>
+          <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtRounded(r.match)}</span>
+        </div>
+      )}
+      {matchUnsure && (
+        <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, lineHeight: 1.4 }}>{t.calc2AskHrMatch}</div>
+      )}
+      {planData?.matchKind === "discretionary" && !hasDiscretionaryMatch && !matchUnsure && (
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, lineHeight: 1.4 }}>{t.calc2DiscretionaryExtra}</div>
       )}
-      {!hasSH && !hasDiscretionaryMatch && (
+      {!hasSH && !hasDiscretionaryMatch && !matchUnsure && (
         <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, lineHeight: 1.4 }}>{t.calc2NoEmployerMoney}</div>
       )}
       {r.overTotalLimit && (
@@ -641,7 +655,15 @@ export function CalcPanel({ t, planData, lang, onOpenEligibility }) {
       body: getTerm("discretionaryMatch", lang).def + (lastDayProvision ? " " + t.calc2LastDayNote : ""),
     });
   }
-  if (!hasSH && !hasDiscretionaryMatch) {
+  if (matchUnsure) {
+    infoRows.push({
+      key: "matchUnsure",
+      title: t.calc2RowDiscretionaryTitle,
+      chip: { label: t.calc2ChipAskHr, bg: C.warningDim, fg: C.warning },
+      body: t.calc2AskHrMatch,
+    });
+  }
+  if (!hasSH && !hasDiscretionaryMatch && !matchUnsure) {
     infoRows.push({
       key: "none",
       title: t.calc2RowNoneTitle,

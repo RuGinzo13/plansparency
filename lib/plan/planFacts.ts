@@ -3,7 +3,8 @@
 // and how vesting applies. Used by the stock answers and by the plan screens, so
 // the two never disagree.
 
-import type { PlanData } from './plandata';
+import type { PlanData, MatchTier } from './plandata';
+import { unsureKeys } from './unsure';
 
 export const has = (s: unknown): s is string => typeof s === 'string' && s.trim().length > 0;
 
@@ -116,4 +117,30 @@ export function parseVesting(text: string | null | undefined): ParsedVesting | n
     if (seen.has(y)) prev = byYear[y]; else byYear[y] = prev;
   }
   return { kind: 'schedule', byYear };
+}
+
+
+// ── The extra (discretionary) match ──────────────────────────────────────────
+// True when the plan has an extra match we are sure about. An unsure match (see unsure.ts) is never counted.
+export const matchCounts = (pd: PlanData): boolean => facts(pd).disc && !unsureKeys(pd).has('match');
+
+const validTier = (t: MatchTier) => Number.isFinite(t.pct) && Number.isFinite(t.upTo) && t.upTo > 0 && t.pct >= 0;
+const tierCap = (t: MatchTier) => (typeof t.cap === 'number' && Number.isFinite(t.cap) ? t.cap : Infinity);
+
+// Yearly match money at `pct`% of pay. Each tier adds pct% of what you save in its slice, never more than its cap (% of pay).
+export function matchAmount(tiers: MatchTier[], pay: number, pct: number): number {
+  let at = 0;
+  let sum = 0;
+  for (const t of Array.isArray(tiers) ? tiers : []) {
+    if (!validTier(t)) continue;
+    const inTier = Math.max(0, Math.min(pct - at, t.upTo));
+    sum += Math.min((pay * inTier / 100) * (t.pct / 100), (pay * tierCap(t)) / 100);
+    at += t.upTo;
+  }
+  return sum;
+}
+
+// The most the match adds, as a percent of pay ("Adds up to X% of pay").
+export function matchMaxPct(tiers: MatchTier[]): number {
+  return (Array.isArray(tiers) ? tiers : []).filter(validTier).reduce((sum, t) => sum + Math.min((t.pct * t.upTo) / 100, tierCap(t)), 0);
 }

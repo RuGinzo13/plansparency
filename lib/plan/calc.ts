@@ -3,6 +3,8 @@
 // contribution/safe-harbor math is type-checked (the UI file keeps @ts-nocheck).
 
 import { getIRSLimitsForAge, type IRSLimits } from './irs';
+import { matchAmount } from './planFacts';
+import type { MatchTier } from './plandata';
 
 export type SafeHarborType =
   | 'none'
@@ -45,6 +47,8 @@ export function safeHarborAmount(
 export interface CalculatorPlanInput {
   safeHarborType: SafeHarborType;
   hasDiscretionaryMatch: boolean;
+  // The extra match tiers to count (empty when there is none or the plan reader wasn't sure of it)
+  matchTiers?: MatchTier[];
   hasRoth: boolean | null;
   hasPreTax: boolean | null;
   planAllowsCatchUp: boolean | null;
@@ -105,7 +109,10 @@ export interface CalculatorResult {
   pctToMax: number | null;
   payForEmployer: number;
   effectivePct: number;
+  // Employer money = safeHarbor (required every year) + match (the employer can change it)
   employer: number;
+  safeHarbor: number;
+  match: number;
   total: number;
   catchUpUsed: number;
   overTotalLimit: boolean;
@@ -179,7 +186,9 @@ export function calculatorResult({
 
   const payForEmployer = Math.min(payThisYear, limits.compLimit);
   const effectivePct = wanted > 0 ? pct * (you / wanted) : 0;
-  const employer = safeHarborAmount(plan.safeHarborType, payForEmployer, effectivePct);
+  const safeHarbor = safeHarborAmount(plan.safeHarborType, payForEmployer, effectivePct);
+  const match = plan.hasDiscretionaryMatch ? matchAmount(plan.matchTiers ?? [], payForEmployer, effectivePct) : 0;
+  const employer = safeHarbor + match;
 
   const total = you + employer;
   const catchUpUsed = Math.max(0, you - deferral);
@@ -230,6 +239,8 @@ export function calculatorResult({
     payForEmployer,
     effectivePct,
     employer,
+    safeHarbor,
+    match,
     total,
     catchUpUsed,
     overTotalLimit,

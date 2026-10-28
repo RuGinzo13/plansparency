@@ -736,7 +736,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         </Modal>}
 
         {welcomeOpen && <WelcomeDialog
-          employerName={employerName} planName={planData?.planName || ""}
+          employerName={employerName} planName={planData?.planName || ""} planData={planData}
           recordkeeperName={planData?.recordkeeperName || ""} recordkeeperUrl={typeof planData?.recordkeeperUrl === "string" ? planData.recordkeeperUrl : ""}
           team={team} lang={lang} t={t} onClose={closeWelcome} onOpenTeam={() => setActiveTab("team")}
           initialStep={welcomeStep} initialPicks={focus}

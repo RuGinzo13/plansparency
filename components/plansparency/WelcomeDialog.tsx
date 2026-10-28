@@ -5,13 +5,16 @@ import { C, F } from './theme';
 import { Modal } from './ui';
 import { TeamAvatar } from './TeamAvatar';
 import type { TeamMember } from '@/lib/team';
-import { FOCUS_CHOICES, MAX_FOCUS, type FocusId } from '@/lib/plan/focus';
+import { focusChoicesFor, MAX_FOCUS, type FocusId } from '@/lib/plan/focus';
+import type { PlanData } from '@/lib/plan/plandata';
 import { FocusIcon } from './FocusIcon';
 import { WatchFirstRow } from './video/WatchFirstRow';
 
 interface Props {
   employerName: string;
   planName: string;
+  // The plan details, so only topics that apply to this plan are listed.
+  planData?: PlanData | null;
   recordkeeperName: string;
   recordkeeperUrl: string;
   team: TeamMember[];
@@ -36,7 +39,7 @@ const ddName = { margin: '4px 0 0', fontSize: 18, fontWeight: 700, color: C.text
 const ddSub = { margin: '4px 0 0', fontSize: 14, lineHeight: 1.5, color: C.textMuted } as const;
 
 // Shown over the plan when an employee first opens it: who the employer is and where the account lives.
-export function WelcomeDialog({ employerName, planName, recordkeeperName, recordkeeperUrl, team, lang, t, onClose, onOpenTeam, initialStep = 1, initialPicks = [], onFocus, onSkip }: Props) {
+export function WelcomeDialog({ employerName, planName, planData = null, recordkeeperName, recordkeeperUrl, team, lang, t, onClose, onOpenTeam, initialStep = 1, initialPicks = [], onFocus, onSkip }: Props) {
   const es = lang === 'es';
   const L = (en: string, esText: string) => (es ? esText : en);
   const [hide, setHide] = useState(false);
@@ -127,13 +130,13 @@ export function WelcomeDialog({ employerName, planName, recordkeeperName, record
         <div style={{ paddingRight: 40 }}>
           {progress(2)}
           <h2 id="welcome-title" ref={step2Heading} tabIndex={-1} style={{ margin: 0, fontFamily: F.display, fontSize: 32, fontWeight: 700, lineHeight: 1.1, color: C.text }}>{L('What do you want to understand first?', '¿Qué quieres entender primero?')}</h2>
-          <p style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.5, color: C.textMuted }}>{L('Pick up to 3. We’ll start there. You can change this anytime.', 'Elige hasta 3. Empezaremos por ahí. Puedes cambiarlo en cualquier momento.')}</p>
+          <p style={{ margin: '10px 0 0', fontSize: 16, lineHeight: 1.5, color: C.textMuted }}>{L('Pick up to 3. We’ll start there. You can change this anytime. Only topics that apply to your plan are listed.', 'Elige hasta 3. Empezaremos por ahí. Puedes cambiarlo en cualquier momento. Solo aparecen los temas que aplican a tu plan.')}</p>
         </div>
 
         <fieldset style={{ border: 'none', margin: 0, padding: 0, minWidth: 0 }}>
           <legend className="sr-only">{L('Pick up to 3 things to learn first', 'Elige hasta 3 cosas para aprender primero')}</legend>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 10 }}>
-            {FOCUS_CHOICES.map((c) => {
+            {focusChoicesFor(planData).map((c) => {
               const on = picks.includes(c.id);
               const blocked = full && !on;
               return (

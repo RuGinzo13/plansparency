@@ -4,6 +4,9 @@
 
 import type { PlanData } from '../plan/plandata';
 import { fmtRounded } from '../format';
+import { facts } from '../plan/planFacts';
+import { unsureKeys } from '../plan/unsure';
+import { matchVideoOwner } from '../plan/relevance';
 import { getLimitYear } from '../plan/irs';
 import {
   employerMoneyAt, employerTiers, matchPhrases, rateMoney, vestingSteps, vestingWords, limitBars, rothRows, EXAMPLE_PAY,
@@ -77,9 +80,15 @@ function make(id: VideoId, pd: PlanData | null, ctx: VideoContextInfo, lang: Lan
 
     case 'match': {
       if (!pd) return null;
-      const em = employerMoneyAt(pd, 0);
-      const t = employerTiers(pd);
-      const phrases = matchPhrases(pd, lang);
+      // One money source: the safe harbor (guaranteed) when it owns the video, else the extra match. Totals never mix them.
+      const source = matchVideoOwner(pd);
+      if (!source) return null;
+      const em = employerMoneyAt(pd, 0, EXAMPLE_PAY, source);
+      const t = employerTiers(pd, source);
+      const phrases = matchPhrases(pd, lang, source);
+      // An extra match next to the safe harbor is not counted; if the plan reader wasn't sure of it, say to ask HR.
+      const extra = source === 'safeHarbor' && facts(pd).disc ? (unsureKeys(pd).has('match') ? 'match.extraAsk' : 'match.extra') : null;
+      const extraScene = () => { if (extra) add('callout', { tone: 'yellow', text: extra === 'match.extra' ? L('Extra match: not guaranteed', 'Match extra: no garantizado') : L('Ask HR about an extra match', 'Pregunta a RR. HH. por un match extra') }, extra); };
       if (!em || !t || !phrases) return null;
       const full = fmtRounded(em.fullEmployer);
       const youAtFull = fmtRounded((EXAMPLE_PAY * em.pctForFull) / 100);
@@ -89,12 +98,13 @@ function make(id: VideoId, pd: PlanData | null, ctx: VideoContextInfo, lang: Lan
         add('employer', { variant: 'building', name: employerCap, big: full, bigSub: ART.yearlyCounter[lang], flat: true, jar: ART.jarYour401k[lang] }, 'match.3flat', { employerName: employerCap, fullEmployer: full });
         add('bars', { a: { label: ART.youSave[lang], value: fmtRounded(0), frac: 0 }, b: { label: ART.employerAdds[lang], value: full, frac: 1 }, note: ART.everyYear[lang] }, 'match.5flat', { fullEmployer: full });
         add('jar', { layers: ['you', 'you', 'employer'], box: { tone: 'green', text: L('You can add more on top. Your own savings are always yours.', 'Puedes agregar más por tu cuenta. Tus propios ahorros siempre son tuyos.') } }, 'match.6flat');
+        extraScene();
         return end(next, 'calculator');
       }
       const t1 = t.tiers[0];
       const tier1Pct = Math.round((t1.to - t1.from) * 100) / 100;
       const youAtTier1 = fmtRounded((EXAMPLE_PAY * tier1Pct) / 100);
-      const atTier1 = employerMoneyAt(pd, t1.to)!.employer - employerMoneyAt(pd, 0)!.employer;
+      const atTier1 = employerMoneyAt(pd, t1.to, EXAMPLE_PAY, source)!.employer - employerMoneyAt(pd, 0, EXAMPLE_PAY, source)!.employer;
       add('paycheck', { pct: tier1Pct, counter: { label: ART.you[lang], value: youAtTier1, suffix: ART.yearlyCounter[lang] } }, 'match.2', { tier1Pct, youAtTier1 });
       const tier1Vars = { employerName: employerCap, tier1Words: phrases.phrases[0], flatWords: phrases.flat ?? undefined };
       add('employer', { variant: 'building', name: employerCap, big: `${rateMoney(t1.rate)} ${L('for', 'por')} $1`, counter: { label: L('Employer adds', 'El empleador agrega'), value: fmtRounded(atTier1), suffix: ART.yearlyCounter[lang] }, jar: ART.jarYour401k[lang] },
@@ -106,10 +116,11 @@ function make(id: VideoId, pd: PlanData | null, ctx: VideoContextInfo, lang: Lan
       }
       add('bars', { a: { label: ART.youSave[lang], value: youAtFull, frac: Math.min(1, (em.pctForFull * EXAMPLE_PAY) / 100 / Math.max(em.fullEmployer, (em.pctForFull * EXAMPLE_PAY) / 100)) }, b: { label: ART.employerAdds[lang], value: full, frac: Math.min(1, em.fullEmployer / Math.max(em.fullEmployer, (em.pctForFull * EXAMPLE_PAY) / 100)) }, note: ART.everyYear[lang] }, 'match.5', { pctForFull: em.pctForFull, employerLc, fullEmployer: full });
       const lowPct = Math.max(0, em.pctForFull - 2);
-      const missed = Math.max(0, em.fullEmployer - employerMoneyAt(pd, lowPct)!.employer);
+      const missed = Math.max(0, em.fullEmployer - employerMoneyAt(pd, lowPct, EXAMPLE_PAY, source)!.employer);
       if (missed >= 1) {
         add('jar', { layers: ['you', 'you', 'employer'], fall: true, box: { tone: 'yellow', text: L(`Saving ${lowPct}%? You miss ${fmtRounded(missed)} a year.`, `¿Ahorras ${lowPct}%? Pierdes ${fmtRounded(missed)} al año.`) } }, 'match.6');
       }
+      extraScene();
       return end(next, 'calculator');
     }
 
@@ -198,6 +209,8 @@ function make(id: VideoId, pd: PlanData | null, ctx: VideoContextInfo, lang: Lan
     }
 
     case 'tdf': {
+      // Only a plan whose fund list has a Target Date fund gets this video.
+      if (!(pd?.fundsData ?? []).some((fd: any) => fd && fd.category === 'Target Date')) return null;
       add('title', { title: TITLES.tdf[lang], art: 'calendar' }, 'tdf.1');
       add('calendar', { year: '2060', pin: true }, 'tdf.2');
       add('mix', { stocks: 85, stocksLabel: ART.stocks[lang], bondsLabel: ART.bonds[lang], note: ART.earlyMore[lang] }, 'tdf.3');
