@@ -30,6 +30,7 @@ import { Md, Modal, LangToggle, Logo, Shield, SkipLink, announce } from '@/compo
 import { TabBar, PlanGuideTabBar, AppHeader } from '@/components/plansparency/nav';
 import { KeyTermsPanel } from '@/components/plansparency/KeyTermsPanel';
 import { TeamPanel } from '@/components/plansparency/TeamPanel';
+import { VideosPanel } from '@/components/plansparency/VideosPanel';
 import { PlanBar } from '@/components/plansparency/PlanBar';
 import { WelcomeDialog } from '@/components/plansparency/WelcomeDialog';
 import type { TeamMember } from '@/lib/team';
@@ -769,7 +770,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
         {activeTab === "calculator" && <div style={{ padding: "12px 20px 0", flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>{focusStrip}<WatchVideo id="limits" placeKey="calc" label={(s, title) => `${lang === "es" ? "¿Nuevo en esto? ▶ Ver" : "New to this? ▶ Watch"}: ${title} · ${s} s`} /></div>}
         {activeTab === "calculator" && <CalcPanel t={t} planData={planData} lang={lang} onOpenEligibility={openEligibility} />}
         {activeTab === "keyterms" && <KeyTermsPanel t={t} lang={lang} openStock={openCard} onOpenCalculator={() => setActiveTab("calculator")} />}
-        {activeTab === "videos" && <div style={{ flex: 1, overflowY: "auto", padding: "28px 20px" }}><h1 style={{ margin: 0, fontFamily: F.display, fontSize: 36, fontWeight: 700, color: C.text }}>{t.navVideos}</h1></div>}
+        {activeTab === "videos" && <VideosPanel />}
         {activeTab === "team" && <TeamPanel team={team} planName={planData?.planName || ""} lang={lang} t={t} onBack={() => setActiveTab("dashboard")} />}
 
         </main>
