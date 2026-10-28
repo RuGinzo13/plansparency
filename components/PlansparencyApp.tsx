@@ -113,6 +113,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   // The focus picks: React state only, never saved on the device or on a server.
   const [focus, setFocus] = useState<FocusId[]>([]);
   const [focusCur, setFocusCur] = useState(0);
+  const [focusHidden, setFocusHidden] = useState(false); // the × on the strip: this visit only
   useEffect(() => {
     if (stage !== STAGE.APP || welcomeShown.current) return;
     welcomeShown.current = true;
@@ -466,13 +467,19 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
   };
   const markWatched = (id) => setWatched((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   const videoCtx = { planData, lang, info: { employerName, planName: planData?.planName, recordkeeperName: planData?.recordkeeperName, hasTeam: team.length > 0 }, onAction: (a) => videoAction(a), theater, openVideo, closeVideo, watched, markWatched };
-  const startFocus = (picks: FocusId[]) => { setFocus(picks); setFocusCur(0); if (picks[0]) goToFocus(picks[0]); };
-  const focusStrip = focus.length > 0 ? (
+  const startFocus = (picks: FocusId[]) => { setFocusHidden(false); setFocus(picks); setFocusCur(0); if (picks[0]) goToFocus(picks[0]); };
+  const focusStrip = focus.length > 0 && focusHidden ? (
+    <div role="status" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, fontSize: 14, color: C.textMuted }}>
+      <span>{lang === "es" ? "Enfoque oculto en esta visita." : "Focus hidden for this visit."}</span>
+      <button type="button" onClick={() => setFocusHidden(false)} style={{ minHeight: 44, padding: 0, background: "none", border: "none", fontSize: 14, fontWeight: 700, color: C.accentText, textDecoration: "underline", cursor: "pointer", fontFamily: F.body }}>{lang === "es" ? "Mostrar de nuevo" : "Show it again"}</button>
+    </div>
+  ) : focus.length > 0 ? (
     <FocusStrip
       picks={focus} current={focusCur} lang={lang}
       onChip={(i) => { setFocusCur(i); goToFocus(focus[i]); }}
       onNext={() => { const n = Math.min(focusCur + 1, focus.length - 1); setFocusCur(n); goToFocus(focus[n]); }}
       onChange={() => openWelcome(2)}
+      onHide={() => setFocusHidden(true)}
       extra={<WatchFirst pick={focus[focusCur]} lang={lang} onGo={goToFocus} />}
     />
   ) : null;
@@ -734,7 +741,7 @@ function Plansparency({ mode = 'version-a', preloadedPlanText, advisorLogo, advi
           team={team} lang={lang} t={t} onClose={closeWelcome} onOpenTeam={() => setActiveTab("team")}
           initialStep={welcomeStep} initialPicks={focus}
           onFocus={(picks, hide) => { closeWelcome(hide); startFocus(picks); }}
-          onSkip={(hide) => { closeWelcome(hide); setFocus([]); setFocusCur(0); }}
+          onSkip={(hide) => { closeWelcome(hide); setFocus([]); setFocusCur(0); setFocusHidden(false); }}
         />}
 
         <AppHeader bare accentColor={C.accent} title={planData?.planName || fileName || "Your Plan"} lang={lang} setLang={setLang} loading={loading} t={t} advisorLogo={advisorLogo} advisorFirmName={advisorFirmName} />
