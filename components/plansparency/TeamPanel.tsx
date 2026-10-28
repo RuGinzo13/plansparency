@@ -81,6 +81,8 @@ export function TeamPanel({ team, planName, lang, t, onBack }: Props) {
                     {m.lead && <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 100, border: `1px solid ${C.border}`, color: C.text }}>{t.teamSetup}</span>}
                   </div>
 
+                  {m.helps && <div style={{ fontSize: 14, lineHeight: 1.45, color: C.textMuted, overflowWrap: 'anywhere' }}><strong style={{ color: C.text }}>{L('Helps with:', 'Ayuda con:')}</strong> {m.helps}</div>}
+
                   {speaks(m) && <div style={{ fontSize: 13, color: C.textMuted }}><strong style={{ color: C.text }}>{t.teamSpeaks}</strong> {speaks(m)}</div>}
 
                   <div style={{ flexGrow: 1, paddingTop: 12, borderTop: `1px solid ${C.borderLight}`, display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>

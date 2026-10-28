@@ -10,6 +10,8 @@ export type TeamMember = {
   role: TeamRole;
   also: TeamRole[];
   title: string;
+  // One optional line: what this person helps with (the advisor's own words, not translated).
+  helps: string;
   phone: string;
   email: string;
   langs: { en: boolean; es: boolean; other: string };
@@ -18,6 +20,7 @@ export type TeamMember = {
   lead: boolean;
 };
 
+export const MAX_HELPS = 120;
 export const MAX_TEAM = 12;
 export const MAX_ALSO = 4;
 export const MAX_PHOTO_CHARS = 80000;
@@ -101,6 +104,7 @@ export function normalizeTeam(raw: unknown): { team: TeamMember[]; errors: strin
       role,
       also,
       title: str(m.title).slice(0, 80),
+      helps: str(m.helps).slice(0, MAX_HELPS),
       phone,
       email,
       langs: { en: langs.en === true, es: langs.es === true, other: str(langs.other).slice(0, 60) },

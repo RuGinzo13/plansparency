@@ -9,13 +9,14 @@ import {
   TEAM_ROLES, ROLE_TEXT, MAX_TEAM, MAX_PHOTO_CHARS, rolesOf,
   isValidEmail, isValidPhone, isValidBooking,
   type TeamMember, type TeamRole,
+  MAX_HELPS,
 } from '@/lib/team';
 
 const MAX_PHOTO_FILE = 5 * 1024 * 1024;
 
 type Draft = Omit<TeamMember, 'id'> & { id: string };
 const blank = (): Draft => ({
-  id: '', name: '', role: 'service', also: [], title: '', phone: '', email: '',
+  id: '', name: '', role: 'service', also: [], title: '', helps: '', phone: '', email: '',
   langs: { en: false, es: false, other: '' }, booking: '', photo: '', lead: false,
 });
 
@@ -145,7 +146,7 @@ export default function TeamEditorPage() {
     const member: TeamMember = {
       ...draft,
       id: editingId === 'new' || !draft.id ? crypto.randomUUID() : draft.id,
-      name: draft.name.trim(), title: draft.title.trim(), phone: draft.phone.trim(),
+      name: draft.name.trim(), title: draft.title.trim(), helps: draft.helps.trim(), phone: draft.phone.trim(),
       email: draft.email.trim(), booking: draft.booking.trim(),
       langs: { ...draft.langs, other: draft.langs.other.trim() },
     };
@@ -242,6 +243,7 @@ export default function TeamEditorPage() {
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                     <div style={{ fontSize: 16, fontWeight: 700, overflowWrap: 'anywhere' }}>{m.name}</div>
                     {m.title && <div style={{ fontSize: 14, color: C.textMuted, overflowWrap: 'anywhere' }}>{m.title}</div>}
+                    {m.helps && <div style={{ maxWidth: '100%', fontSize: 13, color: C.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.helps}</div>}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>{rolesOf(m).map((r) => <RoleChip key={r} role={r} />)}</div>
                     {(m.phone || m.email) && <div style={{ fontSize: 13, color: C.textDim, overflowWrap: 'anywhere' }}>{[m.phone, m.email].filter(Boolean).join(' · ')}</div>}
                   </div>
@@ -319,6 +321,12 @@ export default function TeamEditorPage() {
             <label style={labelStyle}>
               Title (exactly as you want it shown)
               <input type="text" value={draft.title} maxLength={80} placeholder="e.g. Client Service Associate" onChange={(e) => set('title', e.target.value)} style={inputStyle} />
+            </label>
+
+            <label style={labelStyle}>
+              {draft.name.trim() ? `What ${draft.name.trim().split(',')[0].trim().split(/\s+/)[0]} helps with (optional)` : 'What this person helps with (optional)'}
+              <textarea rows={2} value={draft.helps} maxLength={MAX_HELPS} placeholder="e.g. Questions about loans, enrollment meetings in Spanish" onChange={(e) => set('helps', e.target.value)} style={{ ...inputStyle, minHeight: 64, padding: '10px 12px', resize: 'vertical', lineHeight: 1.4 }} />
+              <span style={{ alignSelf: 'flex-end', fontSize: 12, fontWeight: 400, color: C.textDim }}>{draft.helps.length}/{MAX_HELPS}</span>
             </label>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>

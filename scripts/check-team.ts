@@ -67,6 +67,13 @@ check(normalizeTeam([{ ...base, id: 'x'.repeat(41) }]).team[0].id.length > 0 && 
   const many = normalizeTeam([{ ...base, role: 'advisor', also: ['consultant', 'education', 'service', 'support'] }]).team[0];
   check(many.also.length === 4, 'also allows all four other roles');
 }
+// helps-with line
+{
+  check(normalizeTeam([base]).team[0].helps === '', 'old record loads with an empty helps line');
+  check(normalizeTeam([{ ...base, helps: '  Loans and enrollment  ' }]).team[0].helps === 'Loans and enrollment', 'helps is trimmed');
+  check(normalizeTeam([{ ...base, helps: 'x'.repeat(121) }]).team[0].helps.length === 120, 'helps over 120 characters is cut');
+  check(normalizeTeam([{ ...base, helps: 42 }]).team[0].helps === '', 'helps that is not text becomes empty');
+}
 // helpers
 check(telHref('(555) 010-2001') === 'tel:5550102001', 'telHref keeps digits only');
 check(telHref('+1 (555) 010-2001') === 'tel:+15550102001', 'telHref keeps a leading +');
