@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { C } from '../theme';
+import { Pill } from '../Pill';
 import { VisualFrame } from './VisualFrame';
 import { rothRows } from '@/lib/plan/visuals';
 
@@ -21,7 +22,7 @@ export function TaxTimingVisual({ planData, lang }: Props) {
   ];
   const cols = [r.preTax, r.roth].filter(Boolean).length;
   const badge = ([text, taxed]: [string, boolean]) => (
-    <span style={{ display: 'inline-block', fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 100, background: taxed ? C.dangerSoft : C.greenSoft, color: taxed ? C.danger : C.green }}>{text}</span>
+    <Pill kind={taxed ? 'ask' : 'yes'} size="sm">{text}</Pill>
   );
   const head = (text: string, bg: string, fg: string) => (
     <div style={{ padding: '8px 10px', borderRadius: 10, background: bg, color: fg, fontSize: 14, fontWeight: 700 }}>{text}</div>

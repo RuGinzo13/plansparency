@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { C, F, LAYOUT, btnBase } from "@/components/plansparency/theme";
+import { Pill } from '@/components/plansparency/Pill';
 import { AdvisorShell, BackLink } from '@/components/plansparency/advisor/AdvisorShell';
 import { REVIEW_ROWS, rowValueText, getAt, setAt, type ReviewRow, type FieldSpec } from '@/lib/plan/reviewRows';
 import { readPlanDocument } from '@/lib/plan/readPlanDocument';
@@ -149,10 +150,7 @@ export default function AddDocumentPage() {
   if (state === 'notfound') return <AdvisorShell><BackLink /><h1 style={{ fontFamily: F.display, fontSize: 32, fontWeight: 700, margin: '8px 0 0' }}>We couldn’t find that plan.</h1></AdvisorShell>;
   if (state === 'error') return <AdvisorShell><BackLink /><p role="alert" style={{ color: C.danger, fontSize: 16 }}>We couldn’t load the plan. Refresh to try again.</p></AdvisorShell>;
 
-  const tagStyle = (tag: 'New' | 'Different') => ({
-    display: 'inline-flex', alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 100,
-    background: tag === 'New' ? C.greenSoft : C.warningDim, color: tag === 'New' ? C.green : C.warning,
-  }) as const;
+
 
   return (
     <AdvisorShell>
@@ -216,7 +214,7 @@ export default function AddDocumentPage() {
                 <div role="row" key={c.key} className="cmp-grid" style={{ padding: '14px 16px', borderTop: `1px solid ${C.borderLight}`, fontSize: 15, lineHeight: 1.5 }}>
                   <div role="cell" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontWeight: 600 }}>
                     {c.label}
-                    <span style={tagStyle(c.tag)}>{c.tag}</span>
+                    <Pill kind={c.tag === 'New' ? 'yes' : 'ask'} size="sm">{c.tag}</Pill>
                   </div>
                   <div role="cell" style={{ color: C.textMuted, overflowWrap: 'anywhere' }}><span className="cmp-lbl">Now: </span>{c.now}</div>
                   <div role="cell" style={{ color: C.text, overflowWrap: 'anywhere' }}><span className="cmp-lbl">New: </span>{c.next}</div>

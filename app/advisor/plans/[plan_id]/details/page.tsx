@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { C, F, btnBase } from '@/components/plansparency/theme';
 import { AdvisorShell, BackLink, fmtDate } from '@/components/plansparency/advisor/AdvisorShell';
+import { Pill } from '@/components/plansparency/Pill';
 import { ReviewField, UnsureNote, unsureBox } from '@/components/plansparency/advisor/ReviewField';
 import { unsureKeys, UNSURE_KEYS, type UnsureKey } from '@/lib/plan/unsure';
 import { REVIEW_ROWS, rowValueText, diffRows, setAt } from '@/lib/plan/reviewRows';
@@ -103,7 +104,7 @@ export default function EditDetailsPage() {
 
   const rowBox = (changed: boolean) => ({ padding: '14px 16px', borderRadius: 16, background: C.surface, border: changed ? `2px solid ${C.accent}` : 'none', boxShadow: `0 1px 3px ${C.cardShadow}` }) as const;
   const editBtn = { minHeight: 40, padding: '0 14px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontWeight: 700, color: C.accentText, cursor: 'pointer', fontFamily: F.body, flexShrink: 0 } as const;
-  const changedChip = <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: C.accentSoft, color: C.accentText, textTransform: 'none', letterSpacing: 0 }}>Changed</span>;
+  const changedChip = <Pill kind="ask" size="sm">Changed</Pill>;
 
   return (
     <AdvisorShell>

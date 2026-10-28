@@ -4,6 +4,7 @@ import { endSessionFiles } from '@/lib/client/session';
 import { C, F, btnBase, LAYOUT } from '@/components/plansparency/theme';
 import { Logo, SkipLink } from '@/components/plansparency/ui';
 import { REVIEW_ROWS, setAt } from '@/lib/plan/reviewRows';
+import { Pill } from '@/components/plansparency/Pill';
 import { ReviewField, UnsureNote, unsureBox } from '@/components/plansparency/advisor/ReviewField';
 import { unsureKeys, UNSURE_KEYS, type UnsureKey } from '@/lib/plan/unsure';
 import { readPlanDocument } from '@/lib/plan/readPlanDocument';
@@ -205,7 +206,7 @@ export default function AdvisorPage() {
         {showWarning && <AccuracyDialog onClose={() => setShowWarning(false)} />}
         <h1 style={{ fontFamily: F.display, fontSize: wide ? 40 : 32, fontWeight: 700, margin: '0 0 12px' }}>{draft.planName || employerName || 'Plan review'}</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, padding: '5px 12px', borderRadius: 100, background: allChecked ? C.greenSoft : C.accentSoft, color: allChecked ? C.green : C.accentText }}>{checked.length} of {REVIEW_ROWS.length} checked</span>
+          <Pill kind={allChecked ? 'yes' : 'ask'}>{checked.length} of {REVIEW_ROWS.length} checked</Pill>
         </div>
         <div style={{ background: C.warningDim, color: C.text, borderRadius: 12, padding: '12px 16px', fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
           We read plan documents with AI, and it can get things wrong. Employees will see exactly what you approve, under your name.

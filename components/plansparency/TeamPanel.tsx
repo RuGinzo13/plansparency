@@ -4,6 +4,7 @@ import React from 'react';
 import { C, F, ROLE, LAYOUT } from './theme';
 import { RoleChip } from './RoleChip';
 import { Panel } from './Panel';
+import { Pill } from './Pill';
 import { TeamAvatar } from './TeamAvatar';
 import { TEAM_ROLES, ROLE_TEXT, telHref, rolesOf, type TeamMember } from '@/lib/team';
 
@@ -79,7 +80,7 @@ export function TeamPanel({ team, planName, lang, t, onBack }: Props) {
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {rolesOf(m).map((r) => <RoleChip key={r} role={r} lang={lang} />)}
-                    {m.lead && <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 100, border: `1px solid ${C.border}`, color: C.text }}>{t.teamSetup}</span>}
+                    {m.lead && <Pill kind="info" size="sm">{t.teamSetup}</Pill>}
                   </div>
 
                   {m.helps && <div style={{ fontSize: 14, lineHeight: 1.45, color: C.textMuted, overflowWrap: 'anywhere' }}><strong style={{ color: C.text }}>{L('Helps with:', 'Ayuda con:')}</strong> {m.helps}</div>}

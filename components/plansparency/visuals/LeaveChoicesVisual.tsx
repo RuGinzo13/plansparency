@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { C, F } from '../theme';
+import { Pill } from '../Pill';
 import { VisualFrame } from './VisualFrame';
 import type { LeaveOption } from '@/lib/plan/overview';
 
@@ -13,7 +14,7 @@ export function LeaveChoicesVisual({ options, lang }: Props) {
   const es = lang === 'es';
   const L = (en: string, esText: string) => (es ? esText : en);
   const badge = (f: { yes: boolean; text: string }) => (
-    <span style={{ display: 'inline-block', fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 100, background: f.yes ? C.dangerSoft : C.greenSoft, color: f.yes ? C.danger : C.green }}>{f.text}</span>
+    <Pill kind={f.yes ? 'ask' : 'yes'} size="sm">{f.text}</Pill>
   );
   const words = L(
     'Leaving it, or moving it to a new plan or an IRA, keeps taxes off for now. Cashing out means taxes on pre-tax money, plus a 10% extra tax if you’re under 59½. Roth money can come out tax-free if you meet the Roth rules.',
