@@ -3,6 +3,7 @@ export const runtime = 'nodejs'; // Node.js, NOT Edge — needed for Buffer oper
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { UNSURE_KEYS } from '@/lib/plan/unsure';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // ── 1. Parse + validate body ───────────────────────────────────────────────
-    let body: { pdfBase64?: string; planData?: object; initialSummary?: string; employerName?: string };
+    let body: { pdfBase64?: string; planData?: object; initialSummary?: string; employerName?: string; confirmed?: unknown };
     try {
       body = await req.json();
     } catch {
@@ -56,6 +57,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // ── 4. Insert row into plans table ─────────────────────────────────────────
     const pd = planData as Record<string, any>;
+    // The rows the advisor confirmed: only the 3 known keys are ever stored.
+    const confirmed = Array.isArray(body.confirmed) ? UNSURE_KEYS.filter((k) => (body.confirmed as unknown[]).includes(k)) : [];
+    const stored = { ...pd, review: { ...(pd.review && typeof pd.review === 'object' ? pd.review : {}), confirmed } };
 
     const { error: dbError } = await getSupabaseAdmin().from('plans').insert({
       plan_id,
@@ -64,7 +68,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       plan_name: pd.planName ?? pd.employerName ?? null,
       ein: pd.ein ?? null,
       plan_number: pd.planNumber ?? null,
-      plandata_json: planData,
+      plandata_json: stored,
       initial_summary: initialSummary,
       pdf_storage_path: storagePath,
     });

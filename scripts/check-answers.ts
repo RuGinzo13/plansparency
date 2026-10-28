@@ -5,6 +5,8 @@ const STOCK_QUESTIONS = (Object.keys(QUESTION_LABELS) as StockId[]).map((id) => 
 import { samples, mk } from './samples';
 import { getOverview } from '../lib/plan/overview';
 import { parseVesting } from '../lib/plan/planFacts';
+import { normalizePlanData } from '../lib/plan/plandata';
+import { readFileSync } from 'node:fs';
 
 const BAD = ['undefined', 'null', 'NaN', '[object', '{', '—', '–'];
 let pass = 0;
@@ -99,6 +101,28 @@ for (const [text, want] of vestCases) {
   const got = parseVesting(text);
   const ok = want === null ? got === null : Array.isArray(want) ? got?.kind === 'schedule' && JSON.stringify(got.byYear) === JSON.stringify(want) : got?.kind === 'immediate';
   check(ok, `parseVesting(${JSON.stringify(text)}) gave ${JSON.stringify(got)}`);
+}
+
+// PHASE-23: unsure facts say "Ask HR" until the advisor confirms them
+{
+  const real = JSON.parse(readFileSync('scripts/fixtures/real-plans.json', 'utf8')).plans;
+  const np = (k: string, over: any = {}) => ({ ...normalizePlanData(real[k])!, ...over });
+  const isUnsure = (t?: string) => !!t && t.startsWith("**Your plan document isn't clear on this.**");
+  const confirm = (pd: any, keys: string[]) => ({ ...pd, review: { confirmed: keys } });
+  check(isUnsure(getStockAnswer('match', np('tierraSur'), 'en')?.text), 'Tierra Sur: match is Ask HR');
+  check(isUnsure(getStockAnswer('profit', np('conflictInternational'), 'en')?.text), 'Conflict: profit is Ask HR');
+  check(isUnsure(getStockAnswer('inService', np('baers'), 'en')?.text), 'an age with no explicit yes: in-service is Ask HR');
+  check(getStockAnswer('match', np('tierraSur'), 'es')?.text.startsWith('**El documento de tu plan no es claro') === true, 'Ask HR also reads in Spanish');
+  check(getStockAnswer('safeHarbor', np('tierraSur'), 'en')?.text.includes('$2,500') === true, 'Tierra Sur: the safe harbor answer still shows');
+  check(!isUnsure(getStockAnswer('match', confirm(np('tierraSur'), ['match']), 'en')?.text), 'confirmed match gives the normal answer');
+  const qn = getStockAnswer('profit', confirm(np('conflictInternational'), ['profitSharing']), 'en')?.text ?? '';
+  check(qn.startsWith('**Your employer may add a QNEC.**') && !/profit sharing/i.test(qn), 'confirmed QNEC is never called profit sharing');
+  check(getStockAnswer('profit', confirm(np('conflictInternational'), ['profitSharing']), 'es')?.text.startsWith('**Tu empleador puede agregar un QNEC.**') === true, 'confirmed QNEC reads in Spanish');
+  check(getStockAnswer('inService', confirm(np('baers', { distributionInfo: { inServiceAvailable: true, inServiceAge: 59.5 } }), []), 'en')?.text.startsWith('**Yes.') === true, 'an explicit yes with an age gives the normal in-service answer');
+  const ov = getOverview(np('tierraSur'), 'en');
+  const val = (label: string) => ov.groups.flatMap((g) => g.rows).find((r) => r.label === label)?.value;
+  check(val('Employer match') === 'Ask HR' && val('In-service withdrawal') === 'Ask HR' && val('Safe harbor') !== 'Ask HR', 'Tierra Sur panel: match and in-service say Ask HR');
+  check(getOverview(np('tierraSur'), 'es').groups.flatMap((g) => g.rows).find((r) => r.card === 'match')?.value === 'Pregunta a RR. HH.', 'panel Ask HR in Spanish');
 }
 
 console.log(`${pass} checks passed, ${fail} failed`);

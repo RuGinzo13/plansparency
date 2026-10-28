@@ -10,6 +10,7 @@ import { safeHarborAmount } from './calc';
 import { IRS_LIMITS } from './irs-limits';
 import { getLimitYear } from './irs';
 import { fmtRounded } from '../format';
+import { unsureKeys } from './unsure';
 
 type Lang = 'en' | 'es';
 
@@ -362,8 +363,15 @@ export function getOverview(
   const yes = L('Yes', 'Sí');
   const no = 'No';
   const yn = (v: unknown) => (bool(v) ? (v ? yes : no) : tap);
+  // Facts the plan reader wasn't sure of say "Ask HR" until the advisor confirms them.
+  const unsure = unsureKeys(pd);
+  const askHr = L('Ask HR', 'Pregunta a RR. HH.');
   const svcAge = pd?.distributionInfo?.inServiceAge;
-  const inServiceValue = typeof svcAge === 'number' ? L(`Yes, at age ${ageText(svcAge)}`, `Sí, a los ${ageText(svcAge)} años`) : pd?.distributionInfo?.inServiceAvailable === false ? no : tap;
+  const svcOn = pd?.distributionInfo?.inServiceAvailable;
+  const inServiceValue = unsure.has('inService') ? askHr
+    : svcOn === false ? no
+    : svcOn === true ? (typeof svcAge === 'number' ? L(`Yes, at age ${ageText(svcAge)}`, `Sí, a los ${ageText(svcAge)} años`) : yes)
+    : tap;
 
   // Employer money, in plain words
   const upTo = (x: number) => L(`Yes, up to ${num(x)}% of pay`, `Sí, hasta ${num(x)}% del salario`);
@@ -375,13 +383,14 @@ export function getOverview(
     else if (f.type === 'none') safeHarborValue = no;
   }
   let matchValue = tap;
-  if (pd && f) {
+  if (pd && f && unsure.has('match')) matchValue = askHr;
+  else if (pd && f) {
     if (f.disc) matchValue = upTo(f.tiers.reduce((sum, t) => sum + (t.pct * t.upTo) / 100, 0));
     else if (f.safeHarbor) matchValue = L('No, safe harbor only', 'No, solo safe harbor');
     else if (pd.noMatch === true) matchValue = no;
   }
   const psAvail = pd?.profitSharing?.available;
-  const profitValue = bool(psAvail) ? (psAvail ? L('Yes, may be added yearly', 'Sí, puede agregarse cada año') : no) : tap;
+  const profitValue = unsure.has('profitSharing') ? askHr : bool(psAvail) ? (psAvail ? L('Yes, may be added yearly', 'Sí, puede agregarse cada año') : no) : tap;
 
   const req = pd && has(pd.contribEligibility?.requirement) ? pd.contribEligibility.requirement!.trim() : null;
   const catchUp = pd && bool(pd.planAllowsCatchUp) ? pd.planAllowsCatchUp : null;
@@ -440,7 +449,7 @@ export function getOverview(
   const topics: Record<TopicKey, PlanCard[]> = {
     you: [card('elig', req ?? tap, 'neutral'), card('limit', deferral, 'neutral'), card('roth', rothFact)],
     employer: [card('safeHarbor', safeHarborValue), card('match', matchValue), card('profit', profitValue), card('vesting', vestingFact)],
-    access: [card('loans', yn(pd?.loanAvailable)), card('hardship', yn(pd?.hardshipAvailable)), card('inService', tap, 'neutral')],
+    access: [card('loans', yn(pd?.loanAvailable)), card('hardship', yn(pd?.hardshipAvailable)), card('inService', unsure.has('inService') ? askHr : tap, 'neutral')],
     leave: [card('leave', leaveFact, 'good')],
   };
 

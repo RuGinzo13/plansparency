@@ -4,7 +4,8 @@ import { endSessionFiles } from '@/lib/client/session';
 import { C, F, btnBase, LAYOUT } from '@/components/plansparency/theme';
 import { Logo, SkipLink } from '@/components/plansparency/ui';
 import { REVIEW_ROWS, setAt } from '@/lib/plan/reviewRows';
-import { ReviewField } from '@/components/plansparency/advisor/ReviewField';
+import { ReviewField, UnsureNote, unsureBox } from '@/components/plansparency/advisor/ReviewField';
+import { unsureKeys, UNSURE_KEYS, type UnsureKey } from '@/lib/plan/unsure';
 import { readPlanDocument } from '@/lib/plan/readPlanDocument';
 import { PlansTable } from '@/components/plansparency/advisor/PlansTable';
 
@@ -126,7 +127,7 @@ export default function AdvisorPage() {
         const saveRes = await fetch('/api/save-plan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pdfBase64, planData, initialSummary, employerName: employerName.trim() }),
+          body: JSON.stringify({ pdfBase64, planData, initialSummary, employerName: employerName.trim(), confirmed: checked.filter(k => (UNSURE_KEYS as string[]).includes(k)) }),
         });
         if (!saveRes.ok) { const d = await saveRes.json().catch(() => ({})); throw new Error(d.detail || d.error || `Save error ${saveRes.status}`); }
         const { plan_id, advisor_token, share_url } = await saveRes.json();
@@ -186,6 +187,10 @@ export default function AdvisorPage() {
   if (review && draft && !status) {
     const allChecked = checked.length === REVIEW_ROWS.length;
     const canApprove = allChecked && reviewerName.trim().length > 0 && attest;
+    // Rows the reader wasn't sure of; a row stops being unsure once it is checked ("Mark checked" = confirmed).
+    const unsure = unsureKeys({ ...draft, review: { confirmed: checked } });
+    const unsureRows = REVIEW_ROWS.filter(r => unsure.has(r.key as UnsureKey));
+    const unsureFirst = [...REVIEW_ROWS].sort((a, b) => Number(unsure.has(b.key as UnsureKey)) - Number(unsure.has(a.key as UnsureKey)));
     const update = (path: string[], value: any, rowKey: string, mirror?: string[]) => {
       let next = setAt(draft, path, value);
       if (mirror) for (const m of mirror) next = setAt(next, [m], value);
@@ -205,12 +210,15 @@ export default function AdvisorPage() {
         <div style={{ background: C.warningDim, color: C.text, borderRadius: 12, padding: '12px 16px', fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
           We read plan documents with AI, and it can get things wrong. Employees will see exactly what you approve, under your name.
         </div>
-        {REVIEW_ROWS.map(row => {
+        {unsureRows.length > 0 && <div role="status" style={{ border: `2px solid ${C.accent}`, background: C.highlight, borderRadius: 12, padding: '12px 16px', fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}><strong>{unsureRows.length} {unsureRows.length === 1 ? 'item needs' : 'items need'} a closer look.</strong> They are listed first. Until you check them, employees see “Ask HR” for these.</div>}
+        {unsureFirst.map(row => {
+          const isUnsure = unsure.has(row.key as UnsureKey);
           const isChecked = checked.includes(row.key);
           const isEditing = editingKey === row.key;
           return (
-            <div key={row.key} style={{ background: isChecked ? C.greenSoft : C.surface, border: `1px solid ${isChecked ? C.green : C.border}`, borderRadius: 14, padding: 18, marginBottom: 12 }}>
+            <div key={row.key} style={{ background: isChecked ? C.greenSoft : C.surface, border: `1px solid ${isChecked ? C.green : C.border}`, borderRadius: 14, padding: 18, marginBottom: 12, ...(isUnsure ? unsureBox : {}) }}>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{row.label}</div>
+              {isUnsure && <UnsureNote rowKey={row.key as UnsureKey} />}
               {row.fields.map(f => (
                 <ReviewField key={f.path.join('.') + f.kind} field={f} draft={draft} editing={isEditing} onChange={(path, v, mirror) => update(path, v, row.key, mirror)} />
               ))}

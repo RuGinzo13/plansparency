@@ -5,6 +5,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { normalizePlanData } from '@/lib/plan/plandata';
 import { REVIEW_ROWS, diffRows } from '@/lib/plan/reviewRows';
+import { UNSURE_KEYS } from '@/lib/plan/unsure';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_BODY_BYTES = 2_000_000;
@@ -91,6 +92,11 @@ export async function PUT(req: NextRequest, { params }: Ctx): Promise<NextRespon
     const changedRowKeys = diffRows(stored, merged);
     const labels = REVIEW_ROWS.filter((r) => changedRowKeys.includes(r.key)).map((r) => r.label);
     if (JSON.stringify(stored.fundsData ?? []) !== JSON.stringify(merged.fundsData ?? [])) labels.push('Investment options');
+    // Rows the advisor confirmed. Only the 3 known keys are kept. A confirmation stays until that row changes without being confirmed again.
+    const sentConfirmed: string[] = Array.isArray(body?.confirmed) ? UNSURE_KEYS.filter((k) => body.confirmed.includes(k)) : [];
+    const storedConfirmed: string[] = Array.isArray(storedReview?.confirmed) ? UNSURE_KEYS.filter((k) => storedReview.confirmed.includes(k)) : [];
+    const confirmed = UNSURE_KEYS.filter((k) => sentConfirmed.includes(k) || (storedConfirmed.includes(k) && !changedRowKeys.includes(k)));
+    for (const k of sentConfirmed) if (!storedConfirmed.includes(k) && !changedRowKeys.includes(k)) labels.push(`${REVIEW_ROWS.find((r) => r.key === k)?.label ?? k} (confirmed)`);
     const employerChanged = newEmployer !== undefined && newEmployer !== (row.employer_name ?? '');
     if (employerChanged) labels.push('Employer name');
     if (labels.length === 0) return NextResponse.json({ error: 'Nothing changed.' }, { status: 400 });
@@ -102,7 +108,7 @@ export async function PUT(req: NextRequest, { params }: Ctx): Promise<NextRespon
     const history: HistoryEntry[] = [...(Array.isArray(storedReview?.history) ? storedReview.history : []), entry].slice(-MAX_HISTORY);
     // Remember who first reviewed the plan and when, since reviewedAt moves forward with every change.
     const original = storedReview?.original ?? (storedReview?.reviewedAt ? { at: storedReview.reviewedAt, by: storedReview.reviewerName || '' } : undefined);
-    merged.review = { ...(storedReview ?? {}), ...(original ? { original } : {}), reviewerName: by, reviewedAt: at, history };
+    merged.review = { ...(storedReview ?? {}), ...(original ? { original } : {}), reviewerName: by, reviewedAt: at, history, confirmed };
 
     const update: Record<string, unknown> = { plandata_json: merged };
     if (employerChanged) update.employer_name = newEmployer || null;

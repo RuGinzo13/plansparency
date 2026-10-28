@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { C, F, btnBase } from '@/components/plansparency/theme';
 import { AdvisorShell, BackLink, fmtDate } from '@/components/plansparency/advisor/AdvisorShell';
-import { ReviewField } from '@/components/plansparency/advisor/ReviewField';
+import { ReviewField, UnsureNote, unsureBox } from '@/components/plansparency/advisor/ReviewField';
+import { unsureKeys, UNSURE_KEYS, type UnsureKey } from '@/lib/plan/unsure';
 import { REVIEW_ROWS, rowValueText, diffRows, setAt } from '@/lib/plan/reviewRows';
 
 type HistoryEntry = { at: string; by: string; source?: string; fileName?: string; note?: string; fields?: string[] };
@@ -27,6 +28,7 @@ export default function EditDetailsPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [done, setDone] = useState(false);
+  const [confirmedNow, setConfirmedNow] = useState<string[]>([]); // rows the advisor marked "This is right" in this edit
 
   const load = () => {
     fetch(`/api/plan-details/${planId}`)
@@ -48,8 +50,14 @@ export default function EditDetailsPage() {
 
   const changedKeys = diffRows(saved, draft);
   const employerChanged = employer.trim() !== employerSaved.trim();
-  const changeCount = changedKeys.length + (employerChanged ? 1 : 0);
   const review = saved?.review || {};
+  const storedConfirmed: string[] = Array.isArray(review.confirmed) ? review.confirmed : [];
+  // A row you changed counts as checked. Rows still in doubt stand out first.
+  const confirmedAll = [...storedConfirmed.filter((k) => !changedKeys.includes(k)), ...confirmedNow, ...changedKeys.filter((k) => (UNSURE_KEYS as string[]).includes(k))];
+  const unsure = unsureKeys({ ...draft, review: { confirmed: confirmedAll } });
+  const newlyConfirmed = confirmedNow.filter((k) => !storedConfirmed.includes(k) && !changedKeys.includes(k));
+  const changeCount = changedKeys.length + newlyConfirmed.length + (employerChanged ? 1 : 0);
+  const rows = [...REVIEW_ROWS].sort((a, b) => Number(unsure.has(b.key as UnsureKey)) - Number(unsure.has(a.key as UnsureKey)));
   const history: HistoryEntry[] = Array.isArray(review.history) ? review.history.slice().reverse() : [];
   const original = review.original || (!Array.isArray(review.history) || review.history.length === 0 ? (review.reviewedAt ? { at: review.reviewedAt, by: review.reviewerName || '' } : null) : null);
   const planName = (saved?.planName as string) || employerSaved || 'this plan';
@@ -72,12 +80,12 @@ export default function EditDetailsPage() {
       const r = await fetch(`/api/plan-details/${planId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planData: draft, employerName: employer.trim(), by: by.trim(), note: note.trim(), source: 'edit' }),
+        body: JSON.stringify({ planData: draft, employerName: employer.trim(), by: by.trim(), note: note.trim(), source: 'edit', confirmed: confirmedAll.filter((k) => (UNSURE_KEYS as string[]).includes(k)) }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) { setFormError(d?.error || 'We couldn’t save. Try again.'); return; }
       setSaved(d.planData); setDraft(JSON.parse(JSON.stringify(d.planData)));
-      setEmployerSaved(employer.trim()); setOpen([]); setNote(''); setAck(false); setDone(true);
+      setEmployerSaved(employer.trim()); setOpen([]); setNote(''); setAck(false); setDone(true); setConfirmedNow([]);
     } catch {
       setFormError('We couldn’t save. Check your connection and try again.');
     } finally {
@@ -109,16 +117,18 @@ export default function EditDetailsPage() {
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 28, alignItems: 'flex-start' }}>
         <ul style={{ flex: '999 1 560px', minWidth: 0, listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {REVIEW_ROWS.map((row) => {
+          {rows.map((row) => {
+            const isUnsure = unsure.has(row.key as UnsureKey);
             const changed = changedKeys.includes(row.key);
             const isOpen = open.includes(row.key);
             return (
-              <li key={row.key} style={rowBox(changed)}>
+              <li key={row.key} style={{ ...rowBox(changed), ...(isUnsure ? unsureBox : {}) }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', color: C.textMuted, marginBottom: 6 }}>
                       {row.label}{changed && changedChip}
                     </div>
+                    {isUnsure && <UnsureNote rowKey={row.key as UnsureKey} onConfirm={() => { setDone(false); setConfirmedNow((c) => (c.includes(row.key) ? c : [...c, row.key])); }} />}
                     {isOpen ? (
                       row.fields.map((f) => <ReviewField key={f.path.join('.')} field={f} draft={draft} editing onChange={onField} />)
                     ) : (

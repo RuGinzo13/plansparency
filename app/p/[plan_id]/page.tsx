@@ -2,6 +2,7 @@
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import PlansparencyApp from '@/components/PlansparencyApp';
 import { normalizeTeam } from '@/lib/team';
+import { normalizePlanData } from '@/lib/plan/plandata';
 import { C } from '@/components/plansparency/theme';
 
 // ── Dynamic metadata — static export cannot reference async data ──────────────
@@ -77,7 +78,7 @@ export default async function ParticipantPlanPage({ params }: { params: Promise<
   return (
     <PlansparencyApp
       initialPdfBase64={base64}
-      initialPlanData={plan.plandata_json}
+      initialPlanData={{ ...plan.plandata_json, ...normalizePlanData(plan.plandata_json) }}
       initialMessages={initialMessages}
       initialStage="app"
       planId={plan.plan_id}

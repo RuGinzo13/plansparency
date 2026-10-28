@@ -12,6 +12,7 @@ import { IRS_LIMITS } from '../plan/irs-limits';
 import { getLimitYear } from '../plan/irs';
 import { safeHarborAmount } from '../plan/calc';
 import { fmtRounded } from '../format';
+import { unsureKeys, type UnsureKey } from '../plan/unsure';
 
 export type StockId = 'elig' | 'limit' | 'roth' | 'safeHarbor' | 'match' | 'profit' | 'vesting' | 'loans' | 'hardship' | 'inService' | 'leave';
 
@@ -108,10 +109,16 @@ function matchAnswer(pd: PlanData): StockAnswer | null {
 }
 
 // ── Profit sharing ──
-function profitAnswer(pd: PlanData): StockAnswer | null {
+function profitAnswer(pd: PlanData, lang: 'en' | 'es'): StockAnswer | null {
   const available = pd.profitSharing?.available;
   if (typeof available !== 'boolean') return null;
   if (!available) return { text: join([para('No, your plan doesn\'t have profit sharing right now.', '')]) };
+  // A confirmed QNEC is never called profit sharing (DRAFT wording).
+  if (pd.profitSharing.type === 'qnec') {
+    return { text: lang === 'es'
+      ? '**Tu empleador puede agregar un QNEC.** Es dinero que tu empleador puede agregar para todas las personas elegibles, ahorren o no. Es tuyo de inmediato.'
+      : '**Your employer may add a QNEC.** That\'s money your employer can add for everyone who\'s eligible, whether or not you save. It\'s yours right away.' };
+  }
   const out: string[] = [para('Yes, your plan has profit sharing.', 'Your employer decides each year whether to add it and how much. You don\'t have to save anything yourself to get it.')];
   if (pd.profitSharing.lastDayApplies === true) {
     out.push(para('Be here at year end.', 'You may need to be working here on the last day of the plan year to get it.'));
@@ -285,6 +292,13 @@ function inServiceAnswer(pd: PlanData, lang: 'en' | 'es'): StockAnswer | null {
   return { text };
 }
 
+// Cards whose facts the plan reader may not be sure of (see lib/plan/unsure.ts). DRAFT wording.
+const UNSURE_CARD: Partial<Record<StockId, UnsureKey>> = { match: 'match', profit: 'profitSharing', inService: 'inService' };
+const UNSURE_TEXT = {
+  en: "**Your plan document isn't clear on this.** Ask HR or your plan's advisor. Your advisor is checking it.",
+  es: '**El documento de tu plan no es claro sobre esto.** Pregunta a Recursos Humanos o al asesor de tu plan. Tu asesor lo está revisando.',
+};
+
 const BUILDERS: Record<StockId, (pd: PlanData, lang: 'en' | 'es') => StockAnswer | null> = {
   elig: eligAnswer,
   limit: limitAnswer,
@@ -301,7 +315,11 @@ const BUILDERS: Record<StockId, (pd: PlanData, lang: 'en' | 'es') => StockAnswer
 
 // null means "send this question to the AI instead".
 export function getStockAnswer(id: StockId, planData: PlanData | null, lang: 'en' | 'es'): StockAnswer | null {
-  if ((lang !== 'en' && id !== 'inService') || !planData || typeof planData !== 'object') return null;
+  if (!planData || typeof planData !== 'object') return null;
+  const key = UNSURE_CARD[id];
+  if (key && unsureKeys(planData).has(key)) return { text: UNSURE_TEXT[lang] };
+  // Spanish wording exists for the in-service answer and a confirmed QNEC only.
+  if (lang !== 'en' && id !== 'inService' && !(id === 'profit' && planData.profitSharing?.type === 'qnec' && planData.profitSharing.available === true)) return null;
   try {
     return BUILDERS[id](planData, lang);
   } catch {

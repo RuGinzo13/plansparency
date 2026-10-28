@@ -6,6 +6,8 @@
 export interface MatchTier {
   pct: number;
   upTo: number;
+  // The most % of pay the employer adds for this tier, only when the document says so
+  cap?: number;
 }
 
 export interface SafeHarbor {
@@ -16,6 +18,7 @@ export interface SafeHarbor {
 
 export interface ProfitSharing {
   available: boolean | null;
+  // 'qnec' = a qualified nonelective contribution, which is not profit sharing
   type: string;
   formula: string;
   lastDayApplies: boolean | null;
@@ -42,6 +45,8 @@ export interface PlanData {
   recordkeeperUrl?: string;
   matchTiers: MatchTier[];
   noMatch: boolean | null;
+  // 'fixed' = a set formula the employer must follow, 'discretionary' = the employer decides each year
+  matchKind?: 'fixed' | 'discretionary' | null;
   lastDayProvision: boolean | null;
   safeHarbor: SafeHarbor;
   profitSharing: ProfitSharing;
@@ -61,6 +66,8 @@ export interface PlanData {
   advisorName?: string;
   advisorFirm?: string;
   advisorEmail?: string;
+  // Who checked the details and which uncertain rows they confirmed (set on the server, never by a client)
+  review?: { reviewerName?: string; reviewedAt?: string; confirmed?: string[]; [k: string]: any } | null;
 }
 
 export interface DistributionInfo {
@@ -87,14 +94,16 @@ export function parseServiceAge(v: unknown): number | null {
 // 59.5 reads "59½", 55 reads "55".
 export const ageText = (n: number) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)}½`);
 
+const QNEC_RE = /\bQNEC\b|qualified non-?elective/i;
+
 // Extract the hidden <!--PLANDATA:{…}--> block from a Claude reply.
 function normalizeDistribution(raw: any, toBool: (v: any, f?: boolean | null) => boolean | null): DistributionInfo | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const asked = toBool(raw.inServiceAvailable, null);
   const found = parseServiceAge(raw.inServiceAge);
-  // The plan document says no: no age. An age found means yes. Otherwise unknown.
+  // The document's explicit answer only. An age alone never turns it into yes (it may be a default).
   const inServiceAge = asked === false ? null : found;
-  const inServiceAvailable = asked === false ? false : found !== null ? true : asked === true ? true : null;
+  const inServiceAvailable = asked;
   const rmd = typeof raw.rmdAge === 'number' && raw.rmdAge >= 70 && raw.rmdAge <= 80 ? raw.rmdAge : null;
   const sep = typeof raw.separationOptions === 'string' ? raw.separationOptions.trim() : Array.isArray(raw.separationOptions) ? raw.separationOptions.filter((x: unknown) => typeof x === 'string') : undefined;
   return { inServiceAge, inServiceAvailable, rmdAge: rmd, rolloversIn: toBool(raw.rolloversIn, null), ...(sep && sep.length ? { separationOptions: sep } : {}) };
@@ -169,9 +178,11 @@ export function normalizePlanData(raw: any): PlanData | null {
       .map((t) => {
         if (typeof t !== 'object' || !t) return null;
         const pct = t.pct ?? t.percentage ?? t.matchPct ?? t.rate ?? t.matchPercentage;
-        const upTo = t.upTo ?? t.upToPercent ?? t.cap ?? t.maxPct ?? t.upToPercentage ?? t.limit;
+        const upTo = t.upTo ?? t.upToPercent ?? t.maxPct ?? t.upToPercentage ?? t.limit;
         if (pct == null || upTo == null) return null;
-        return { pct: Number(pct), upTo: Number(upTo) };
+        const rawCap = t.cap ?? t.totalCap ?? t.maxMatch;
+        const cap = typeof rawCap === 'number' && Number.isFinite(rawCap) && rawCap >= 0 && rawCap <= 100 ? rawCap : undefined;
+        return { pct: Number(pct), upTo: Number(upTo), ...(cap !== undefined ? { cap } : {}) };
       })
       .filter(Boolean) as MatchTier[];
   };
@@ -191,6 +202,7 @@ export function normalizePlanData(raw: any): PlanData | null {
     // match
     matchTiers: normalizeTiers(raw.matchTiers),
     noMatch: toBool(raw.noMatch, false),
+    matchKind: raw.matchKind === 'fixed' || raw.matchKind === 'discretionary' ? raw.matchKind : null,
     lastDayProvision: toBool(raw.lastDayProvision, null),
     // safe harbor — type MUST be a valid enum string
     safeHarbor: {
@@ -201,7 +213,8 @@ export function normalizePlanData(raw: any): PlanData | null {
     // profit sharing
     profitSharing: {
       available: toBool(ps.available, false),
-      type: typeof ps.type === 'string' ? ps.type : 'discretionary',
+      // A QNEC is not profit sharing: read it from the type or the formula text.
+      type: QNEC_RE.test(`${typeof ps.type === 'string' ? ps.type : ''} ${typeof ps.formula === 'string' ? ps.formula : ''}`) ? 'qnec' : typeof ps.type === 'string' ? ps.type : 'discretionary',
       formula: typeof ps.formula === 'string' ? ps.formula.trim() : '',
       lastDayApplies: toBool(ps.lastDayApplies, null),
     },

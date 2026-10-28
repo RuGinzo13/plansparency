@@ -3,6 +3,8 @@
 import { REVIEW_ROWS, diffRows, rowValueText, fieldText, getAt, setAt } from '../lib/plan/reviewRows';
 import { samples, base, mk } from './samples';
 import { normalizePlanData, parseServiceAge } from '../lib/plan/plandata';
+import { unsureKeys } from '../lib/plan/unsure';
+import { readFileSync } from 'node:fs';
 
 let pass = 0;
 let fail = 0;
@@ -50,10 +52,29 @@ check(getAt(changed, ['safeHarbor', 'type']) === 'qaca' && getAt(base, ['safeHar
     check(parseServiceAge(v) === want, `parseServiceAge(${JSON.stringify(v)}) is ${parseServiceAge(v)}, wanted ${want}`);
   }
   const n = (di: any) => normalizePlanData({ ...base, distributionInfo: di })!.distributionInfo;
-  check(n({ inServiceAge: '59½' })?.inServiceAge === 59.5 && n({ inServiceAge: '59½' })?.inServiceAvailable === true, 'an age found means offered');
+  check(n({ inServiceAge: '59½' })?.inServiceAge === 59.5 && n({ inServiceAge: '59½' })?.inServiceAvailable === null, 'an age alone does not mean offered');
+  check(n({ inServiceAvailable: true, inServiceAge: '59½' })?.inServiceAvailable === true, 'an explicit yes stays yes');
   check(n({ inServiceAvailable: false, inServiceAge: 59.5 })?.inServiceAge === null && n({ inServiceAvailable: false })?.inServiceAvailable === false, 'explicit no wins, no age');
   check(n({ inServiceAge: 12 })?.inServiceAvailable === null && n({})?.inServiceAvailable === null, 'no age and no statement is unknown');
   check(normalizePlanData({ ...base, distributionInfo: undefined })!.distributionInfo === undefined, 'no distributionInfo stays missing');
+}
+
+// PHASE-23: facts the reader wasn't sure of
+{
+  const real = JSON.parse(readFileSync('scripts/fixtures/real-plans.json', 'utf8')).plans;
+  const np = (k: string) => normalizePlanData(real[k])!;
+  const u = (pd: any) => [...unsureKeys(pd)].sort().join(',');
+  check(u(np('tierraSur')) === 'inService,match', `Tierra Sur unsure: ${u(np('tierraSur'))}`);
+  check(u(np('conflictInternational')) === 'inService,match,profitSharing' || u(np('conflictInternational')) === 'inService,profitSharing', `Conflict unsure: ${u(np('conflictInternational'))}`);
+  check(np('conflictInternational').profitSharing.type === 'qnec', 'a Discretionary QNEC formula reads as qnec');
+  check(u(np('baers')) === 'inService', `Baers unsure: ${u(np('baers'))}`);
+  check(np('tierraSur').matchTiers[0].cap === 4, 'totalCap is kept as cap');
+  check(u({ ...np('tierraSur'), review: { confirmed: ['match', 'inService'] } }) === '', 'confirmed keys are no longer unsure');
+  check(u(mk({ distributionInfo: { inServiceAvailable: true, inServiceAge: 59.5 } })) === '', 'an explicit yes with an age is not unsure');
+  check(u(mk({ safeHarbor: { type: 'basic_match', formula: '', vestingImmediate: true }, noMatch: false, matchTiers: [{ pct: 100, upTo: 4 }] })) === 'match', 'a second match next to a safe harbor match is unsure');
+  check(u(mk({ safeHarbor: { type: 'nonelective', formula: '', vestingImmediate: true }, noMatch: false, matchTiers: [{ pct: 100, upTo: 4 }] })) === '', 'a match next to a nonelective is fine');
+  check(normalizePlanData({ ...base, matchKind: 'fixed' })!.matchKind === 'fixed' && normalizePlanData({ ...base, matchKind: 'x' })!.matchKind === null, 'matchKind keeps only the two known words');
+  check(normalizePlanData({ ...base, profitSharing: { available: true, type: 'discretionary', formula: 'Qualified nonelective contribution' } })!.profitSharing.type === 'qnec', 'qualified nonelective reads as qnec');
 }
 
 console.log(`${pass} checks passed, ${fail} failed`);

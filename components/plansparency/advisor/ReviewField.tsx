@@ -3,6 +3,7 @@ import React from 'react';
 import { C, F, btnBase } from '../theme';
 import { getAt, triLabel, type FieldSpec } from '@/lib/plan/reviewRows';
 import { ageText, parseServiceAge } from '@/lib/plan/plandata';
+import { UNSURE_REASONS, type UnsureKey } from '@/lib/plan/unsure';
 
 export const controlStyle = { width: '100%', minHeight: 44, padding: '0 12px', borderRadius: 8, border: `1px solid ${C.inputBorder}`, background: C.aiBubble, color: C.text, fontFamily: F.body, fontSize: 16, boxSizing: 'border-box' } as const;
 
@@ -70,3 +71,16 @@ export function ReviewField({ field, draft, editing, onChange }: { field: FieldS
     : <div style={readStyle}>{tiers.length ? tiers.map((t, i) => <div key={i}>{t.pct}% match on the first {t.upTo}% of pay</div>) : 'None listed'}</div>);
 }
 
+
+// Shown on a row the plan reader wasn't sure of. Stands out first: coral outline, label and the reason.
+export const unsureBox = { border: `2px solid ${C.accent}`, background: C.highlight } as const;
+
+export function UnsureNote({ rowKey, onConfirm }: { rowKey: UnsureKey; onConfirm?: () => void }) {
+  return (
+    <div style={{ margin: '0 0 12px' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.accentText, marginBottom: 4 }}>Please check: we weren't sure</div>
+      <div style={{ fontSize: 14, lineHeight: 1.5, color: C.text }}>{UNSURE_REASONS[rowKey]}</div>
+      {onConfirm && <button type="button" onClick={onConfirm} style={{ ...btnBase, minHeight: 44, padding: '0 18px', fontSize: 14, marginTop: 8, background: C.surface, color: C.accentText, border: `2px solid ${C.accent}` }}>This is right</button>}
+    </div>
+  );
+}

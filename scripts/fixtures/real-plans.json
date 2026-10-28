@@ -1,0 +1,185 @@
+{
+ "_note": "Plan details as saved in Supabase on Oct 28, 2026 for the 4 test plans (public SPDs, not firm plans). EIN and plan number removed. Used by scripts/check-relevance.ts. Do not edit by hand; refresh from Supabase when the test plans change.",
+ "plans": {
+  "conflictInternational": {
+   "hasRoth": true,
+   "noMatch": false,
+   "planName": "Conflict International, Inc. 401(K) Plan",
+   "fundsData": [],
+   "matchTiers": [],
+   "safeHarbor": {
+    "type": "basic_match",
+    "formula": "100% of first 3% of compensation deferred, plus 50% of next 2% of compensation deferred",
+    "vestingImmediate": true
+   },
+   "loanAvailable": true,
+   "profitSharing": {
+    "type": "discretionary",
+    "formula": "Discretionary QNEC at company option",
+    "available": true,
+    "lastDayApplies": false
+   },
+   "rothAvailable": true,
+   "vestingSchedule": "Immediate 100% vesting on all accounts (elective deferrals, rollover, QNEC, and safe harbor match)",
+   "distributionInfo": {
+    "rmdAge": 70.5,
+    "rolloversIn": true,
+    "inServiceAge": 59.5,
+    "separationOptions": "Lump sum distribution; rollover to IRA or new employer plan"
+   },
+   "lastDayProvision": false,
+   "matchEligibility": {
+    "entryDates": "First day of calendar month coincident with or next following eligibility",
+    "requirement": "Age 21 and 6 months of service",
+    "immediateMatch": false
+   },
+   "recordkeeperName": "TAG Resources, LLC",
+   "hardshipAvailable": true,
+   "planAllowsCatchUp": true,
+   "contribEligibility": {
+    "autoEnroll": true,
+    "entryDates": "First day of calendar month coincident with or next following eligibility",
+    "requirement": "Age 21 and 6 months of service",
+    "autoEnrollPct": 1
+   }
+  },
+  "conflictInternationalNoMatch": {
+   "hasRoth": true,
+   "noMatch": true,
+   "planName": "Conflict International, Inc. 401(K) Plan",
+   "fundsData": [],
+   "matchTiers": [],
+   "safeHarbor": {
+    "type": "basic_match",
+    "formula": "100% of first 3% of pay, plus 50% of next 2% of pay (max 4% of pay)",
+    "vestingImmediate": true
+   },
+   "loanAvailable": true,
+   "profitSharing": {
+    "type": "discretionary",
+    "formula": "QNEC at company discretion",
+    "available": true,
+    "lastDayApplies": false
+   },
+   "rothAvailable": true,
+   "vestingSchedule": "100% immediate for all account types (employee deferrals, safe harbor match, QNECs, rollovers)",
+   "distributionInfo": {
+    "rmdAge": 70.5,
+    "rolloversIn": true,
+    "inServiceAge": 59.5,
+    "separationOptions": "Lump sum (default); rollover to IRA or new employer plan"
+   },
+   "lastDayProvision": false,
+   "matchEligibility": {
+    "entryDates": "Same as contribution eligibility",
+    "requirement": "Age 21 and 6 months of service",
+    "immediateMatch": false
+   },
+   "recordkeeperName": "TAG Resources",
+   "hardshipAvailable": true,
+   "planAllowsCatchUp": true,
+   "contribEligibility": {
+    "autoEnroll": true,
+    "entryDates": "First day of calendar month",
+    "requirement": "Age 21 and 6 months of service",
+    "autoEnrollPct": 1
+   }
+  },
+  "tierraSur": {
+   "hasRoth": true,
+   "noMatch": false,
+   "planName": "Tierra Sur, LLC 401(k) Plan",
+   "fundsData": [],
+   "hasPreTax": true,
+   "matchTiers": [
+    {
+     "pct": 100,
+     "upTo": 6,
+     "totalCap": 4
+    }
+   ],
+   "safeHarbor": {
+    "type": "basic_match",
+    "formula": "100% match on the first 3% of pay you contribute, plus 50% match on the next 2%. 100% immediately vested.",
+    "vestingImmediate": true
+   },
+   "loanAvailable": true,
+   "profitSharing": {
+    "type": "discretionary",
+    "formula": "Discretionary, employer decides annually",
+    "available": true,
+    "lastDayApplies": true
+   },
+   "rothAvailable": true,
+   "vestingSchedule": "Safe harbor contributions: 100% immediately vested. Discretionary match and employer/profit sharing contributions: 6-year graded — 0% at 0-1 year, 20% at 2, 40% at 3, 60% at 4, 80% at 5, 100% at 6+ years.",
+   "distributionInfo": {
+    "rmdAge": 72,
+    "rolloversIn": true,
+    "inServiceAge": 59.5,
+    "separationOptions": "Lump sum, partial, installments, or rollover"
+   },
+   "lastDayProvision": true,
+   "matchEligibility": {
+    "entryDates": "First day of the month",
+    "requirement": "Age 21 and 12 months of service; last-day and 1,000-hour requirement for discretionary match",
+    "immediateMatch": false
+   },
+   "recordkeeperName": "Equitable",
+   "hardshipAvailable": true,
+   "planAllowsCatchUp": true,
+   "contribEligibility": {
+    "autoEnroll": false,
+    "entryDates": "First day of the month",
+    "requirement": "Age 21 and full-time hire",
+    "autoEnrollPct": 0
+   }
+  },
+  "baers": {
+   "hasRoth": true,
+   "noMatch": false,
+   "planName": "Baer's Rug & Linoleum Co., Inc. 401(k) Plan",
+   "fundsData": [],
+   "matchTiers": [
+    {
+     "pct": 100,
+     "upTo": 4
+    }
+   ],
+   "safeHarbor": {
+    "type": "none",
+    "formula": "",
+    "vestingImmediate": true
+   },
+   "loanAvailable": false,
+   "profitSharing": {
+    "type": "discretionary",
+    "formula": "",
+    "available": false,
+    "lastDayApplies": false
+   },
+   "rothAvailable": true,
+   "vestingSchedule": "100% immediate vesting for both employee deferrals and matching contributions",
+   "distributionInfo": {
+    "rmdAge": 72,
+    "rolloversIn": true,
+    "inServiceAge": 59.5,
+    "separationOptions": "Lump sum, partial payments, or rollover"
+   },
+   "lastDayProvision": false,
+   "matchEligibility": {
+    "entryDates": "First of month",
+    "requirement": "Age 21 and 1,000 hours",
+    "immediateMatch": false
+   },
+   "recordkeeperName": "Principal",
+   "hardshipAvailable": true,
+   "planAllowsCatchUp": true,
+   "contribEligibility": {
+    "autoEnroll": false,
+    "entryDates": "First of month",
+    "requirement": "Age 21 and 1,000 hours",
+    "autoEnrollPct": 0
+   }
+  }
+ }
+}
